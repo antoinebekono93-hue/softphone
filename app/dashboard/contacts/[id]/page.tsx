@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Mail, Phone, Building, FileText, User } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building, FileText, User, Clock } from "lucide-react";
 import InboxClient from "../../inbox/InboxClient";
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {

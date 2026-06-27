@@ -120,10 +120,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
  * Keep the plan active when invoices are paid.
  */
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  const invAny = invoice as any;
   const subscriptionId =
-    typeof invoice.subscription === "string"
-      ? invoice.subscription
-      : invoice.subscription?.id;
+    typeof invAny.subscription === "string"
+      ? invAny.subscription
+      : invAny.subscription?.id;
 
   if (!subscriptionId) return;
 
@@ -137,10 +138,11 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
  * Mark the plan as past_due when payment fails.
  */
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  const invAny = invoice as any;
   const subscriptionId =
-    typeof invoice.subscription === "string"
-      ? invoice.subscription
-      : invoice.subscription?.id;
+    typeof invAny.subscription === "string"
+      ? invAny.subscription
+      : invAny.subscription?.id;
 
   if (!subscriptionId) return;
 

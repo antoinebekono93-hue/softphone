@@ -7,7 +7,7 @@ export async function getCallLogs(limit: number = 50, offset: number = 0) {
   const session = await auth();
   if (!session?.user?.organizationId) return { logs: [], total: 0 };
 
-  const [logs, total] = await Promise.all([
+  const [logs, total, contacts] = await Promise.all([
     prisma.callLog.findMany({
       where: { organizationId: session.user.organizationId },
       orderBy: { startedAt: 'desc' },
