@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
+import { getToken } from "next-auth/jwt";
 
 /**
  * Paths that don't require authentication.
@@ -27,7 +27,7 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-export default auth((req) => {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow public paths and static files
@@ -44,15 +44,17 @@ export default auth((req) => {
   }
 
   // Temporarily bypassed for UI Demo
-  // if (!req.auth) {
+  // const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  // if (!token) {
   //   const loginUrl = new URL("/login", req.url);
   //   loginUrl.searchParams.set("callbackUrl", pathname);
   //   return NextResponse.redirect(loginUrl);
   // }
 
-  // Check if user has an active organization for dashboard access
+  // We need to fetch the token if they are on a protected dashboard route
   if (pathname.startsWith("/dashboard")) {
-    const planStatus = req.auth?.user?.planStatus;
+    const token = await getToken({ req, secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET });
+    const planStatus = token?.planStatus as string | undefined;
 
     // Allow access to billing page even with inactive plan (so they can reactivate)
     if (pathname === "/dashboard/billing") {
@@ -66,7 +68,7 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
