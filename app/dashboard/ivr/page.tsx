@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import IvrBuilderClient from "./IvrBuilderClient";
 

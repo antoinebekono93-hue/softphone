@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import { stripe, STRIPE_PRICES } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 

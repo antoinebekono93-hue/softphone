@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export async function updateTelnyxSettings(formData: FormData) {

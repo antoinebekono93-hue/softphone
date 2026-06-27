@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 
 export const metadata = {
   title: "Automations | Antigravity",

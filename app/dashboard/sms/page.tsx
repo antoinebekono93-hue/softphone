@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import SmsDashboardClient from "./SmsDashboardClient";
 import { redirect } from "next/navigation";
 

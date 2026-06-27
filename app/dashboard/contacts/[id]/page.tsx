@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, Phone, Building, FileText, User } from "lucide-react";

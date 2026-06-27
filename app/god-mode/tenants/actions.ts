@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export async function updateTenant(tenantId: string, data: {

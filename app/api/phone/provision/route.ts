@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import { getTenantTwilioClient } from "@/lib/twilio-tenant";
 import { prisma } from "@/lib/prisma";
 import { getPlanLimits } from "@/lib/utils";

@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 import { Users, Phone, Plus, MoreHorizontal, Search } from "lucide-react";
 
 export const metadata = {

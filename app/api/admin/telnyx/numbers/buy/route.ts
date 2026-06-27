@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 // @ts-ignore
 import Telnyx from "telnyx";
-import { auth } from "@/lib/auth";
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
   try {
