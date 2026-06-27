@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Mail, Phone, Building, FileText, User } from "lucide-react";
 import InboxClient from "../../inbox/InboxClient";
 
-export default async function ContactDetailPage({ params }: { params: { id: string } }) {
+export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (!session || !session.user?.id) {
     redirect("/login");
@@ -22,7 +23,7 @@ export default async function ContactDetailPage({ params }: { params: { id: stri
 
   const contact = await prisma.contact.findUnique({
     where: {
-      id: params.id,
+      id,
       organizationId: user.organizationId
     },
     include: {
