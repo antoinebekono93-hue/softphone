@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Allow Twilio webhook routes to be called externally
+      // Allow Telnyx webhook routes to be called externally
       {
         source: "/api/voice/:path*",
         headers: [
