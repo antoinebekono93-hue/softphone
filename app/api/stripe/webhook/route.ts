@@ -105,7 +105,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   await prisma.organization.update({
     where: { id: organizationId },
     data: {
-      plan,
+      // Note: We leave pricingPlanId alone here or it should be mapped properly.
       planStatus: "ACTIVE",
       stripeSubscriptionId: session.subscription as string,
     },
@@ -163,7 +163,6 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   await prisma.organization.updateMany({
     where: { stripeSubscriptionId: subscription.id },
     data: {
-      plan: newPlan,
       planStatus: subscription.status === "active" ? "ACTIVE" : "PAST_DUE",
     },
   });
