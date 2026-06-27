@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-// @ts-ignore
-import Telnyx from "telnyx";
+import { telnyx } from "@/lib/telnyx";
 import { auth } from "@/auth";
 
 export async function GET(req: Request) {
@@ -17,13 +16,7 @@ export async function GET(req: Request) {
     const limit = searchParams.get("limit") || "10";
     const features = searchParams.get("features"); // e.g., "sms,voice"
 
-    // 3. Initialize Telnyx Client
-    if (!process.env.TELNYX_API_KEY) {
-      return NextResponse.json({ error: "Missing Telnyx API Key in environment variables" }, { status: 500 });
-    }
-    const telnyx = new Telnyx(process.env.TELNYX_API_KEY as string);
-
-    // 4. Construct Telnyx API Query
+    // 4. Call Telnyx Number Search API Query
     let queryOptions: any = {
       "filter[country_code]": countryCode,
       "filter[limit]": parseInt(limit),

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-// @ts-ignore
-import Telnyx from "telnyx";
+import { telnyx } from "@/lib/telnyx";
 import { auth } from "@/auth";
 
 export async function POST(req: Request) {
@@ -19,11 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
     }
 
-    // 3. Initialize Telnyx Client
-    if (!process.env.TELNYX_API_KEY) {
-      return NextResponse.json({ error: "Missing Telnyx API Key" }, { status: 500 });
-    }
-    const telnyx = new Telnyx(process.env.TELNYX_API_KEY as string);
+    // 3. Sip connection check
     const sipConnectionId = process.env.TELNYX_SIP_CONNECTION_ID;
 
     // 4. Place the order via Telnyx Number Orders API

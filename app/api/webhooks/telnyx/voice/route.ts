@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-// @ts-ignore
-import Telnyx from "telnyx";
+import { telnyx } from "@/lib/telnyx";
+import { prisma } from "@/lib/prisma";
 
-const telnyx = new Telnyx(process.env.TELNYX_API_KEY as string);
+// Keep track of gathering states temporarily in memory (For production, use Redis or a DB table)
 
 export async function POST(req: Request) {
   try {
