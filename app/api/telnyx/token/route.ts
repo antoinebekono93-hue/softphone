@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import telnyxLib from "telnyx";
 
 export async function GET(req: Request) {
   try {
@@ -32,33 +33,20 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Telnyx integration not fully configured (missing API Key or Connection ID)." }, { status: 400 });
     }
 
-    // Generate a WebRTC credential token valid for 24 hours
-    // According to Telnyx docs, On-Demand Credentials for WebRTC uses POST /v2/webrtc/credentials
-    const response = await fetch("https://api.telnyx.com/v2/webrtc/credentials", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({
-        connection_id: connectionId
-      })
-    });
+    const telnyx = telnyxLib(apiKey);
 
-
-    if (!response.ok) {
-      const err = await response.json();
+    // connectionId now expects a Telephony Credential ID
+    // In the new Telnyx WebRTC flow, we generate a JWT directly from the Telephony Credential ID
+    try {
+      const response = await telnyx.telephonyCredentials.createToken(connectionId);
+      
+      return NextResponse.json({
+        token: response,
+      });
+    } catch (err: any) {
       console.error("Telnyx token generation failed:", err);
-      return NextResponse.json({ error: `Erreur Telnyx: ${err?.errors?.[0]?.detail || JSON.stringify(err)}` }, { status: 500 });
+      return NextResponse.json({ error: `Erreur Telnyx: ${err.message || 'Token generation failed'}` }, { status: 500 });
     }
-
-    const data = await response.json();
-    
-    // Return the generated JWT to the client
-    return NextResponse.json({
-      token: data.data.token || data.data.sip_username, // Fallbacks
-    });
 
   } catch (error: any) {
     console.error("[/api/telnyx/token] Error:", error);
