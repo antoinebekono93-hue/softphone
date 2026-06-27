@@ -1,0 +1,44 @@
+{
+  "name": "2",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:ws": "tsx server/media-server.ts",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "^2.11.2",
+    "@prisma/client": "6.19.3",
+    "@stripe/stripe-js": "^9.8.0",
+    "@tailwindcss/postcss": "^4.3.1",
+    "@telnyx/webrtc": "^2.27.1",
+    "@types/ws": "^8.18.1",
+    "bcryptjs": "^3.0.3",
+    "lucide-react": "^1.21.0",
+    "next": "16.2.9",
+    "next-auth": "^5.0.0-beta.31",
+    "postcss": "^8.5.15",
+    "prisma": "6.19.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "stripe": "^22.3.0",
+    "tailwindcss": "^4.3.1",
+    "telnyx": "^7.2.0",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "tsx": "^4.16.2",
+    "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "npx tsx prisma/seed.ts"
+  }
+}
