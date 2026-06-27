@@ -64,7 +64,7 @@ export function Softphone() {
             {isRegistered
               ? "Telnyx Online"
               : registrationError
-              ? "Connection Error"
+              ? registrationError
               : "Connecting..."}
           </span>
         </div>
