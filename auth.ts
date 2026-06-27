@@ -73,7 +73,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        token.id = user.id as string;
 
         // Fetch organization info
         const dbUser = (await prisma.user.findUnique({
