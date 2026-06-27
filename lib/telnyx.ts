@@ -6,4 +6,4 @@ if (!telnyxApiKey) {
   throw new Error('TELNYX_API_KEY is not defined in environment variables');
 }
 
-export const telnyx = (Telnyx as any)(telnyxApiKey);
+export const telnyx = new (Telnyx as any)(telnyxApiKey);
