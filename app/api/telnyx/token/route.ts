@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     if (!response.ok) {
       const err = await response.json();
       console.error("Telnyx token generation failed:", err);
-      return NextResponse.json({ error: "Failed to generate Telnyx token" }, { status: 500 });
+      return NextResponse.json({ error: `Erreur Telnyx: ${err?.errors?.[0]?.detail || JSON.stringify(err)}` }, { status: 500 });
     }
 
     const data = await response.json();

@@ -56,9 +56,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         // Fetch token from our new secure backend route
         const response = await fetch('/api/telnyx/token');
         if (!response.ok) {
-           if (response.status === 400 || response.status === 404) {
-             setRegistrationError("Clés d'API Telnyx manquantes (voir Paramètres)");
-           } else {
+           try {
+             const errData = await response.json();
+             setRegistrationError(errData.error || "Erreur serveur (Token)");
+           } catch (e) {
              setRegistrationError("Erreur serveur (Token)");
            }
            return;
