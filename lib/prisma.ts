@@ -4,9 +4,15 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+let prismaUrl = process.env.DATABASE_URL;
+if (prismaUrl && !prismaUrl.includes('pgbouncer=true')) {
+  prismaUrl += (prismaUrl.includes('?') ? '&' : '?') + 'pgbouncer=true';
+}
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
+    datasourceUrl: prismaUrl,
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
