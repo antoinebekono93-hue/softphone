@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "@/auth";
 
 export async function registerUser(data: any) {
   try {
@@ -28,7 +28,7 @@ export async function registerUser(data: any) {
       counter++;
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await hashPassword(password);
 
     // Create Org and User
     const newOrg = await prisma.organization.create({
