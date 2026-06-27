@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, getPlanFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { createSubaccount, createTwimlApp, createApiKey } from "@/lib/twilio";
 import { getPlanLimits } from "@/lib/utils";
 import type Stripe from "stripe";
 
@@ -102,37 +101,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!org) return;
 
-  // Provision Twilio subaccount if not already done
-  let twilioData: Record<string, string> = {};
-
-  if (!org.twilioSubaccountSid) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
-
-    // 1. Create subaccount
-    const subaccount = await createSubaccount(`Antigravity - ${org.name}`);
-
-    // 2. Create TwiML App
-    const twimlApp = await createTwimlApp(
-      subaccount.sid,
-      subaccount.authToken,
-      appUrl
-    );
-
-    // 3. Create API Key for token generation
-    const apiKey = await createApiKey(
-      subaccount.sid,
-      subaccount.authToken
-    );
-
-    twilioData = {
-      twilioSubaccountSid: subaccount.sid,
-      twilioSubaccountToken: subaccount.authToken,
-      twilioTwimlAppSid: twimlApp.twimlAppSid,
-      twilioApiKey: apiKey.apiKey,
-      twilioApiSecret: apiKey.apiSecret,
-    };
-  }
-
   // Update the organization
   await prisma.organization.update({
     where: { id: organizationId },
@@ -140,7 +108,6 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       plan,
       planStatus: "ACTIVE",
       stripeSubscriptionId: session.subscription as string,
-      ...twilioData,
     },
   });
 
