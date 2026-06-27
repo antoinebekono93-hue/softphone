@@ -39,7 +39,7 @@ export function AudioVisualizer({ isActive, stream }: AudioVisualizerProps) {
       const updateVolume = () => {
         if (!analyserRef.current || !dataArrayRef.current) return;
 
-        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
+        analyserRef.current.getByteFrequencyData(dataArrayRef.current as any);
         
         // Calculate average volume
         let sum = 0;

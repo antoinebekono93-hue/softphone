@@ -71,7 +71,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         clientRef.current = new TelnyxRTC({
           login_token: token,
           remoteElement: "telnyx-remote-audio", // The ID of our <audio> element
-        });
+        } as any);
 
         clientRef.current.on("telnyx.ready", () => {
           setIsRegistered(true);

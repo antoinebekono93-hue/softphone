@@ -76,7 +76,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.id = user.id;
 
         // Fetch organization info
-        const dbUser = await prisma.user.findUnique({
+        const dbUser = (await prisma.user.findUnique({
           where: { id: user.id },
           select: {
             role: true,
@@ -85,18 +85,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               select: {
                 id: true,
                 name: true,
-                plan: true,
                 planStatus: true,
               },
             },
           },
-        });
+        })) as any;
 
         if (dbUser) {
           token.role = dbUser.role;
           token.organizationId = dbUser.organizationId;
           token.organizationName = dbUser.organization?.name;
-          token.plan = dbUser.organization?.plan;
           token.planStatus = dbUser.organization?.planStatus;
         }
       }
@@ -108,7 +106,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.role = token.role as string;
         session.user.organizationId = token.organizationId as string;
         session.user.organizationName = token.organizationName as string;
-        session.user.plan = token.plan as string;
         session.user.planStatus = token.planStatus as string;
       }
       return session;
