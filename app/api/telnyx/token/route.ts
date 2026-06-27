@@ -33,6 +33,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Telnyx integration not fully configured (missing API Key or Connection ID)." }, { status: 400 });
     }
 
+    // @ts-ignore
     const telnyx = telnyxLib(apiKey);
 
     // connectionId now expects a Telephony Credential ID
