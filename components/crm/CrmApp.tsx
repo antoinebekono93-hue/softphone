@@ -39,6 +39,29 @@ export default function CrmApp() {
     }
   };
 
+  const handleNewOpportunity = async (stage: string = "NEW") => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/crm/opportunities', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: "Nouvelle Opportunité",
+          expectedRevenue: 1000,
+          stage,
+          priority: 1
+        })
+      });
+      if (res.ok) {
+        await fetchOpportunities();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchOpportunities();
   }, []);
@@ -70,7 +93,7 @@ export default function CrmApp() {
             Filtres
           </button>
           {!selectedRecordId && (
-            <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-blue-500/20 transition-all">
+            <button onClick={() => handleNewOpportunity("NEW")} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-blue-500/20 transition-all">
               + Nouvelle Opportunité
             </button>
           )}
@@ -85,12 +108,14 @@ export default function CrmApp() {
           <RecordView 
             opportunity={selectedOpportunity} 
             onClose={() => setSelectedRecordId(null)} 
+            onRefresh={fetchOpportunities}
           />
         ) : (
           <KanbanBoard 
             opportunities={opportunities} 
             onRecordClick={(id) => setSelectedRecordId(id)}
             onUpdateOpportunities={setOpportunities}
+            onAddOpportunity={handleNewOpportunity}
           />
         )}
       </div>

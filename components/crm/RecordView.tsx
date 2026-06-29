@@ -6,11 +6,27 @@ import Chatter from "./Chatter";
 interface RecordViewProps {
   opportunity: Opportunity;
   onClose: () => void;
+  onRefresh: () => void;
 }
 
-export default function RecordView({ opportunity, onClose }: RecordViewProps) {
+export default function RecordView({ opportunity, onClose, onRefresh }: RecordViewProps) {
   const STAGES = ["NEW", "QUALIFIED", "PROPOSITION", "WON"];
   const currentStageIndex = STAGES.indexOf(opportunity.stage);
+
+  const updateStage = async (stage: string) => {
+    try {
+      const res = await fetch(`/api/crm/opportunities/${opportunity.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage })
+      });
+      if (res.ok) {
+        onRefresh();
+      }
+    } catch (error) {
+      console.error('Failed to update stage', error);
+    }
+  };
 
   return (
     <div className="h-full flex gap-6">
@@ -21,10 +37,10 @@ export default function RecordView({ opportunity, onClose }: RecordViewProps) {
         {/* Record Header - Status Bar */}
         <div className="bg-gray-50/80 p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex gap-2">
-            <button className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-sm transition-colors shadow-sm shadow-emerald-500/20">
+            <button onClick={() => updateStage("WON")} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold text-sm transition-colors shadow-sm shadow-emerald-500/20">
               Gagné
             </button>
-            <button className="px-4 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded font-bold text-sm transition-colors shadow-sm">
+            <button onClick={() => updateStage("LOST")} className="px-4 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 rounded font-bold text-sm transition-colors shadow-sm">
               Perdu
             </button>
           </div>

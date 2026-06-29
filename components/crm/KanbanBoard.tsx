@@ -13,9 +13,10 @@ interface KanbanBoardProps {
   opportunities: Opportunity[];
   onRecordClick: (id: string) => void;
   onUpdateOpportunities: (opps: Opportunity[]) => void;
+  onAddOpportunity: (stage: string) => void;
 }
 
-export default function KanbanBoard({ opportunities, onRecordClick, onUpdateOpportunities }: KanbanBoardProps) {
+export default function KanbanBoard({ opportunities, onRecordClick, onUpdateOpportunities, onAddOpportunity }: KanbanBoardProps) {
   
   const handleDragStart = (e: React.DragEvent, id: string) => {
     e.dataTransfer.setData("recordId", id);
@@ -102,7 +103,7 @@ export default function KanbanBoard({ opportunities, onRecordClick, onUpdateOppo
               ))}
               
               {/* Quick Add Button */}
-              <button className="w-full py-2 flex items-center justify-center gap-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-sm font-bold border border-transparent hover:border-gray-200 rounded-lg transition-all">
+              <button onClick={() => onAddOpportunity(stage.id)} className="w-full py-2 flex items-center justify-center gap-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 text-sm font-bold border border-transparent hover:border-gray-200 rounded-lg transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Ajouter
               </button>
