@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import CampaignDashboard from "@/components/whatsapp/campaigns/CampaignDashboard";
+import CrmApp from "@/components/crm/CrmApp";
 
 export default function DashboardPage() {
   // Architecture Single Page (SPA) avec state pour changer de vue
@@ -50,6 +51,13 @@ export default function DashboardPage() {
               <div className="flex-1 bg-white/5 rounded-2xl border border-white/10 p-6">
                 <p className="text-gray-400">L'interface du Softphone (Clavier) sera intégrée ici prochainement.</p>
               </div>
+            </div>
+          )}
+
+          {/* VUE ODOO CRM */}
+          {currentView === "crm" && (
+            <div className="animate-in fade-in duration-300 h-full flex flex-col">
+              <CrmApp />
             </div>
           )}
 

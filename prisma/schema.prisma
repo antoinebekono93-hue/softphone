@@ -84,6 +84,8 @@ model User {
   phoneNumbers   PhoneNumber[]  @relation("AssignedUser")
   callLogs       CallLog[]
   smsMessages    SmsMessage[]
+  opportunities  Opportunity[]
+  internalNotes  InternalNote[]
 
   @@index([organizationId])
   @@index([email])
@@ -133,6 +135,8 @@ model Organization {
   whatsappAccount     WhatsAppAccount?
   campaigns           Campaign[]
   whatsappTemplates   WhatsAppTemplate[]
+  opportunities       Opportunity[]
+  internalNotes       InternalNote[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -181,6 +185,8 @@ model Contact {
   callLogs     CallLog[]
   smsMessages  SmsMessage[]
   campaignRecipients CampaignRecipient[]
+  opportunities      Opportunity[]
+  internalNotes      InternalNote[]
 
   @@unique([organizationId, phone])
   @@index([organizationId])
@@ -432,4 +438,50 @@ model WhatsAppTemplate {
   campaigns      Campaign[]
 
   @@index([organizationId])
+}
+
+model Opportunity {
+  id             String   @id @default(cuid())
+  name           String
+  stage          String   @default("NEW") // NEW, QUALIFIED, PROPOSITION, WON, LOST
+  expectedRevenue Float   @default(0.0)
+  probability    Int      @default(10) // 0 to 100
+  priority       Int      @default(0) // 0 to 3 stars
+  
+  contactId      String?
+  organizationId String
+  assignedUserId String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedUser   User?        @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  internalNotes  InternalNote[]
+
+  @@index([organizationId])
+  @@index([contactId])
+}
+
+model InternalNote {
+  id             String   @id @default(cuid())
+  content        String
+  
+  opportunityId  String?
+  contactId      String?
+  organizationId String
+  authorId       String
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([opportunityId])
+  @@index([contactId])
 }
