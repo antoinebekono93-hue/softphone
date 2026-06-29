@@ -25,11 +25,11 @@ export default function KanbanBoard({ opportunities, onRecordClick, onUpdateOppo
     e.preventDefault(); // Neccessary to allow drop
   };
 
-  const handleDrop = (e: React.DragEvent, newStage: string) => {
+  const handleDrop = async (e: React.DragEvent, newStage: string) => {
     e.preventDefault();
     const recordId = e.dataTransfer.getData("recordId");
     
-    // Update the state
+    // Optimistic UI update
     const updated = opportunities.map(opp => {
       if (opp.id === recordId) {
         return { ...opp, stage: newStage };
@@ -38,6 +38,16 @@ export default function KanbanBoard({ opportunities, onRecordClick, onUpdateOppo
     });
     
     onUpdateOpportunities(updated);
+
+    try {
+      await fetch(`/api/crm/opportunities/${recordId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: newStage })
+      });
+    } catch (error) {
+      console.error('Failed to update stage', error);
+    }
   };
 
   return (

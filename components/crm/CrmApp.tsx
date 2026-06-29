@@ -1,29 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import KanbanBoard from "./KanbanBoard";
 import RecordView from "./RecordView";
 
 export type Opportunity = {
   id: string;
   name: string;
-  company: string;
+  company?: string;
+  contactId?: string;
+  contact?: { name: string; phone: string; organizationId: string };
   expectedRevenue: number;
   priority: number;
   stage: string;
 };
 
-// Mock data
-const MOCK_OPPORTUNITIES: Opportunity[] = [
-  { id: "1", name: "Installation Serveurs", company: "Acme Corp", expectedRevenue: 15000, priority: 3, stage: "NEW" },
-  { id: "2", name: "Licences Logiciel 100 Postes", company: "TechFlow", expectedRevenue: 8500, priority: 2, stage: "QUALIFIED" },
-  { id: "3", name: "Maintenance Annuelle", company: "Global Industries", expectedRevenue: 24000, priority: 3, stage: "PROPOSITION" },
-  { id: "4", name: "Formation Équipe", company: "DesignStudio", expectedRevenue: 3000, priority: 1, stage: "NEW" },
-];
-
 export default function CrmApp() {
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(MOCK_OPPORTUNITIES);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchOpportunities = async () => {
+    try {
+      const res = await fetch('/api/crm/opportunities');
+      if (res.ok) {
+        const data = await res.json();
+        // Map DB fields to our UI fields
+        const mapped = data.map((d: any) => ({
+          ...d,
+          company: d.contact?.name || "Client Inconnu",
+        }));
+        setOpportunities(mapped);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, []);
 
   const selectedOpportunity = opportunities.find(o => o.id === selectedRecordId);
 
@@ -61,7 +79,9 @@ export default function CrmApp() {
 
       {/* Main Area */}
       <div className="flex-1 overflow-hidden relative">
-        {selectedRecordId && selectedOpportunity ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full text-white">Chargement...</div>
+        ) : selectedRecordId && selectedOpportunity ? (
           <RecordView 
             opportunity={selectedOpportunity} 
             onClose={() => setSelectedRecordId(null)} 
