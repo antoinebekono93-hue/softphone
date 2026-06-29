@@ -35,15 +35,15 @@ export default function CampaignDashboard() {
   }
 
   return (
-    <div className="h-full flex flex-col bg-[#0a0a0f] p-8 overflow-y-auto">
+    <div className="h-full flex flex-col bg-white p-8 overflow-y-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold mb-2 text-white tracking-tight">Campagnes Marketing</h1>
-          <p className="text-gray-400">Gérez vos diffusions WhatsApp et analysez vos performances.</p>
+          <h1 className="text-3xl font-extrabold mb-2 text-gray-900 tracking-tight">Campagnes Marketing</h1>
+          <p className="text-gray-500">Gérez vos diffusions WhatsApp et analysez vos performances.</p>
         </div>
         <button
           onClick={() => setIsBuilding(true)}
-          className="btn btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 text-white font-semibold shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all flex items-center gap-2"
+          className="btn btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           Créer une campagne
@@ -51,66 +51,66 @@ export default function CampaignDashboard() {
       </div>
 
       {/* AI Insights Card */}
-      <div className="bg-gradient-to-r from-cyan-900/30 to-violet-900/30 border border-cyan-500/20 rounded-2xl p-5 mb-8 flex items-start gap-4">
-        <div className="p-2 bg-cyan-500/20 rounded-lg text-cyan-400">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100/50 rounded-2xl p-5 mb-8 flex items-start gap-4 shadow-sm">
+        <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
         <div>
-          <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+          <h3 className="text-blue-900 font-bold mb-1 flex items-center gap-2">
             Insight IA
-            <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-500/30">Nouveau</span>
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">Nouveau</span>
           </h3>
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-blue-800/80">
             D'après l'historique de vos clients, le <strong>Mardi à 10h00</strong> est le moment optimal pour vos campagnes promotionnelles (taux d'ouverture attendu: +22%).
           </p>
         </div>
       </div>
 
       {/* Campaigns List */}
-      <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+      <div className="flex-1 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-white/10 bg-black/20">
-              <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Campagne</th>
-              <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
-              <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Envoyés</th>
-              <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Taux d'ouverture</th>
-              <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Taux de réponse</th>
+            <tr className="border-b border-gray-200 bg-gray-50/80">
+              <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Campagne</th>
+              <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Statut</th>
+              <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Envoyés</th>
+              <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Taux d'ouverture</th>
+              <th className="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Taux de réponse</th>
             </tr>
           </thead>
           <tbody>
             {campaigns.map((camp) => (
-              <tr key={camp.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+              <tr key={camp.id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors cursor-pointer">
                 <td className="p-4">
-                  <div className="font-medium text-white">{camp.name}</div>
-                  <div className="text-xs text-gray-500 mt-1">{camp.date}</div>
+                  <div className="font-bold text-gray-900">{camp.name}</div>
+                  <div className="text-xs text-gray-500 mt-1 font-medium">{camp.date}</div>
                 </td>
                 <td className="p-4">
                   {camp.status === "COMPLETED" && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Terminée
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Terminée
                     </span>
                   )}
                   {camp.status === "DRAFT" && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 border border-gray-200">
                       <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Brouillon
                     </span>
                   )}
                 </td>
-                <td className="p-4 text-gray-300">{camp.sent > 0 ? camp.sent.toLocaleString() : "-"}</td>
+                <td className="p-4 text-gray-600 font-medium">{camp.sent > 0 ? camp.sent.toLocaleString() : "-"}</td>
                 <td className="p-4">
                   {camp.sent > 0 ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-300">{Math.round((camp.read / camp.delivered) * 100)}%</span>
-                      <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-cyan-500" style={{ width: `${(camp.read / camp.delivered) * 100}%` }}></div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-700 font-bold w-8">{Math.round((camp.read / camp.delivered) * 100)}%</span>
+                      <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(camp.read / camp.delivered) * 100}%` }}></div>
                       </div>
                     </div>
                   ) : "-"}
                 </td>
                 <td className="p-4">
                   {camp.sent > 0 ? (
-                    <span className="text-emerald-400 font-medium">{Math.round((camp.replied / camp.read) * 100)}%</span>
+                    <span className="text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md">{Math.round((camp.replied / camp.read) * 100)}%</span>
                   ) : "-"}
                 </td>
               </tr>
