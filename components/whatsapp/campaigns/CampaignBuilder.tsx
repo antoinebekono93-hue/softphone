@@ -74,7 +74,7 @@ export default function CampaignBuilder({ onCancel }: CampaignBuilderProps) {
                   >
                     <option value="all">Tous les contacts (1,245 contacts)</option>
                     <option value="active">Clients actifs (890 contacts)</option>
-                    <option value="inactive">Inactifs > 30 jours (355 contacts)</option>
+                    <option value="inactive">Inactifs &gt; 30 jours (355 contacts)</option>
                   </select>
                 </div>
               </div>
