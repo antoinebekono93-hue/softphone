@@ -131,6 +131,8 @@ model Organization {
   aiAgents            VoiceAIAgent[]
   walletTransactions  WalletTransaction[]
   whatsappAccount     WhatsAppAccount?
+  campaigns           Campaign[]
+  whatsappTemplates   WhatsAppTemplate[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -178,6 +180,7 @@ model Contact {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   callLogs     CallLog[]
   smsMessages  SmsMessage[]
+  campaignRecipients CampaignRecipient[]
 
   @@unique([organizationId, phone])
   @@index([organizationId])
@@ -368,4 +371,65 @@ model WhatsAppAccount {
   updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model Campaign {
+  id             String   @id @default(cuid())
+  name           String
+  status         String   @default("DRAFT") // DRAFT, SCHEDULED, SENDING, COMPLETED, CANCELLED
+  scheduledAt    DateTime?
+  
+  // Analytics
+  sentCount      Int      @default(0)
+  deliveredCount Int      @default(0)
+  readCount      Int      @default(0)
+  repliedCount   Int      @default(0)
+
+  // Content
+  templateId     String?
+  body           String?  // text content if not using a template
+
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       WhatsAppTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  recipients     CampaignRecipient[]
+
+  @@index([organizationId])
+}
+
+model CampaignRecipient {
+  id         String   @id @default(cuid())
+  campaignId String
+  contactId  String
+  status     String   @default("PENDING") // PENDING, SENT, DELIVERED, READ, FAILED
+  messageId  String?  // Telnyx message ID when sent
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, contactId])
+  @@index([campaignId])
+  @@index([contactId])
+}
+
+model WhatsAppTemplate {
+  id             String   @id @default(cuid())
+  name           String
+  language       String   @default("fr")
+  category       String   @default("MARKETING") // MARKETING, UTILITY, AUTHENTICATION
+  status         String   @default("APPROVED")  // PENDING, APPROVED, REJECTED
+  content        String
+  
+  organizationId String
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaigns      Campaign[]
+
+  @@index([organizationId])
 }
