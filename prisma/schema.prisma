@@ -130,6 +130,7 @@ model Organization {
   pricingPlan         PricingPlan? @relation(fields: [pricingPlanId], references: [id])
   aiAgents            VoiceAIAgent[]
   walletTransactions  WalletTransaction[]
+  whatsappAccount     WhatsAppAccount?
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -351,4 +352,20 @@ model WalletTransaction {
 
   @@index([organizationId])
   @@index([createdAt])
+}
+
+model WhatsAppAccount {
+  id             String   @id @default(cuid())
+  wabaId         String
+  phoneNumberId  String
+  phoneNumber    String
+  accessToken    String
+  status         String   @default("ACTIVE")
+
+  organizationId String   @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
