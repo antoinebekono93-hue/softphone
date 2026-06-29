@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
         await prisma.campaignRecipient.update({
           where: { id: recipient.id },
-          data: { status: 'SENT', sentAt: new Date() }
+          data: { status: 'SENT', messageId: telnyxMessageId }
         });
 
         await prisma.smsMessage.create({
