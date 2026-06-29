@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import Telnyx from "telnyx";
-
-const telnyx = Telnyx(process.env.TELNYX_API_KEY || "");
+import { telnyx } from "@/lib/telnyx";
 
 export async function POST(req: Request) {
   try {
@@ -34,12 +32,9 @@ export async function POST(req: Request) {
     const campaign = await prisma.campaign.create({
       data: {
         name: name || "Campagne WhatsApp",
-        type: "WHATSAPP",
-        status: "RUNNING",
-        content,
+        status: "SENDING",
+        body: content,
         organizationId: session.user.organizationId,
-        createdBy: session.user.id,
-        startedAt: new Date(),
         recipients: {
           create: contacts.map(c => ({
             contactId: c.id,
@@ -112,10 +107,8 @@ export async function POST(req: Request) {
     await prisma.campaign.update({
       where: { id: campaign.id },
       data: { 
-        status: 'COMPLETED', 
-        completedAt: new Date(),
-        successCount,
-        failCount
+        status: 'COMPLETED',
+        sentCount: successCount
       }
     });
 

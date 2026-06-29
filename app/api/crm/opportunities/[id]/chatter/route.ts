@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import Telnyx from "telnyx";
-const telnyx = Telnyx(process.env.TELNYX_API_KEY || "");
+import { telnyx } from "@/lib/telnyx";
 
 export async function GET(
   req: Request,
