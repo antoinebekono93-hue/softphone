@@ -23,7 +23,7 @@ export default function CampaignBuilder({ onCancel }: CampaignBuilderProps) {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-[#0a0a0f] p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
         <div className="flex items-center gap-4">

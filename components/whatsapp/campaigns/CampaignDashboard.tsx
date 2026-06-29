@@ -35,7 +35,7 @@ export default function CampaignDashboard() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-[#0a0a0f] p-8 overflow-y-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-extrabold mb-2 text-white tracking-tight">Campagnes Marketing</h1>
