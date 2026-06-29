@@ -19,6 +19,10 @@ export default function CrmApp() {
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newModalStage, setNewModalStage] = useState("NEW");
+  const [newOppName, setNewOppName] = useState("");
+  const [newOppRevenue, setNewOppRevenue] = useState(1000);
 
   const fetchOpportunities = async () => {
     try {
@@ -39,16 +43,25 @@ export default function CrmApp() {
     }
   };
 
-  const handleNewOpportunity = async (stage: string = "NEW") => {
+  const openNewOpportunityModal = (stage: string = "NEW") => {
+    setNewModalStage(stage);
+    setNewOppName("");
+    setNewOppRevenue(1000);
+    setShowNewModal(true);
+  };
+
+  const submitNewOpportunity = async () => {
+    if (!newOppName.trim()) return alert("Le nom est requis");
+    setShowNewModal(false);
     setIsLoading(true);
     try {
       const res = await fetch('/api/crm/opportunities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: "Nouvelle Opportunité",
-          expectedRevenue: 1000,
-          stage,
+          name: newOppName,
+          expectedRevenue: newOppRevenue,
+          stage: newModalStage,
           priority: 1
         })
       });
@@ -93,7 +106,7 @@ export default function CrmApp() {
             Filtres
           </button>
           {!selectedRecordId && (
-            <button onClick={() => handleNewOpportunity("NEW")} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-blue-500/20 transition-all">
+            <button onClick={() => openNewOpportunityModal("NEW")} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-blue-500/20 transition-all">
               + Nouvelle Opportunité
             </button>
           )}
@@ -115,10 +128,57 @@ export default function CrmApp() {
             opportunities={opportunities} 
             onRecordClick={(id) => setSelectedRecordId(id)}
             onUpdateOpportunities={setOpportunities}
-            onAddOpportunity={handleNewOpportunity}
+            onAddOpportunity={openNewOpportunityModal}
           />
         )}
       </div>
+
+      {/* Modal Nouvelle Opportunité */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-gray-900">Créer une opportunité</h2>
+              <p className="text-sm text-gray-500 mt-1">Étape: {newModalStage}</p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Nom de l'opportunité</label>
+                <input 
+                  type="text" 
+                  value={newOppName}
+                  onChange={e => setNewOppName(e.target.value)}
+                  placeholder="Ex: Contrat ABC"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Revenu Espéré (€)</label>
+                <input 
+                  type="number" 
+                  value={newOppRevenue}
+                  onChange={e => setNewOppRevenue(Number(e.target.value))}
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            <div className="p-6 bg-gray-50 flex justify-end gap-3">
+              <button 
+                onClick={() => setShowNewModal(false)} 
+                className="px-5 py-2.5 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={submitNewOpportunity} 
+                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
