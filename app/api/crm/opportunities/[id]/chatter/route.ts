@@ -5,16 +5,17 @@ import { auth } from "@/auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const session = await auth();
     if (!session?.user?.organizationId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const opportunity = await prisma.opportunity.findUnique({
-      where: { id: params.id, organizationId: session.user.organizationId },
+      where: { id: resolvedParams.id, organizationId: session.user.organizationId },
       include: {
         internalNotes: {
           include: { author: true },
@@ -79,9 +80,10 @@ export async function GET(
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const session = await auth();
     if (!session?.user?.organizationId) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -91,7 +93,7 @@ export async function POST(
     const { type, content } = body;
 
     const opportunity = await prisma.opportunity.findUnique({
-      where: { id: params.id, organizationId: session.user.organizationId },
+      where: { id: resolvedParams.id, organizationId: session.user.organizationId },
       include: { contact: true }
     });
 

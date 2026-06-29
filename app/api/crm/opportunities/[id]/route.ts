@@ -4,9 +4,10 @@ import { auth } from "@/auth";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const session = await auth();
     if (!session?.user?.organizationId) {
       return new NextResponse("Unauthorized", { status: 401 });
@@ -17,7 +18,7 @@ export async function PATCH(
 
     const opportunity = await prisma.opportunity.update({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         organizationId: session.user.organizationId
       },
       data: {
