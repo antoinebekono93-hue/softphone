@@ -56,7 +56,7 @@ export function DashboardSidebar({
         { name: "Boîte de réception", href: "/dashboard/inbox", icon: Inbox },
         { name: "Softphone", href: "/dashboard/softphone", icon: Phone },
         { name: "Analyse & Rapports", href: "/dashboard/analytics", icon: BarChart2 },
-        { name: "Contacts (CRM)", href: "/dashboard/contacts", icon: Users },
+        { name: "CRM (Pipeline)", href: "/dashboard/crm", icon: Users },
       ]
     },
     {
@@ -64,6 +64,7 @@ export function DashboardSidebar({
       items: [
         { name: "Agents Vocaux IA", href: "/dashboard/ai-agents", icon: Bot },
         { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
+        { name: "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
         { name: "Numéros de téléphone", href: "/dashboard/numbers", icon: Hash },
         { name: "Connectivité IoT", href: "/dashboard/iot", icon: Wifi },
         { name: "Vérification OTP", href: "/dashboard/verify", icon: ShieldCheck },
