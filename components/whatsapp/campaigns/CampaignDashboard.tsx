@@ -67,10 +67,10 @@ export default function CampaignDashboard() {
       </div>
 
       {/* Campaigns List */}
-      <div className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden">
+      <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-white/10 bg-white/[0.02]">
+            <tr className="border-b border-white/10 bg-black/20">
               <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Campagne</th>
               <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
               <th className="p-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Envoyés</th>
@@ -80,7 +80,7 @@ export default function CampaignDashboard() {
           </thead>
           <tbody>
             {campaigns.map((camp) => (
-              <tr key={camp.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors cursor-pointer">
+              <tr key={camp.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
                 <td className="p-4">
                   <div className="font-medium text-white">{camp.name}</div>
                   <div className="text-xs text-gray-500 mt-1">{camp.date}</div>
