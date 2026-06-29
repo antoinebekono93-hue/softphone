@@ -37,9 +37,9 @@ export default function Chatter({ opportunityId }: ChatterProps) {
 
   useEffect(() => {
     fetchFeed();
-    // Optional: add a polling interval here if we want realtime-ish feel
-    // const interval = setInterval(fetchFeed, 5000);
-    // return () => clearInterval(interval);
+    // Polling interval for realtime-ish feel (WhatsApp, Calls)
+    const interval = setInterval(fetchFeed, 3000);
+    return () => clearInterval(interval);
   }, [opportunityId]);
 
   const handleSubmit = async () => {

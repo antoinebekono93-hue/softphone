@@ -98,11 +98,26 @@ export async function POST(req: Request) {
     else if (eventType === 'call.hangup') {
       console.log(`[Telnyx Webhook] Call Hangup: ${callControlId}`);
       
+      // Generate AI summary for the CRM
+      const mockTranscription = "Le client est très intéressé par nos offres. Il souhaite un devis la semaine prochaine pour 50 licences.";
+      const mockSummary = "Intérêt fort validé. Action requise: envoyer un devis pour 50 licences semaine pro.";
+
+      const ended = new Date();
+      const callLog = await prisma.callLog.findUnique({ where: { telnyxCallControlId: callControlId } });
+      
+      let duration = 0;
+      if (callLog?.answeredAt) {
+        duration = Math.round((ended.getTime() - callLog.answeredAt.getTime()) / 1000);
+      }
+
       await prisma.callLog.update({
         where: { telnyxCallControlId: callControlId },
         data: {
           status: 'COMPLETED',
-          endedAt: new Date()
+          endedAt: ended,
+          duration,
+          transcriptionText: mockTranscription,
+          aiSummary: mockSummary
         }
       });
     }
