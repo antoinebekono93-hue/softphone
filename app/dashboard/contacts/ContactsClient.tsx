@@ -183,79 +183,79 @@ export function ContactsClient({ initialContacts }: { initialContacts: any[] }) 
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
-              <h2 className="text-xl font-bold">
-                 {selectedContact ? "Edit Contact" : "New Contact"}
+          <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between shrink-0">
+              <h2 className="text-xl font-bold text-white">
+                 {selectedContact ? "Modifier Contact" : "Nouveau Contact"}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Full Name</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-300">Nom complet</label>
                   <input 
                     type="text" 
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="apple-input"
-                    placeholder="e.g. John Doe"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Ex: Jean Dupont"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Phone Number *</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-300">Numéro de téléphone *</label>
                   <input 
                     type="tel" 
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="apple-input"
-                    placeholder="e.g. +1234567890"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Ex: +33612345678"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Company</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-300">Entreprise</label>
                   <input 
                     type="text" 
                     value={formData.company}
                     onChange={(e) => setFormData({...formData, company: e.target.value})}
-                    className="apple-input"
-                    placeholder="e.g. Acme Corp"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Ex: Acme Corp"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Email</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-300">Email</label>
                   <input 
                     type="email" 
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="apple-input"
-                    placeholder="e.g. john@acme.com"
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Ex: jean@acme.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-1">Notes</label>
+                  <label className="block text-sm font-semibold mb-1 text-gray-300">Notes</label>
                   <textarea 
                     value={formData.notes}
                     onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                    className="apple-input min-h-[100px] resize-none"
-                    placeholder="Internal notes about this contact..."
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 min-h-[100px] resize-none"
+                    placeholder="Notes internes concernant ce contact..."
                   />
                 </div>
               </form>
             </div>
-            <div className="p-6 border-t border-[var(--border-subtle)] flex justify-between items-center shrink-0">
+            <div className="p-6 border-t border-white/10 flex justify-between items-center shrink-0">
               {selectedContact ? (
                  <button 
                    type="button"
                    onClick={handleDelete}
                    disabled={isDeleting || isSaving}
-                   className="apple-btn bg-transparent border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 flex items-center gap-2"
+                   className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-colors"
                  >
                     {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    Delete
+                    Supprimer
                  </button>
               ) : <div></div>}
 
@@ -263,17 +263,17 @@ export function ContactsClient({ initialContacts }: { initialContacts: any[] }) 
                 <button 
                    type="button"
                    onClick={() => setIsModalOpen(false)} 
-                   className="apple-btn bg-transparent border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]"
+                   className="px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 text-white hover:bg-white/5 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button 
                    type="submit"
                    form="contact-form"
                    disabled={isSaving || isDeleting} 
-                   className="apple-btn btn-primary min-w-[100px]"
+                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90 transition-opacity min-w-[100px] flex justify-center items-center"
                 >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Save"}
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer"}
                 </button>
               </div>
             </div>
