@@ -110,16 +110,61 @@ export async function POST(req: Request) {
         duration = Math.round((ended.getTime() - callLog.answeredAt.getTime()) / 1000);
       }
 
+      const finalStatus = (duration === 0 || !callLog?.answeredAt) ? 'NO_ANSWER' : 'COMPLETED';
+
       await prisma.callLog.update({
         where: { telnyxCallControlId: callControlId },
         data: {
-          status: 'COMPLETED',
+          status: finalStatus,
           endedAt: ended,
           duration,
-          transcriptionText: mockTranscription,
-          aiSummary: mockSummary
+          transcriptionText: duration > 0 ? mockTranscription : null,
+          aiSummary: duration > 0 ? mockSummary : null
         }
       });
+
+      // --- AUTOMATION BRIDGE : NO_ANSWER_AI ---
+      if (finalStatus === 'NO_ANSWER' && callLog?.contactId && callLog?.phoneNumberId) {
+        const phoneNumber = await prisma.phoneNumber.findUnique({
+          where: { id: callLog.phoneNumberId },
+          include: { voiceAIAgent: true }
+        });
+
+        if (phoneNumber?.voiceAIAgent) {
+          const rule = await prisma.automationRule.findFirst({
+            where: {
+              organizationId: callLog.organizationId,
+              triggerType: 'NO_ANSWER_AI',
+              isActive: true
+            }
+          });
+
+          if (rule && rule.actionType === 'ADD_TO_CAMPAIGN') {
+            try {
+              const payload = JSON.parse(rule.actionPayload);
+              if (payload.campaignId) {
+                await prisma.campaignRecipient.upsert({
+                  where: {
+                    campaignId_contactId: {
+                      campaignId: payload.campaignId,
+                      contactId: callLog.contactId
+                    }
+                  },
+                  create: {
+                    campaignId: payload.campaignId,
+                    contactId: callLog.contactId,
+                    status: 'PENDING'
+                  },
+                  update: {}
+                });
+                console.log(`[Automation] Added contact ${callLog.contactId} to campaign ${payload.campaignId}`);
+              }
+            } catch (e) {
+              console.error("[Automation Error]", e);
+            }
+          }
+        }
+      }
     }
 
     // Handle incoming SMS/MMS messages
