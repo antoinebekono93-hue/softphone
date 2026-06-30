@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef } from "react";
 import { Search, Plus, X, Loader2, Building, Mail, Phone, Trash2, Folder, Download, Upload, Users } from "lucide-react";
+import Link from "next/link";
 import { createContact, updateContact, deleteContact, createContactGroup, deleteContactGroup, importContacts } from "./actions";
 import Papa from "papaparse";
 
@@ -341,12 +342,20 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                         ) : "-"}
                       </td>
                       <td className="p-4 text-right">
-                        <button 
-                          onClick={() => openModal(contact)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors shadow-sm"
-                        >
-                          Modifier
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => openModal(contact)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors shadow-sm"
+                          >
+                            Modifier
+                          </button>
+                          <Link 
+                            href={`/dashboard/contacts/${contact.id}`}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors shadow-sm"
+                          >
+                            Profil
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))

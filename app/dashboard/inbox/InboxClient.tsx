@@ -5,7 +5,7 @@ import { Phone, MessageSquare, PhoneMissed, Voicemail, Clock, CheckCircle2, User
 
 export type InboxEvent = {
   id: string;
-  type: 'CALL' | 'SMS';
+  type: 'CALL' | 'SMS' | 'WHATSAPP';
   direction: string;
   status: string;
   from: string;
@@ -32,6 +32,7 @@ export default function InboxClient({ initialEvents }: { initialEvents: InboxEve
   };
 
   const getEventIcon = (event: InboxEvent) => {
+    if (event.type === 'WHATSAPP') return <MessageSquare className="w-4 h-4 text-emerald-500" />;
     if (event.type === 'SMS') return <MessageSquare className="w-4 h-4 text-blue-400" />;
     if (event.type === 'CALL') {
       if (event.status === 'VOICEMAIL') return <Voicemail className="w-4 h-4 text-violet-400" />;
@@ -42,7 +43,7 @@ export default function InboxClient({ initialEvents }: { initialEvents: InboxEve
   };
 
   const getEventPreview = (event: InboxEvent) => {
-    if (event.type === 'SMS') return event.body ? event.body.substring(0, 50) + (event.body.length > 50 ? '...' : '') : 'Message vide';
+    if (event.type === 'SMS' || event.type === 'WHATSAPP') return event.body ? event.body.substring(0, 50) + (event.body.length > 50 ? '...' : '') : 'Message vide';
     if (event.type === 'CALL') {
       if (event.aiSummary) return event.aiSummary.substring(0, 50) + '...';
       if (event.status === 'VOICEMAIL') return 'Nouveau message vocal';
@@ -131,9 +132,11 @@ export default function InboxClient({ initialEvents }: { initialEvents: InboxEve
             <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar">
               <div className="max-w-3xl mx-auto">
                 {/* SMS View */}
-                {selectedEvent.type === 'SMS' && (
+                {(selectedEvent.type === 'SMS' || selectedEvent.type === 'WHATSAPP') && (
                   <div className="glass-panel p-8 relative">
-                    <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-4 uppercase tracking-wider">Message Texte</h4>
+                    <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-4 uppercase tracking-wider">
+                      {selectedEvent.type === 'WHATSAPP' ? 'Message WhatsApp' : 'Message Texte'}
+                    </h4>
                     <p className="text-xl leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
                       {selectedEvent.body}
                     </p>

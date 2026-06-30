@@ -57,7 +57,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
     })),
     ...contact.smsMessages.map(s => ({
       id: s.id,
-      type: 'SMS' as const,
+      type: s.type === 'WHATSAPP' ? 'WHATSAPP' as const : 'SMS' as const,
       direction: s.direction,
       status: s.status,
       from: s.fromNumber,
