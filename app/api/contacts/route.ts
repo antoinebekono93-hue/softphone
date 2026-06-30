@@ -2,6 +2,35 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
+export async function GET(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { organizationId: true }
+    });
+
+    if (!user?.organizationId) {
+      return NextResponse.json({ error: "No organization found" }, { status: 400 });
+    }
+
+    const contacts = await prisma.contact.findMany({
+      where: { organizationId: user.organizationId },
+      orderBy: { name: 'asc' },
+      include: { groups: true }
+    });
+
+    return NextResponse.json(contacts);
+  } catch (error: any) {
+    console.error("[/api/contacts GET] Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
