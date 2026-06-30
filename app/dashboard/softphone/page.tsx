@@ -12,7 +12,7 @@ export default async function SoftphonePage() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 h-full flex flex-col">
       <div>
-        <h1 className="text-3xl font-bold text-white">Softphone</h1>
+        <h1 className="text-3xl font-bold text-[var(--text-primary)]">Softphone</h1>
         <p className="text-[var(--text-secondary)] mt-2">Passez vos appels, consultez l'historique et discutez avec l'IA.</p>
       </div>
 
