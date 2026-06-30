@@ -183,7 +183,7 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
         const res = await importContacts(parsed, selectedGroupId || undefined);
         if (res.success) {
           alert(`${res.importedCount} contacts importés avec succès ! Rafraîchissez la page pour voir les modifications complètes.`);
-          window.location.reload(); // Simple way to resync state since it's a bulk operation
+          window.location.reload();
         } else {
           alert(res.error || "Erreur lors de l'importation");
         }
@@ -203,11 +203,11 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
       
       {/* Sidebar for Groups */}
       <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
-        <h2 className="text-xl font-bold text-white mb-2">Groupes</h2>
+        <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Groupes</h2>
         
         <button 
           onClick={() => setIsGroupModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors w-full"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors w-full shadow-sm"
         >
           <Plus className="w-4 h-4" /> Créer un groupe
         </button>
@@ -215,13 +215,13 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
         <div className="flex flex-col gap-1 mt-2">
           <button
             onClick={() => setSelectedGroupId(null)}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${!selectedGroupId ? 'bg-cyan-500/20 text-cyan-400 font-medium' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${!selectedGroupId ? 'bg-[var(--bg-surface)] text-[var(--accent-cyan)] font-medium shadow-sm border border-[var(--border-subtle)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'}`}
           >
             <Users className="w-4 h-4" /> Tous les contacts
           </button>
           
           {groups.map(g => (
-            <div key={g.id} className={`group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${selectedGroupId === g.id ? 'bg-cyan-500/20 text-cyan-400 font-medium' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
+            <div key={g.id} className={`group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${selectedGroupId === g.id ? 'bg-[var(--bg-surface)] text-[var(--accent-cyan)] font-medium shadow-sm border border-[var(--border-subtle)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'}`}>
               <button
                 onClick={() => setSelectedGroupId(g.id)}
                 className="flex items-center gap-3 flex-1 text-left"
@@ -230,9 +230,9 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
               </button>
               <button 
                 onClick={() => handleDeleteGroup(g.id)}
-                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-rose-400 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-var(--danger) transition-opacity"
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <Trash2 className="w-3.5 h-3.5 text-red-500" />
               </button>
             </div>
           ))}
@@ -243,10 +243,10 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-6 gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+            <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] flex items-center gap-3">
               {selectedGroupId ? groups.find(g => g.id === selectedGroupId)?.name : "Tous les contacts"}
             </h1>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-[var(--text-secondary)] text-sm mt-1">
               {filteredContacts.length} contact(s) dans cette vue
             </p>
           </div>
@@ -262,20 +262,20 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isImporting}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-2 shadow-sm"
             >
               {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
               Importer CSV
             </button>
             <button 
               onClick={handleExportCSV}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-2 shadow-sm"
             >
               <Download className="w-4 h-4" /> Exporter
             </button>
             <button 
               onClick={() => openModal()}
-              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90 transition-opacity flex items-center gap-2 shadow-[0_0_15px_rgba(0,212,255,0.3)]"
+              className="btn-primary-gradient flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Ajouter
@@ -284,56 +284,56 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
         </div>
 
         <div className="glass-panel overflow-hidden flex-1 flex flex-col">
-          <div className="p-4 border-b border-white/10 flex items-center gap-3 shrink-0">
-             <Search className="w-5 h-5 text-gray-500" />
+          <div className="p-4 border-b border-[var(--border-subtle)] flex items-center gap-3 shrink-0">
+             <Search className="w-5 h-5 text-[var(--text-secondary)]" />
              <input 
                type="text"
                placeholder="Rechercher par nom, entreprise ou téléphone..."
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
-               className="bg-transparent border-none outline-none w-full text-white placeholder:text-gray-500"
+               className="bg-transparent border-none outline-none w-full text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
              />
           </div>
           
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
-                <tr className="border-b border-white/10 bg-white/5">
-                  <th className="p-4 text-xs font-semibold uppercase text-gray-400">Nom</th>
-                  <th className="p-4 text-xs font-semibold uppercase text-gray-400">Entreprise</th>
-                  <th className="p-4 text-xs font-semibold uppercase text-gray-400">Téléphone</th>
-                  <th className="p-4 text-xs font-semibold uppercase text-gray-400 hidden lg:table-cell">Email</th>
-                  <th className="p-4 text-xs font-semibold uppercase text-gray-400 text-right">Actions</th>
+                <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Nom</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Entreprise</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Téléphone</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] hidden lg:table-cell">Email</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredContacts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-12 text-center text-gray-500">
+                    <td colSpan={5} className="p-12 text-center text-[var(--text-secondary)]">
                       Aucun contact trouvé dans cette vue.
                     </td>
                   </tr>
                 ) : (
                   filteredContacts.map((contact: any) => (
-                    <tr key={contact.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                    <tr key={contact.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors">
                       <td className="p-4">
-                        <div className="font-semibold text-white">
+                        <div className="font-semibold text-[var(--text-primary)]">
                           {contact.name || "Sans nom"}
                         </div>
                       </td>
-                      <td className="p-4 text-sm text-gray-400">
+                      <td className="p-4 text-sm text-[var(--text-secondary)]">
                         {contact.company ? (
                           <div className="flex items-center gap-1.5">
                             <Building className="w-3.5 h-3.5" /> {contact.company}
                           </div>
                         ) : "-"}
                       </td>
-                      <td className="p-4 text-sm font-medium text-gray-300">
+                      <td className="p-4 text-sm font-medium text-[var(--text-primary)]">
                         <div className="flex items-center gap-1.5">
-                           <Phone className="w-3.5 h-3.5 text-gray-500" /> {contact.phone}
+                           <Phone className="w-3.5 h-3.5 text-[var(--text-secondary)]" /> {contact.phone}
                         </div>
                       </td>
-                      <td className="p-4 text-sm text-gray-400 hidden lg:table-cell">
+                      <td className="p-4 text-sm text-[var(--text-secondary)] hidden lg:table-cell">
                         {contact.email ? (
                           <div className="flex items-center gap-1.5">
                             <Mail className="w-3.5 h-3.5" /> {contact.email}
@@ -343,7 +343,7 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                       <td className="p-4 text-right">
                         <button 
                           onClick={() => openModal(contact)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors shadow-sm"
                         >
                           Modifier
                         </button>
@@ -359,76 +359,76 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
         {/* Contact Form Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-              <div className="p-6 border-b border-white/10 flex items-center justify-between shrink-0">
-                <h2 className="text-xl font-bold text-white">
+            <div className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+              <div className="p-6 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">
                    {selectedContact ? "Modifier Contact" : "Nouveau Contact"}
                 </h2>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white">
+                <button onClick={() => setIsModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="p-6 space-y-4 overflow-y-auto flex-1">
                 <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-300">Nom complet</label>
+                    <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Nom complet</label>
                     <input 
                       type="text" 
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
                       placeholder="Ex: Jean Dupont"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-300">Numéro de téléphone *</label>
+                    <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Numéro de téléphone *</label>
                     <input 
                       type="tel" 
                       required
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
                       placeholder="Ex: +33612345678"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-300">Entreprise</label>
+                    <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Entreprise</label>
                     <input 
                       type="text" 
                       value={formData.company}
                       onChange={(e) => setFormData({...formData, company: e.target.value})}
-                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
                       placeholder="Ex: Acme Corp"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-300">Email</label>
+                    <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Email</label>
                     <input 
                       type="email" 
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
                       placeholder="Ex: jean@acme.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold mb-1 text-gray-300">Notes</label>
+                    <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Notes</label>
                     <textarea 
                       value={formData.notes}
                       onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 min-h-[100px] resize-none"
+                      className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors min-h-[100px] resize-none"
                       placeholder="Notes internes concernant ce contact..."
                     />
                   </div>
                 </form>
               </div>
-              <div className="p-6 border-t border-white/10 flex justify-between items-center shrink-0">
+              <div className="p-6 border-t border-[var(--border-subtle)] flex justify-between items-center shrink-0 bg-[var(--bg-surface)]">
                 {selectedContact ? (
                    <button 
                      type="button"
                      onClick={handleDelete}
                      disabled={isDeleting || isSaving}
-                     className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-colors"
+                     className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
                    >
                       {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       Supprimer
@@ -439,7 +439,7 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                   <button 
                      type="button"
                      onClick={() => setIsModalOpen(false)} 
-                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 text-white hover:bg-white/5 transition-colors"
+                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors bg-[var(--bg-surface)]"
                   >
                     Annuler
                   </button>
@@ -447,7 +447,7 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                      type="submit"
                      form="contact-form"
                      disabled={isSaving || isDeleting} 
-                     className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90 transition-opacity min-w-[100px] flex justify-center items-center"
+                     className="btn-primary-gradient min-w-[100px] flex justify-center items-center"
                   >
                     {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer"}
                   </button>
@@ -460,37 +460,37 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
         {/* Group Creation Modal */}
         {isGroupModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-white">Nouveau Groupe</h2>
-                <button onClick={() => setIsGroupModalOpen(false)} className="text-gray-400 hover:text-white">
+            <div className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-[var(--border-subtle)] flex items-center justify-between">
+                <h2 className="text-xl font-bold text-[var(--text-primary)]">Nouveau Groupe</h2>
+                <button onClick={() => setIsGroupModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
               <form onSubmit={handleCreateGroup}>
                 <div className="p-6">
-                  <label className="block text-sm font-semibold mb-2 text-gray-300">Nom du groupe</label>
+                  <label className="block text-sm font-semibold mb-2 text-[var(--text-secondary)]">Nom du groupe</label>
                   <input 
                     type="text" 
                     required
                     value={newGroupName}
                     onChange={(e) => setNewGroupName(e.target.value)}
-                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
                     placeholder="Ex: VIP, Prospects..."
                   />
                 </div>
-                <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
+                <div className="p-6 border-t border-[var(--border-subtle)] flex justify-end gap-3 bg-[var(--bg-surface)]">
                   <button 
                      type="button"
                      onClick={() => setIsGroupModalOpen(false)} 
-                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 text-white hover:bg-white/5 transition-colors"
+                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors bg-[var(--bg-surface)]"
                   >
                     Annuler
                   </button>
                   <button 
                      type="submit"
                      disabled={isSavingGroup || !newGroupName.trim()} 
-                     className="px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 text-white hover:bg-cyan-600 transition-colors flex items-center justify-center min-w-[100px]"
+                     className="btn-primary-gradient flex items-center justify-center min-w-[100px]"
                   >
                     {isSavingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
                   </button>
