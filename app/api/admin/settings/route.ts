@@ -36,7 +36,9 @@ export async function POST(req: Request) {
       aiAgentRatePerMinute,
       whatsappRate,
       phoneNumberRate,
-      eSimRate
+      eSimRate,
+      telnyxApiKey,
+      telnyxConnectionId
     } = body;
 
     const settings = await prisma.systemSettings.upsert({
@@ -47,7 +49,9 @@ export async function POST(req: Request) {
         aiAgentRatePerMinute,
         whatsappRate,
         phoneNumberRate,
-        eSimRate
+        eSimRate,
+        telnyxApiKey,
+        telnyxConnectionId
       },
       create: {
         id: "default",
@@ -56,7 +60,9 @@ export async function POST(req: Request) {
         aiAgentRatePerMinute,
         whatsappRate,
         phoneNumberRate,
-        eSimRate
+        eSimRate,
+        telnyxApiKey,
+        telnyxConnectionId
       }
     });
 

@@ -516,5 +516,8 @@ model SystemSettings {
   phoneNumberRate      Float    @default(1.00)
   eSimRate             Float    @default(5.00)
 
+  telnyxApiKey         String?  // Global Telnyx API Key
+  telnyxConnectionId   String?  // Global SIP Connection ID
+
   updatedAt            DateTime @updatedAt
 }

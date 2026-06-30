@@ -13,7 +13,9 @@ export default function AdminSettingsClient() {
     aiAgentRatePerMinute: 0,
     whatsappRate: 0,
     phoneNumberRate: 0,
-    eSimRate: 0
+    eSimRate: 0,
+    telnyxApiKey: "",
+    telnyxConnectionId: ""
   });
 
   useEffect(() => {
@@ -31,7 +33,9 @@ export default function AdminSettingsClient() {
           aiAgentRatePerMinute: data.aiAgentRatePerMinute,
           whatsappRate: data.whatsappRate,
           phoneNumberRate: data.phoneNumberRate,
-          eSimRate: data.eSimRate
+          eSimRate: data.eSimRate,
+          telnyxApiKey: data.telnyxApiKey || "",
+          telnyxConnectionId: data.telnyxConnectionId || ""
         });
       }
     } catch (e) {
@@ -60,7 +64,10 @@ export default function AdminSettingsClient() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setRates(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+    setRates(prev => ({ 
+      ...prev, 
+      [name]: name.startsWith("telnyx") ? value : (parseFloat(value) || 0) 
+    }));
   };
 
   if (isLoading) {
@@ -125,6 +132,26 @@ export default function AdminSettingsClient() {
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">$</span>
             <input type="number" step="0.01" name="eSimRate" value={rates.eSimRate} onChange={handleChange} className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 pl-7 pr-3 text-[var(--text-primary)] focus:border-cyan-500 outline-none" />
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-6 border-t border-[var(--border-subtle)] space-y-6">
+        <div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Téléphonie (Telnyx WebRTC)</h3>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Configurez la clé d'API globale et l'ID de connexion SIP pour la plateforme.
+          </p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-[var(--text-secondary)]">API Key (V2)</label>
+            <input type="password" name="telnyxApiKey" value={rates.telnyxApiKey} onChange={handleChange} placeholder="KEY..." className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 px-3 text-[var(--text-primary)] focus:border-cyan-500 outline-none" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-[var(--text-secondary)]">SIP Connection ID</label>
+            <input type="text" name="telnyxConnectionId" value={rates.telnyxConnectionId} onChange={handleChange} placeholder="123456789..." className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 px-3 text-[var(--text-primary)] focus:border-cyan-500 outline-none" />
           </div>
         </div>
       </div>

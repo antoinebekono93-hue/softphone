@@ -1,6 +1,5 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { TelnyxSettingsClient } from "./TelnyxSettingsClient";
 
 export const metadata = {
   title: "Settings | Antigravity",
@@ -59,12 +58,6 @@ export default async function SettingsPage() {
             </div>
           </div>
         </div>
-
-        {/* Telnyx WebRTC Settings */}
-        <TelnyxSettingsClient 
-          initialApiKey={org?.telnyxApiKey || ""}
-          initialConnectionId={org?.telnyxConnectionId || ""}
-        />
 
         {/* Danger Zone */}
         <div className="border border-rose-500/20 bg-rose-500/5 rounded-2xl p-6">
