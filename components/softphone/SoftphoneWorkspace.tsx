@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Softphone } from "./Softphone";
-import { Search, History, Users, Voicemail, PhoneMissed, PhoneForwarded, PhoneIncoming, MoreVertical, Play, Loader2, UserPlus } from "lucide-react";
+import { Search, History, Users, Voicemail, PhoneMissed, PhoneForwarded, PhoneIncoming, MoreVertical, Play, Loader2, UserPlus, ChevronDown, ChevronUp, Bot, Phone } from "lucide-react";
 
 import Link from "next/link";
 
@@ -12,6 +12,7 @@ export function SoftphoneWorkspace() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,27 +134,52 @@ export function SoftphoneWorkspace() {
                   </div>
                   {contacts.length === 0 && <div className="p-8 text-center text-[var(--text-secondary)] text-sm">Aucun contact trouvé</div>}
                   {contacts.map((contact) => (
-                    <div key={contact.id} className="p-4 hover:bg-[var(--bg-surface-hover)] transition-colors cursor-pointer flex items-center justify-between">
-                      <div className="flex flex-col gap-1">
-                        <div className="font-medium text-[var(--text-primary)] flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-500 flex items-center justify-center text-xs font-bold">
-                          {(contact.name || "?").charAt(0).toUpperCase()}
+                    <div 
+                      key={contact.id} 
+                      className="p-4 hover:bg-[var(--bg-surface-hover)] transition-colors cursor-pointer flex flex-col gap-3 border-b border-[var(--border-subtle)]"
+                      onClick={() => setExpandedContactId(expandedContactId === contact.id ? null : contact.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1">
+                          <div className="font-medium text-[var(--text-primary)] flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-500 flex items-center justify-center text-xs font-bold">
+                            {(contact.name || "?").charAt(0).toUpperCase()}
+                            </div>
+                            {contact.name || "Sans Nom"}
                           </div>
-                          {contact.name || "Sans Nom"}
+                          <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2 pl-8">
+                            <span>{contact.phone}</span>
+                            {contact.company && (
+                              <>
+                                <span>•</span>
+                                <span>{contact.company}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2 pl-8">
-                          <span>{contact.phone}</span>
-                          {contact.company && (
-                            <>
-                              <span>•</span>
-                              <span>{contact.company}</span>
-                            </>
-                          )}
-                        </div>
+                        <button className="p-2 text-[var(--text-secondary)] hover:bg-white/5 rounded-full transition-colors">
+                          {expandedContactId === contact.id ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </button>
                       </div>
-                      <button className="p-2 text-[var(--text-secondary)] hover:text-cyan-500 hover:bg-cyan-500/10 rounded-full transition-colors">
-                        <PhoneForwarded className="w-4 h-4" />
-                      </button>
+                      
+                      {expandedContactId === contact.id && (
+                        <div className="flex gap-3 pl-8 mt-2 animate-in slide-in-from-top-2 duration-200">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); alert("Lancement d'un appel via l'Agent IA (À implémenter)"); }}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl text-sm font-semibold text-[var(--text-primary)] transition-colors shadow-sm"
+                          >
+                            <Bot className="w-4 h-4 text-violet-500" />
+                            Agent IA
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); alert("Veuillez composer le numéro sur le clavier à droite."); }}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:opacity-90 rounded-xl text-sm font-semibold text-white transition-opacity shadow-sm"
+                          >
+                            <Phone className="w-4 h-4" />
+                            Moi-même
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
