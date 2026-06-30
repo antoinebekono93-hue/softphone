@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Phone, Users, Wallet, Activity } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { DashboardCharts } from "./DashboardCharts";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -8,13 +10,90 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const orgId = session.user.organizationId;
+
+  // Fetch Stats
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [contactsCount, org, callsToday, smsToday] = await Promise.all([
+    prisma.contact.count({ where: { organizationId: orgId } }),
+    prisma.organization.findUnique({ where: { id: orgId }, select: { walletBalance: true } }),
+    prisma.callLog.count({ where: { organizationId: orgId, startedAt: { gte: today } } }),
+    prisma.smsMessage.count({ where: { organizationId: orgId, sentAt: { gte: today } } })
+  ]);
+
+  // Fetch chart data (last 7 days)
+  const chartData = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    d.setHours(0, 0, 0, 0);
+    const nextD = new Date(d);
+    nextD.setDate(d.getDate() + 1);
+    
+    const [calls, messages] = await Promise.all([
+      prisma.callLog.count({ where: { organizationId: orgId, startedAt: { gte: d, lt: nextD } } }),
+      prisma.smsMessage.count({ where: { organizationId: orgId, sentAt: { gte: d, lt: nextD } } })
+    ]);
+    
+    chartData.push({
+      date: d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
+      calls,
+      messages
+    });
+  }
+
+  // Fetch recent activity
+  const recentCalls = await prisma.callLog.findMany({
+    where: { organizationId: orgId },
+    orderBy: { startedAt: 'desc' },
+    take: 5,
+    include: { contact: true }
+  });
+  
+  const recentMessages = await prisma.smsMessage.findMany({
+    where: { organizationId: orgId },
+    orderBy: { sentAt: 'desc' },
+    take: 5,
+    include: { contact: true }
+  });
+
+  const activities = [...recentCalls, ...recentMessages]
+    .sort((a: any, b: any) => {
+      const timeA = a.startedAt ? a.startedAt.getTime() : a.sentAt.getTime();
+      const timeB = b.startedAt ? b.startedAt.getTime() : b.sentAt.getTime();
+      return timeB - timeA;
+    })
+    .slice(0, 10)
+    .map((item: any) => {
+      const isCall = 'duration' in item;
+      let type: 'CALL' | 'SMS' | 'WHATSAPP' | 'AI_CALL' = 'CALL';
+      
+      if (isCall) {
+        type = item.aiSummary ? 'AI_CALL' : 'CALL';
+      } else {
+        type = item.type === 'WHATSAPP' ? 'WHATSAPP' : 'SMS';
+      }
+
+      const itemTime = isCall ? item.startedAt : item.sentAt;
+
+      return {
+        id: item.id,
+        type,
+        title: isCall ? `Appel ${item.direction === 'OUTBOUND' ? 'sortant' : 'entrant'} ${item.contact ? 'avec ' + item.contact.name : ''}` : `Message ${item.direction === 'OUTBOUND' ? 'envoyé' : 'reçu'} ${item.contact ? 'de ' + item.contact.name : ''}`,
+        time: new Date(itemTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        description: isCall ? item.aiSummary : item.body
+      };
+    });
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 h-full flex flex-col">
+    <div className="p-8 max-w-7xl mx-auto space-y-8 h-full flex flex-col overflow-y-auto custom-scrollbar">
       <div>
         <h1 className="text-3xl font-extrabold text-[var(--text-primary)]">
           Bonjour, {session.user.name?.split(' ')[0] || "Admin"} 👋
         </h1>
-        <p className="text-[var(--text-secondary)] mt-2">Voici l'aperçu de votre espace de travail Antigravity.</p>
+        <p className="text-[var(--text-secondary)] mt-2">Voici l'aperçu de votre espace de travail Antigravity en temps réel.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -26,7 +105,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-secondary)]">Appels aujourd'hui</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">0</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{callsToday}</p>
             </div>
           </div>
         </div>
@@ -38,7 +117,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-secondary)]">Contacts totaux</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">---</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">{contactsCount}</p>
             </div>
           </div>
         </div>
@@ -50,7 +129,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-sm font-medium text-[var(--text-secondary)]">Solde Wallet</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">$0.00</p>
+              <p className="text-2xl font-bold text-[var(--text-primary)]">${org?.walletBalance?.toFixed(2) || "0.00"}</p>
             </div>
           </div>
         </div>
@@ -68,16 +147,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Getting Started Section */}
-      <div className="glass-panel flex-1 p-8 flex flex-col items-center justify-center text-center">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-cyan-500 to-violet-500 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,212,255,0.3)]">
-          <Activity className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Bienvenue sur Antigravity</h2>
-        <p className="text-[var(--text-secondary)] max-w-lg mb-8">
-          Votre plateforme cloud de communication est prête. Utilisez la barre latérale gauche pour naviguer vers le Softphone, le CRM, ou gérer vos campagnes.
-        </p>
-      </div>
+      <DashboardCharts data={chartData} activities={activities} />
     </div>
   );
 }
