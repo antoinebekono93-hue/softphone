@@ -138,6 +138,7 @@ model Organization {
   opportunities       Opportunity[]
   internalNotes       InternalNote[]
   contactGroups       ContactGroup[]
+  sequences           Sequence[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -193,6 +194,7 @@ model Contact {
   campaignRecipients CampaignRecipient[]
   opportunities      Opportunity[]
   internalNotes      InternalNote[]
+  sequenceEnrollments SequenceEnrollment[]
 
   @@unique([organizationId, phone])
   @@index([organizationId])
@@ -524,4 +526,50 @@ model SystemSettings {
   telnyxConnectionId   String?  // Global SIP Connection ID
 
   updatedAt            DateTime @updatedAt
+}
+
+model Sequence {
+  id             String         @id @default(cuid())
+  name           String
+  description    String?
+  isActive       Boolean        @default(false)
+  organizationId String
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  steps          SequenceStep[]
+  enrollments    SequenceEnrollment[]
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model SequenceStep {
+  id             String         @id @default(cuid())
+  sequenceId     String
+  stepOrder      Int            // 1, 2, 3...
+  delayHours     Int            // Hours to wait after the previous step (or after enrollment if step 1)
+  actionType     String         // "SMS", "WHATSAPP", "AI_CALL"
+  content        String?        // SMS body or AI Prompt
+  templateId     String?        // for WhatsApp
+  
+  sequence       Sequence       @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@index([sequenceId])
+}
+
+model SequenceEnrollment {
+  id             String         @id @default(cuid())
+  sequenceId     String
+  contactId      String
+  currentStep    Int            @default(1)
+  status         String         @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED, FAILED
+  nextRunAt      DateTime?      // When the next step should be executed
+  
+  sequence       Sequence       @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  contact        Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([sequenceId, contactId])
+  @@index([sequenceId])
+  @@index([contactId])
 }

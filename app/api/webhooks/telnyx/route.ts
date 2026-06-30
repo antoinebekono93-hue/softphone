@@ -5,16 +5,11 @@ import { prisma } from '@/lib/prisma';
 // We need the media server URL. Ideally, it's wss://our-domain/media
 const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'wss://your-ngrok-domain.ngrok-free.app/media';
 
-export async function POST(req: Request) {
+async function processEvent(event: any) {
   try {
-    const payload = await req.json();
-    const event = payload.data;
+    if (!event || !event.event_type) return;
 
-    if (!event || !event.event_type) {
-      return new NextResponse('Invalid payload', { status: 400 });
-    }
-
-    const callControlId = event.payload.call_control_id;
+    const callControlId = event.payload?.call_control_id;
     const eventType = event.event_type;
 
     if (eventType === 'call.initiated') {
@@ -214,6 +209,35 @@ export async function POST(req: Request) {
         }
       }
     }
+  } catch (error: any) {
+    console.error('[Telnyx Webhook Async Error]', error);
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const rawBody = await req.text();
+    let event;
+
+    const signature = req.headers.get('telnyx-signature-ed25519');
+    const timestamp = req.headers.get('telnyx-timestamp');
+    const publicKey = process.env.TELNYX_PUBLIC_KEY;
+
+    if (signature && timestamp && publicKey) {
+      try {
+        event = telnyx.webhooks.constructEvent(rawBody, signature, timestamp, publicKey).data;
+      } catch (err: any) {
+        console.error('[Telnyx Webhook] Signature verification failed:', err.message);
+        return new NextResponse('Invalid signature', { status: 400 });
+      }
+    } else {
+      // Fallback if public key is not configured (e.g. local dev)
+      console.warn('[Telnyx Webhook] No signature verification performed (missing headers or PUBLIC_KEY)');
+      event = JSON.parse(rawBody).data;
+    }
+
+    // Run async to return 200 OK fast
+    processEvent(event).catch(console.error);
 
     return new NextResponse('OK', { status: 200 });
   } catch (error: any) {

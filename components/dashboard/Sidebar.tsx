@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import EmbeddedSignupButton from "../whatsapp/EmbeddedSignupButton";
+import { EmbeddedSignupButton } from "../whatsapp/EmbeddedSignupButton";
 
 interface SidebarProps {
   onNavigate: (view: string) => void;

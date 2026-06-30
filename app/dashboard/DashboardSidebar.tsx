@@ -17,6 +17,7 @@ import {
   GitMerge, 
   UsersRound, 
   BookUser,
+  Workflow,
   Settings, 
   CreditCard,
   LogOut,
@@ -55,11 +56,12 @@ export function DashboardSidebar({
       title: "Services de base",
       items: [
         { name: "Aperçu du projet", href: "/dashboard", icon: Home },
+        { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
+        { name: "Séquences", href: "/dashboard/sequences", icon: Workflow },
         { name: "Boîte de réception", href: "/dashboard/inbox", icon: Inbox },
         { name: "Softphone", href: "/dashboard/softphone", icon: Phone },
         { name: "Analyse & Rapports", href: "/dashboard/analytics", icon: BarChart2 },
         { name: "CRM (Pipeline)", href: "/dashboard/crm", icon: Users },
-        { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
       ]
     },
     {

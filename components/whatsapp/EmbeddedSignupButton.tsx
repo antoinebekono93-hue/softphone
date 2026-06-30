@@ -1,97 +1,104 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Script from "next/script";
-
-declare global {
-  interface Window {
-    fbAsyncInit: () => void;
-    FB: any;
-  }
-}
+import { MessageCircle } from "lucide-react";
 
 interface EmbeddedSignupButtonProps {
   appId: string;
-  configId: string; // The Configuration ID from Meta App Dashboard
+  configId?: string;
   onSuccess?: (accessToken: string) => void;
+  onError?: (error: any) => void;
 }
 
-export default function EmbeddedSignupButton({ appId, configId, onSuccess }: EmbeddedSignupButtonProps) {
+export function EmbeddedSignupButton({ appId, configId, onSuccess, onError }: EmbeddedSignupButtonProps) {
   const [isSdkLoaded, setIsSdkLoaded] = useState(false);
 
   useEffect(() => {
-    window.fbAsyncInit = function () {
-      window.FB.init({
-        appId: appId,
-        autoLogAppEvents: true,
-        xfbml: true,
-        version: "v19.0", // Use a recent API version for Embedded Signup v4
-      });
-      setIsSdkLoaded(true);
-    };
+    // Load the Facebook SDK asynchronously
+    if (typeof window !== "undefined") {
+      (window as any).fbAsyncInit = function () {
+        (window as any).FB.init({
+          appId: appId,
+          cookie: true,
+          xfbml: true,
+          version: "v19.0", // Use latest version
+        });
+        setIsSdkLoaded(true);
+      };
+
+      // Load SDK Script
+      (function (d, s, id) {
+        let js: any, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs?.parentNode?.insertBefore(js, fjs);
+      })(document, "script", "facebook-jssdk");
+    }
   }, [appId]);
 
-  const launchWhatsAppSignup = () => {
-    if (!window.FB) {
+  const [isLinking, setIsLinking] = useState(false);
+
+  const handleLogin = () => {
+    if (!isSdkLoaded || !(window as any).FB) {
       console.error("Facebook SDK not loaded yet.");
+      if (onError) onError(new Error("SDK not loaded"));
       return;
     }
 
-    // Launch Facebook login using the config_id
-    window.FB.login(
-      (response: any) => {
+    (window as any).FB.login(
+      async (response: any) => {
         if (response.authResponse) {
           const accessToken = response.authResponse.accessToken;
-          console.log("Got access token from Meta!");
-          if (onSuccess) {
-            onSuccess(accessToken);
+          console.log("WhatsApp Auth Success. Access Token received.");
+          
+          try {
+            setIsLinking(true);
+            const res = await fetch("/api/whatsapp/link-account", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ accessToken })
+            });
+            
+            const data = await res.json();
+            if (res.ok) {
+              console.log("Telnyx Link Success:", data);
+              if (onSuccess) onSuccess(data);
+              alert("WhatsApp account successfully linked!");
+            } else {
+              console.error("Telnyx Link Error:", data);
+              if (onError) onError(data);
+              alert("Failed to link WhatsApp account.");
+            }
+          } catch (err) {
+            console.error("Request failed", err);
+            if (onError) onError(err);
+          } finally {
+            setIsLinking(false);
           }
+
         } else {
-          console.log("User cancelled login or did not fully authorize.");
+          console.error("User cancelled login or did not fully authorize.");
+          if (onError) onError(new Error("Login cancelled or unauthorized"));
         }
       },
       {
-        config_id: configId, 
-        response_type: "code",
-        override_default_response_type: true,
-        extras: {
-          setup: {},
-          featureType: "WA_EMBEDDED_SIGNUP",
-        },
-        scope: "business_management,whatsapp_business_management,whatsapp_business_messaging",
+        config_id: configId || "", // Utilisation du configId s'il est fourni
+        scopes: "whatsapp_business_management,whatsapp_business_messaging",
+        extras: { feature: "whatsapp_embedded_signup" },
       }
     );
   };
 
   return (
-    <>
-      <Script
-        async
-        defer
-        crossOrigin="anonymous"
-        src="https://connect.facebook.net/en_US/sdk.js"
-        strategy="lazyOnload"
-      />
-      <button
-        onClick={launchWhatsAppSignup}
-        disabled={!isSdkLoaded}
-        className="w-full btn btn-primary flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-        </svg>
-        {isSdkLoaded ? "Connect WhatsApp" : "Chargement..."}
-      </button>
-    </>
+    <button 
+      onClick={handleLogin}
+      disabled={!isSdkLoaded || isLinking}
+      className={`flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${(isSdkLoaded && !isLinking) ? 'bg-[#25D366] hover:bg-[#128C7E] text-white shadow-lg' : 'bg-[var(--bg-surface-hover)] text-[var(--text-muted)] cursor-not-allowed'}`}
+    >
+      <MessageCircle className="w-5 h-5" />
+      {isLinking ? "Liaison en cours..." : isSdkLoaded ? "Connecter WhatsApp" : "Chargement..."}
+    </button>
   );
 }

@@ -20,6 +20,12 @@ export async function POST(req: Request) {
 
     // 3. Sip connection check
     const sipConnectionId = process.env.TELNYX_SIP_CONNECTION_ID;
+    const callControlAppId = process.env.TELNYX_CALL_CONTROL_APP_ID;
+    const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
+    
+    if (!messagingProfileId) {
+      return NextResponse.json({ error: "TELNYX_MESSAGING_PROFILE_ID is missing in environment. Cannot purchase number for SMS." }, { status: 400 });
+    }
 
     // 4. Place the order via Telnyx Number Orders API
     console.log(`Placing order for number: ${phoneNumber}...`);
@@ -27,8 +33,9 @@ export async function POST(req: Request) {
     // We order the specific number
     const orderResponse = await telnyx.numberOrders.create({
       phone_numbers: [{ phone_number: phoneNumber }],
-      connection_id: sipConnectionId, // Automatically link the number to our SIP connection!
-      messaging_profile_id: process.env.TELNYX_MESSAGING_PROFILE_ID // Optional: link for SMS
+      // Priority to Call Control App (AI Agents), fallback to SIP Connection (Softphone)
+      connection_id: callControlAppId || sipConnectionId,
+      messaging_profile_id: messagingProfileId
     });
 
     // 5. In a real application, we would save this to Prisma Database:

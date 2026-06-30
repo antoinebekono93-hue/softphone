@@ -4,6 +4,8 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, Phone, Building, FileText, User, Clock } from "lucide-react";
 import InboxClient from "../../inbox/InboxClient";
+import { EnrollSequenceButton } from "./EnrollSequenceButton";
+import { getSequences } from "../../sequences/actions";
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,6 +37,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
       }
     }
   });
+
+  const sequences = await getSequences();
 
   if (!contact) {
     notFound();
@@ -126,6 +130,11 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
                   {contact.notes || <span className="text-[var(--text-secondary)] italic">Aucune note.</span>}
                 </p>
               </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-3">Automatisation</h3>
+              <EnrollSequenceButton contactId={contact.id} sequences={sequences} />
             </div>
           </div>
         </div>

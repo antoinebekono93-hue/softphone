@@ -10,7 +10,24 @@ export async function POST(request: Request) {
 
     if (contentType.includes("application/json")) {
       // Fallback if configured as Call Control JSON webhook
-      const body = await request.json().catch(() => ({}));
+      const rawBody = await request.text();
+      const signature = request.headers.get('telnyx-signature-ed25519');
+      const timestamp = request.headers.get('telnyx-timestamp');
+      const publicKey = process.env.TELNYX_PUBLIC_KEY;
+      
+      let body: any = {};
+      if (signature && timestamp && publicKey) {
+         try {
+            // @ts-ignore (Assuming telnyx.webhooks is imported or available)
+            body = require("@/lib/telnyx").telnyx.webhooks.constructEvent(rawBody, signature, timestamp, publicKey);
+         } catch (err: any) {
+            console.error('[Telnyx Webhook] Signature verification failed:', err.message);
+            return new NextResponse('Invalid signature', { status: 400 });
+         }
+      } else {
+         body = JSON.parse(rawBody);
+      }
+      
       to = body.data?.payload?.to || "";
       from = body.data?.payload?.from || "";
     } else {
