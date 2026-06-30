@@ -4,31 +4,88 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
-export async function getContacts() {
+export async function getContacts(groupId?: string) {
   const session = await auth();
   if (!session?.user?.organizationId) return [];
 
+  const whereClause: any = { organizationId: session.user.organizationId };
+  if (groupId) {
+    whereClause.groups = { some: { id: groupId } };
+  }
+
   const contacts = await prisma.contact.findMany({
-    where: { organizationId: session.user.organizationId },
+    where: whereClause,
+    include: { groups: true },
     orderBy: { name: 'asc' }
   });
 
   return contacts;
 }
 
-export async function createContact(data: { name?: string, company?: string, email?: string, phone: string, notes?: string }) {
+export async function getContactGroups() {
+  const session = await auth();
+  if (!session?.user?.organizationId) return [];
+  
+  return await prisma.contactGroup.findMany({
+    where: { organizationId: session.user.organizationId },
+    orderBy: { name: 'asc' }
+  });
+}
+
+export async function createContactGroup(data: { name: string, description?: string }) {
   const session = await auth();
   if (!session?.user?.organizationId) return { error: "Unauthorized" };
 
   try {
-    // Basic validation
-    if (!data.phone) return { error: "Phone number is required" };
-
-    const contact = await prisma.contact.create({
+    const group = await prisma.contactGroup.create({
       data: {
         ...data,
         organizationId: session.user.organizationId
       }
+    });
+    revalidatePath("/dashboard/contacts");
+    return { success: true, group };
+  } catch (error) {
+    console.error("Create Group Error:", error);
+    return { error: "Failed to create group." };
+  }
+}
+
+export async function deleteContactGroup(id: string) {
+  const session = await auth();
+  if (!session?.user?.organizationId) return { error: "Unauthorized" };
+
+  try {
+    await prisma.contactGroup.delete({
+      where: { id, organizationId: session.user.organizationId }
+    });
+    revalidatePath("/dashboard/contacts");
+    return { success: true };
+  } catch (error) {
+    console.error("Delete Group Error:", error);
+    return { error: "Failed to delete group." };
+  }
+}
+
+export async function createContact(data: { name?: string, company?: string, email?: string, phone: string, notes?: string }, groupId?: string) {
+  const session = await auth();
+  if (!session?.user?.organizationId) return { error: "Unauthorized" };
+
+  try {
+    if (!data.phone) return { error: "Phone number is required" };
+
+    const createData: any = {
+      ...data,
+      organizationId: session.user.organizationId
+    };
+    
+    if (groupId) {
+      createData.groups = { connect: [{ id: groupId }] };
+    }
+
+    const contact = await prisma.contact.create({
+      data: createData,
+      include: { groups: true }
     });
 
     revalidatePath("/dashboard/contacts");
@@ -42,17 +99,23 @@ export async function createContact(data: { name?: string, company?: string, ema
   }
 }
 
-export async function updateContact(id: string, data: { name?: string, company?: string, email?: string, phone: string, notes?: string }) {
+export async function updateContact(id: string, data: { name?: string, company?: string, email?: string, phone: string, notes?: string }, groupId?: string) {
   const session = await auth();
   if (!session?.user?.organizationId) return { error: "Unauthorized" };
 
   try {
+    const updateData: any = { ...data };
+    if (groupId) {
+      updateData.groups = { connect: [{ id: groupId }] };
+    }
+
     const contact = await prisma.contact.update({
       where: { 
         id, 
         organizationId: session.user.organizationId 
       },
-      data
+      data: updateData,
+      include: { groups: true }
     });
 
     revalidatePath("/dashboard/contacts");
@@ -83,5 +146,61 @@ export async function deleteContact(id: string) {
   } catch (error) {
     console.error("Delete Contact Error:", error);
     return { error: "Failed to delete contact." };
+  }
+}
+
+export async function importContacts(contactsData: any[], groupId?: string) {
+  const session = await auth();
+  if (!session?.user?.organizationId) return { error: "Unauthorized" };
+
+  try {
+    let importedCount = 0;
+    
+    for (const contact of contactsData) {
+      if (!contact.phone) continue;
+      
+      const updateData: any = {
+        name: contact.name || undefined,
+        company: contact.company || undefined,
+        email: contact.email || undefined,
+        notes: contact.notes || undefined,
+      };
+      
+      if (groupId) {
+        updateData.groups = { connect: [{ id: groupId }] };
+      }
+
+      const createData: any = {
+        organizationId: session.user.organizationId,
+        phone: String(contact.phone),
+        name: contact.name || null,
+        company: contact.company || null,
+        email: contact.email || null,
+        notes: contact.notes || null,
+      };
+
+      if (groupId) {
+        createData.groups = { connect: [{ id: groupId }] };
+      }
+
+      await prisma.contact.upsert({
+        where: {
+          organizationId_phone: {
+            organizationId: session.user.organizationId,
+            phone: String(contact.phone)
+          }
+        },
+        update: updateData,
+        create: createData
+      });
+      
+      importedCount++;
+    }
+
+    revalidatePath("/dashboard/contacts");
+    return { success: true, importedCount };
+  } catch (error) {
+    console.error("Import Contacts Error:", error);
+    return { error: "An error occurred during import." };
   }
 }

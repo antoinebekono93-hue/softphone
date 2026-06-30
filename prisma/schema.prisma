@@ -137,6 +137,7 @@ model Organization {
   whatsappTemplates   WhatsAppTemplate[]
   opportunities       Opportunity[]
   internalNotes       InternalNote[]
+  contactGroups       ContactGroup[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -182,6 +183,7 @@ model Contact {
   updatedAt DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  groups       ContactGroup[]
   callLogs     CallLog[]
   smsMessages  SmsMessage[]
   campaignRecipients CampaignRecipient[]
@@ -189,6 +191,22 @@ model Contact {
   internalNotes      InternalNote[]
 
   @@unique([organizationId, phone])
+  @@index([organizationId])
+}
+
+model ContactGroup {
+  id             String    @id @default(cuid())
+  name           String
+  description    String?
+  
+  organizationId String
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contacts       Contact[]
+
   @@index([organizationId])
 }
 

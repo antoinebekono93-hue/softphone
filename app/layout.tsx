@@ -69,7 +69,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.webmanifest" />
       </head>
       <body>
-        <ThemeProvider defaultTheme="dark" forcedTheme="dark">
+        <ThemeProvider defaultTheme="dark">
           <AuthProvider>
             {/* @ts-ignore */}
             <TelnyxProvider>

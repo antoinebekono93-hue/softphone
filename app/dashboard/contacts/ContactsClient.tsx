@@ -1,17 +1,29 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Search, Plus, Edit2, X, Loader2, Building, Mail, Phone, Trash2 } from "lucide-react";
-import { createContact, updateContact, deleteContact } from "./actions";
+import { useState, useMemo, useRef } from "react";
+import { Search, Plus, X, Loader2, Building, Mail, Phone, Trash2, Folder, Download, Upload, Users } from "lucide-react";
+import { createContact, updateContact, deleteContact, createContactGroup, deleteContactGroup, importContacts } from "./actions";
+import Papa from "papaparse";
 
-export function ContactsClient({ initialContacts }: { initialContacts: any[] }) {
+export function ContactsClient({ initialContacts, initialGroups }: { initialContacts: any[], initialGroups: any[] }) {
   const [contacts, setContacts] = useState(initialContacts);
+  const [groups, setGroups] = useState(initialGroups);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Group Modal
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [isSavingGroup, setIsSavingGroup] = useState(false);
+
+  // Import State
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -22,14 +34,21 @@ export function ContactsClient({ initialContacts }: { initialContacts: any[] }) 
   });
 
   const filteredContacts = useMemo(() => {
-    if (!searchQuery) return contacts;
+    let result = contacts;
+    
+    // Filter by group
+    if (selectedGroupId) {
+      result = result.filter((c: any) => c.groups?.some((g: any) => g.id === selectedGroupId));
+    }
+
+    if (!searchQuery) return result;
     const q = searchQuery.toLowerCase();
-    return contacts.filter((c: any) => 
+    return result.filter((c: any) => 
       (c.name && c.name.toLowerCase().includes(q)) ||
       (c.phone && c.phone.includes(q)) ||
       (c.company && c.company.toLowerCase().includes(q))
     );
-  }, [contacts, searchQuery]);
+  }, [contacts, searchQuery, selectedGroupId]);
 
   const openModal = (contact: any = null) => {
     setSelectedContact(contact);
@@ -58,7 +77,7 @@ export function ContactsClient({ initialContacts }: { initialContacts: any[] }) 
     setIsSaving(true);
     
     if (selectedContact) {
-      const res = await updateContact(selectedContact.id, formData);
+      const res = await updateContact(selectedContact.id, formData, selectedGroupId || undefined);
       if (res.success && res.contact) {
         setContacts(contacts.map(c => c.id === selectedContact.id ? res.contact : c));
         setIsModalOpen(false);
@@ -66,7 +85,7 @@ export function ContactsClient({ initialContacts }: { initialContacts: any[] }) 
         alert(res.error || "An error occurred");
       }
     } else {
-      const res = await createContact(formData);
+      const res = await createContact(formData, selectedGroupId || undefined);
       if (res.success && res.contact) {
         setContacts([...contacts, res.contact].sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "")));
         setIsModalOpen(false);
@@ -78,7 +97,7 @@ export function ContactsClient({ initialContacts }: { initialContacts: any[] }) 
   };
 
   const handleDelete = async () => {
-    if (!selectedContact || !confirm("Are you sure you want to delete this contact?")) return;
+    if (!selectedContact || !confirm("Êtes-vous sûr de vouloir supprimer ce contact ?")) return;
     setIsDeleting(true);
     const res = await deleteContact(selectedContact.id);
     if (res.success) {
@@ -90,196 +109,398 @@ export function ContactsClient({ initialContacts }: { initialContacts: any[] }) 
     setIsDeleting(false);
   };
 
+  const handleCreateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName) return;
+    setIsSavingGroup(true);
+    const res = await createContactGroup({ name: newGroupName });
+    if (res.success && res.group) {
+      setGroups([...groups, res.group].sort((a: any, b: any) => a.name.localeCompare(b.name)));
+      setIsGroupModalOpen(false);
+      setNewGroupName("");
+      setSelectedGroupId(res.group.id);
+    } else {
+      alert(res.error || "Failed to create group");
+    }
+    setIsSavingGroup(false);
+  };
+
+  const handleDeleteGroup = async (id: string) => {
+    if (!confirm("Voulez-vous supprimer ce groupe ? Les contacts ne seront pas supprimés.")) return;
+    const res = await deleteContactGroup(id);
+    if (res.success) {
+      setGroups(groups.filter(g => g.id !== id));
+      if (selectedGroupId === id) setSelectedGroupId(null);
+    } else {
+      alert(res.error || "Error");
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (filteredContacts.length === 0) return alert("Aucun contact à exporter");
+    const data = filteredContacts.map((c: any) => ({
+      Name: c.name || "",
+      Phone: c.phone || "",
+      Email: c.email || "",
+      Company: c.company || "",
+      Notes: c.notes || ""
+    }));
+    const csv = Papa.unparse(data);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `contacts_${selectedGroupId ? groups.find(g => g.id === selectedGroupId)?.name : "tous"}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        const parsed = results.data.map((row: any) => ({
+          name: row.Name || row.name || row.Nom || "",
+          phone: row.Phone || row.phone || row.Telephone || row['Téléphone'] || "",
+          email: row.Email || row.email || "",
+          company: row.Company || row.company || row.Entreprise || "",
+          notes: row.Notes || row.notes || ""
+        })).filter((r: any) => r.phone); // Phone is required
+
+        if (parsed.length === 0) {
+          alert("Aucun contact valide trouvé. Assurez-vous d'avoir une colonne 'Phone'.");
+          setIsImporting(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+
+        const res = await importContacts(parsed, selectedGroupId || undefined);
+        if (res.success) {
+          alert(`${res.importedCount} contacts importés avec succès ! Rafraîchissez la page pour voir les modifications complètes.`);
+          window.location.reload(); // Simple way to resync state since it's a bulk operation
+        } else {
+          alert(res.error || "Erreur lors de l'importation");
+        }
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      },
+      error: () => {
+        alert("Erreur de lecture du fichier CSV");
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    });
+  };
+
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-[var(--text-primary)]">
-            Contacts
-          </h1>
-          <p className="text-[var(--text-secondary)] text-sm md:text-base">
-            Manage your customer address book.
-          </p>
-        </div>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full h-full flex flex-col md:flex-row gap-6">
+      
+      {/* Sidebar for Groups */}
+      <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
+        <h2 className="text-xl font-bold text-white mb-2">Groupes</h2>
+        
         <button 
-          onClick={() => openModal()}
-          className="apple-btn btn-primary flex items-center gap-2"
+          onClick={() => setIsGroupModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors w-full"
         >
-          <Plus className="w-4 h-4" />
-          Add Contact
+          <Plus className="w-4 h-4" /> Créer un groupe
         </button>
-      </div>
 
-      <div className="glass-panel overflow-hidden">
-        <div className="p-4 border-b border-[var(--border-subtle)] flex items-center gap-3">
-           <Search className="w-5 h-5 text-[var(--text-secondary)]" />
-           <input 
-             type="text"
-             placeholder="Search by name, company, or phone..."
-             value={searchQuery}
-             onChange={(e) => setSearchQuery(e.target.value)}
-             className="bg-transparent border-none outline-none w-full text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]"
-           />
-        </div>
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)]">
-              <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Name</th>
-              <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Company</th>
-              <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Phone</th>
-              <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] hidden md:table-cell">Email</th>
-              <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredContacts.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="p-8 text-center text-[var(--text-secondary)]">
-                  No contacts found.
-                </td>
-              </tr>
-            ) : (
-              filteredContacts.map((contact: any) => (
-                <tr key={contact.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors">
-                  <td className="p-4">
-                    <div className="font-semibold text-[var(--text-primary)]">
-                      {contact.name || "Unnamed Contact"}
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm text-[var(--text-secondary)]">
-                    {contact.company ? (
-                      <div className="flex items-center gap-1.5">
-                        <Building className="w-3.5 h-3.5" /> {contact.company}
-                      </div>
-                    ) : "-"}
-                  </td>
-                  <td className="p-4 text-sm font-medium">
-                    <div className="flex items-center gap-1.5">
-                       <Phone className="w-3.5 h-3.5 text-[var(--text-secondary)]" /> {contact.phone}
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm text-[var(--text-secondary)] hidden md:table-cell">
-                    {contact.email ? (
-                      <div className="flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5" /> {contact.email}
-                      </div>
-                    ) : "-"}
-                  </td>
-                  <td className="p-4 text-right">
-                    <button 
-                      onClick={() => openModal(contact)}
-                      className="apple-btn bg-transparent border border-[var(--border-subtle)] px-3 py-1.5 text-xs"
-                    >
-                      Edit
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-white/10 flex items-center justify-between shrink-0">
-              <h2 className="text-xl font-bold text-white">
-                 {selectedContact ? "Modifier Contact" : "Nouveau Contact"}
-              </h2>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white">
-                <X className="w-5 h-5" />
+        <div className="flex flex-col gap-1 mt-2">
+          <button
+            onClick={() => setSelectedGroupId(null)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${!selectedGroupId ? 'bg-cyan-500/20 text-cyan-400 font-medium' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}
+          >
+            <Users className="w-4 h-4" /> Tous les contacts
+          </button>
+          
+          {groups.map(g => (
+            <div key={g.id} className={`group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${selectedGroupId === g.id ? 'bg-cyan-500/20 text-cyan-400 font-medium' : 'text-gray-400 hover:bg-white/5 hover:text-white'}`}>
+              <button
+                onClick={() => setSelectedGroupId(g.id)}
+                className="flex items-center gap-3 flex-1 text-left"
+              >
+                <Folder className="w-4 h-4" /> {g.name}
+              </button>
+              <button 
+                onClick={() => handleDeleteGroup(g.id)}
+                className="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-rose-400 transition-opacity"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-300">Nom complet</label>
-                  <input 
-                    type="text" 
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                    placeholder="Ex: Jean Dupont"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-300">Numéro de téléphone *</label>
-                  <input 
-                    type="tel" 
-                    required
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                    placeholder="Ex: +33612345678"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-300">Entreprise</label>
-                  <input 
-                    type="text" 
-                    value={formData.company}
-                    onChange={(e) => setFormData({...formData, company: e.target.value})}
-                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                    placeholder="Ex: Acme Corp"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-300">Email</label>
-                  <input 
-                    type="email" 
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-                    placeholder="Ex: jean@acme.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-gray-300">Notes</label>
-                  <textarea 
-                    value={formData.notes}
-                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 min-h-[100px] resize-none"
-                    placeholder="Notes internes concernant ce contact..."
-                  />
-                </div>
-              </form>
-            </div>
-            <div className="p-6 border-t border-white/10 flex justify-between items-center shrink-0">
-              {selectedContact ? (
-                 <button 
-                   type="button"
-                   onClick={handleDelete}
-                   disabled={isDeleting || isSaving}
-                   className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-colors"
-                 >
-                    {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                    Supprimer
-                 </button>
-              ) : <div></div>}
+          ))}
+        </div>
+      </div>
 
-              <div className="flex gap-3">
-                <button 
-                   type="button"
-                   onClick={() => setIsModalOpen(false)} 
-                   className="px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 text-white hover:bg-white/5 transition-colors"
-                >
-                  Annuler
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
+              {selectedGroupId ? groups.find(g => g.id === selectedGroupId)?.name : "Tous les contacts"}
+            </h1>
+            <p className="text-gray-400 text-sm mt-1">
+              {filteredContacts.length} contact(s) dans cette vue
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <input 
+              type="file" 
+              accept=".csv" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={handleImportCSV} 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isImporting}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+            >
+              {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+              Importer CSV
+            </button>
+            <button 
+              onClick={handleExportCSV}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Exporter
+            </button>
+            <button 
+              onClick={() => openModal()}
+              className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90 transition-opacity flex items-center gap-2 shadow-[0_0_15px_rgba(0,212,255,0.3)]"
+            >
+              <Plus className="w-4 h-4" />
+              Ajouter
+            </button>
+          </div>
+        </div>
+
+        <div className="glass-panel overflow-hidden flex-1 flex flex-col">
+          <div className="p-4 border-b border-white/10 flex items-center gap-3 shrink-0">
+             <Search className="w-5 h-5 text-gray-500" />
+             <input 
+               type="text"
+               placeholder="Rechercher par nom, entreprise ou téléphone..."
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className="bg-transparent border-none outline-none w-full text-white placeholder:text-gray-500"
+             />
+          </div>
+          
+          <div className="overflow-x-auto flex-1">
+            <table className="w-full text-left border-collapse whitespace-nowrap">
+              <thead>
+                <tr className="border-b border-white/10 bg-white/5">
+                  <th className="p-4 text-xs font-semibold uppercase text-gray-400">Nom</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-gray-400">Entreprise</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-gray-400">Téléphone</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-gray-400 hidden lg:table-cell">Email</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-gray-400 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredContacts.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-12 text-center text-gray-500">
+                      Aucun contact trouvé dans cette vue.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredContacts.map((contact: any) => (
+                    <tr key={contact.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="p-4">
+                        <div className="font-semibold text-white">
+                          {contact.name || "Sans nom"}
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-gray-400">
+                        {contact.company ? (
+                          <div className="flex items-center gap-1.5">
+                            <Building className="w-3.5 h-3.5" /> {contact.company}
+                          </div>
+                        ) : "-"}
+                      </td>
+                      <td className="p-4 text-sm font-medium text-gray-300">
+                        <div className="flex items-center gap-1.5">
+                           <Phone className="w-3.5 h-3.5 text-gray-500" /> {contact.phone}
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-gray-400 hidden lg:table-cell">
+                        {contact.email ? (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5" /> {contact.email}
+                          </div>
+                        ) : "-"}
+                      </td>
+                      <td className="p-4 text-right">
+                        <button 
+                          onClick={() => openModal(contact)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+                        >
+                          Modifier
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Contact Form Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between shrink-0">
+                <h2 className="text-xl font-bold text-white">
+                   {selectedContact ? "Modifier Contact" : "Nouveau Contact"}
+                </h2>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
                 </button>
-                <button 
-                   type="submit"
-                   form="contact-form"
-                   disabled={isSaving || isDeleting} 
-                   className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90 transition-opacity min-w-[100px] flex justify-center items-center"
-                >
-                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer"}
-                </button>
+              </div>
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-300">Nom complet</label>
+                    <input 
+                      type="text" 
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      placeholder="Ex: Jean Dupont"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-300">Numéro de téléphone *</label>
+                    <input 
+                      type="tel" 
+                      required
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      placeholder="Ex: +33612345678"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-300">Entreprise</label>
+                    <input 
+                      type="text" 
+                      value={formData.company}
+                      onChange={(e) => setFormData({...formData, company: e.target.value})}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      placeholder="Ex: Acme Corp"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-300">Email</label>
+                    <input 
+                      type="email" 
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                      placeholder="Ex: jean@acme.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-1 text-gray-300">Notes</label>
+                    <textarea 
+                      value={formData.notes}
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 min-h-[100px] resize-none"
+                      placeholder="Notes internes concernant ce contact..."
+                    />
+                  </div>
+                </form>
+              </div>
+              <div className="p-6 border-t border-white/10 flex justify-between items-center shrink-0">
+                {selectedContact ? (
+                   <button 
+                     type="button"
+                     onClick={handleDelete}
+                     disabled={isDeleting || isSaving}
+                     className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border border-rose-500/30 text-rose-500 hover:bg-rose-500/10 transition-colors"
+                   >
+                      {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                      Supprimer
+                   </button>
+                ) : <div></div>}
+  
+                <div className="flex gap-3">
+                  <button 
+                     type="button"
+                     onClick={() => setIsModalOpen(false)} 
+                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 text-white hover:bg-white/5 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                     type="submit"
+                     form="contact-form"
+                     disabled={isSaving || isDeleting} 
+                     className="px-4 py-2 rounded-xl text-sm font-semibold bg-gradient-to-r from-cyan-500 to-violet-500 text-white hover:opacity-90 transition-opacity min-w-[100px] flex justify-center items-center"
+                  >
+                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Group Creation Modal */}
+        {isGroupModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-[#1a1a2e] border border-white/10 w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-white">Nouveau Groupe</h2>
+                <button onClick={() => setIsGroupModalOpen(false)} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleCreateGroup}>
+                <div className="p-6">
+                  <label className="block text-sm font-semibold mb-2 text-gray-300">Nom du groupe</label>
+                  <input 
+                    type="text" 
+                    required
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Ex: VIP, Prospects..."
+                  />
+                </div>
+                <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-white/5">
+                  <button 
+                     type="button"
+                     onClick={() => setIsGroupModalOpen(false)} 
+                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-white/10 text-white hover:bg-white/5 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button 
+                     type="submit"
+                     disabled={isSavingGroup || !newGroupName.trim()} 
+                     className="px-4 py-2 rounded-xl text-sm font-semibold bg-cyan-500 text-white hover:bg-cyan-600 transition-colors flex items-center justify-center min-w-[100px]"
+                  >
+                    {isSavingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
