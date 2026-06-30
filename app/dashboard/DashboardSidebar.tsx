@@ -20,6 +20,7 @@ import {
   Settings, 
   CreditCard,
   LogOut,
+  Shield,
   PanelLeftClose,
   PanelLeftOpen,
   ChevronDown,
@@ -79,6 +80,7 @@ export function DashboardSidebar({
         { name: "Équipe", href: "/dashboard/team", icon: UsersRound },
         { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
         { name: "Facturation & Wallet", href: "/dashboard/billing", icon: CreditCard },
+        { name: "Administration", href: "/dashboard/admin", icon: Shield },
       ]
     }
   ];

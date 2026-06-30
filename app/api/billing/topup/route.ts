@@ -1,33 +1,32 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+import { creditWallet } from "@/lib/billing";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const org = await prisma.organization.findFirst();
-    if (!org) return NextResponse.json({ error: "No org" }, { status: 404 });
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const { amount } = await request.json();
-    if (!amount || isNaN(amount) || amount <= 0) {
+    const body = await req.json();
+    const { amount } = body;
+
+    if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    // Simulate Top-up
-    const updatedOrg = await prisma.organization.update({
-      where: { id: org.id },
-      data: {
-        walletBalance: { increment: amount },
-        walletTransactions: {
-          create: {
-            amount: amount,
-            type: "TOP_UP",
-            description: `Recharge par carte bancaire (${amount}€)`
-          }
-        }
-      }
-    });
+    // SIMULATION : Au lieu de créer une session Stripe Checkout,
+    // on crédite directement le wallet pour le test.
+    await creditWallet(
+      session.user.organizationId,
+      amount,
+      `Rechargement simulé via Tableau de bord (+${amount}$)`
+    );
 
-    return NextResponse.json({ success: true, newBalance: updatedOrg.walletBalance });
-  } catch (error) {
+    return NextResponse.json({ success: true, message: "Wallet recharged successfully" });
+  } catch (error: any) {
+    console.error("[/api/billing/topup POST] Error:", error);
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }
