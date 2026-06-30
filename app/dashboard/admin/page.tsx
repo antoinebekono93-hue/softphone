@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import AdminSettingsClient from "./AdminSettingsClient";
 
 export default async function AdminDashboardPage() {
   const session = await auth();
@@ -32,6 +33,8 @@ export default async function AdminDashboardPage() {
         <h1 className="text-3xl font-bold text-[var(--text-primary)]">Administration Système</h1>
         <p className="text-[var(--text-secondary)] mt-2">Vue d'ensemble des portefeuilles et transactions de toutes les organisations.</p>
       </div>
+
+      <AdminSettingsClient />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Organizations List */}

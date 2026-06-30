@@ -503,3 +503,18 @@ model InternalNote {
   @@index([opportunityId])
   @@index([contactId])
 }
+
+// ============================================
+// Global System Settings (Singleton)
+// ============================================
+model SystemSettings {
+  id                   String   @id @default("default")
+  smsRate              Float    @default(0.05)
+  callRatePerMinute    Float    @default(0.02)
+  aiAgentRatePerMinute Float    @default(0.15)
+  whatsappRate         Float    @default(0.02)
+  phoneNumberRate      Float    @default(1.00)
+  eSimRate             Float    @default(5.00)
+
+  updatedAt            DateTime @updatedAt
+}
