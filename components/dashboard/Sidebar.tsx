@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import EmbeddedSignupButton from "../whatsapp/EmbeddedSignupButton";
 
 interface SidebarProps {
@@ -9,10 +10,13 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ onNavigate, currentView }: SidebarProps) {
+  const [notification, setNotification] = useState<string | null>(null);
+
   const handleToken = async (token: string) => {
     // This token will be sent to the backend route we will create soon
     console.log("Token reçu en frontend, prêt à être envoyé au backend Telnyx:", token);
-    alert("Jeton d'authentification récupéré avec succès ! Le backend va s'en charger.");
+    setNotification("Jeton d'authentification récupéré avec succès !");
+    setTimeout(() => setNotification(null), 3000);
   };
 
   // Replace these with environment variables once you create your Meta App
@@ -91,6 +95,12 @@ export default function Sidebar({ onNavigate, currentView }: SidebarProps) {
           </button>
         </nav>
       </div>
+
+      {notification && (
+        <div className="mx-4 mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-xl text-xs font-bold text-center">
+          {notification}
+        </div>
+      )}
 
       <div className="mt-auto p-6 border-t border-white/5 bg-white/[0.02]">
         <div className="mb-2">

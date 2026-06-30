@@ -14,6 +14,7 @@ export default function CampaignBuilder({ onCancel }: CampaignBuilderProps) {
   const [audience, setAudience] = useState("all");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
 
   const handleMagicAi = () => {
     setIsAiLoading(true);
@@ -181,6 +182,12 @@ export default function CampaignBuilder({ onCancel }: CampaignBuilderProps) {
               <div></div>
             )}
             
+            {notification && (
+              <div className={`p-3 rounded-lg text-sm font-medium ${notification.type === 'success' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
+                {notification.message}
+              </div>
+            )}
+
             {step < 3 ? (
               <button 
                 onClick={() => setStep(s => s + 1)}
@@ -200,14 +207,16 @@ export default function CampaignBuilder({ onCancel }: CampaignBuilderProps) {
                       body: JSON.stringify({ name, content: message, audience })
                     });
                     if (res.ok) {
-                      alert("Campagne lancée avec succès !");
-                      onCancel();
-                      window.location.reload();
+                      setNotification({ type: 'success', message: 'Campagne lancée avec succès !' });
+                      setTimeout(() => {
+                        onCancel();
+                        window.location.reload();
+                      }, 1500);
                     } else {
-                      alert("Erreur lors du lancement.");
+                      setNotification({ type: 'error', message: 'Erreur lors du lancement.' });
                     }
                   } catch (e) {
-                    alert("Erreur lors du lancement.");
+                    setNotification({ type: 'error', message: 'Erreur lors du lancement.' });
                   } finally {
                     setIsSending(false);
                   }

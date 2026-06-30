@@ -26,7 +26,6 @@ export default function CallsPage() {
   const [calls, setCalls] = useState<CallLog[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [generatingMock, setGeneratingMock] = useState(false);
   const [selectedCall, setSelectedCall] = useState<CallLog | null>(null);
 
   const fetchData = async () => {
@@ -53,17 +52,6 @@ export default function CallsPage() {
     fetchData();
   }, []);
 
-  const handleGenerateMock = async () => {
-    setGeneratingMock(true);
-    try {
-      await fetch('/api/calls/mock', { method: 'POST' });
-      await fetchData();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setGeneratingMock(false);
-    }
-  };
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -81,14 +69,6 @@ export default function CallsPage() {
             </h1>
             <p className="text-[var(--text-secondary)] text-sm md:text-base">Analysez vos appels, consultez les transcriptions et suivez votre capacité réseau.</p>
           </div>
-          <button 
-            onClick={handleGenerateMock}
-            disabled={generatingMock}
-            className="w-full md:w-auto btn-primary-gradient flex items-center justify-center gap-2"
-          >
-            {generatingMock ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
-            Générer appels tests
-          </button>
         </div>
 
         {stats && (
@@ -139,7 +119,7 @@ export default function CallsPage() {
           {loading ? (
             <div className="p-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-[var(--text-secondary)]" /></div>
           ) : calls.length === 0 ? (
-            <div className="p-8 text-center text-[var(--text-secondary)] text-sm">Aucun appel trouvé. Générez des données mock.</div>
+            <div className="p-8 text-center text-[var(--text-secondary)] text-sm">Aucun appel trouvé.</div>
           ) : (
             <div className="divide-y divide-[var(--border-subtle)]">
               {calls.map(call => (

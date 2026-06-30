@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 import { Users, Phone, Plus, MoreHorizontal, Search } from "lucide-react";
 
 export const metadata = {
@@ -8,13 +9,14 @@ export const metadata = {
 export default async function TeamPage() {
   const session = await auth();
 
-  // Mock Team Members
-  const team = [
-    { id: 1, name: "Alice Smith", email: "alice@antigravity.com", role: "Admin", status: "Active", joined: "Jan 12, 2026" },
-    { id: 2, name: "Bob Jones", email: "bob@antigravity.com", role: "Manager", status: "Active", joined: "Feb 05, 2026" },
-    { id: 3, name: "Charlie Brown", email: "charlie@antigravity.com", role: "Agent", status: "Invited", joined: "-" },
-    { id: 4, name: "Diana Prince", email: "diana@antigravity.com", role: "Agent", status: "Active", joined: "Mar 10, 2026" },
-  ];
+  if (!session?.user?.organizationId) {
+    return <div>Unauthorized</div>;
+  }
+
+  const team = await prisma.user.findMany({
+    where: { organizationId: session.user.organizationId },
+    orderBy: { createdAt: 'asc' }
+  });
 
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
@@ -62,26 +64,24 @@ export default async function TeamPage() {
                     <td className="p-4 pl-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 flex items-center justify-center font-bold text-sm">
-                          {user.name.split(' ').map(n => n[0]).join('')}
+                          {(user.name || "Unknown").split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium text-[var(--text-primary)]">{user.name}</div>
+                          <div className="font-medium text-[var(--text-primary)]">{user.name || "User"}</div>
                           <div className="text-xs text-[var(--text-secondary)]">{user.email}</div>
                         </div>
                       </div>
                     </td>
                     <td className="p-4">
-                      <select className="bg-transparent border border-transparent hover:border-[var(--border-subtle)] rounded px-2 py-1 text-sm text-[var(--text-primary)] outline-none cursor-pointer focus:border-cyan-500">
-                        <option>{user.role}</option>
-                        <option>Admin</option>
-                        <option>Manager</option>
-                        <option>Agent</option>
+                      <select defaultValue={user.role} className="bg-transparent border border-transparent hover:border-[var(--border-subtle)] rounded px-2 py-1 text-sm text-[var(--text-primary)] outline-none cursor-pointer focus:border-cyan-500">
+                        <option value="ADMIN">Admin</option>
+                        <option value="USER">Agent</option>
                       </select>
                     </td>
                     <td className="p-4">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold ${user.status === 'Active' ? 'badge-glass-green' : 'badge-glass-gray'}`}>
-                         <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${user.status === 'Active' ? 'bg-emerald-500' : 'bg-gray-400'}`}></div>
-                        {user.status}
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold badge-glass-green">
+                         <div className="w-1.5 h-1.5 rounded-full mr-1.5 bg-emerald-500"></div>
+                        Active
                       </span>
                     </td>
                     <td className="p-4 pr-6 text-right">

@@ -16,6 +16,7 @@ import {
   ShieldCheck, 
   GitMerge, 
   UsersRound, 
+  BookUser,
   Settings, 
   CreditCard,
   LogOut,
@@ -57,6 +58,7 @@ export function DashboardSidebar({
         { name: "Softphone", href: "/dashboard/softphone", icon: Phone },
         { name: "Analyse & Rapports", href: "/dashboard/analytics", icon: BarChart2 },
         { name: "CRM (Pipeline)", href: "/dashboard/crm", icon: Users },
+        { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
       ]
     },
     {
