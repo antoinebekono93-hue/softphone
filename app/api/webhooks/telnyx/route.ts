@@ -123,6 +123,22 @@ export async function POST(req: Request) {
         }
       });
 
+      // --- PHASE 2: LEAD SCORING & SENTIMENT ---
+      if (duration > 0 && callLog?.contactId) {
+        // Mocking AI analysis
+        const mockLeadScore = Math.floor(Math.random() * 41) + 50; // Score between 50 and 90
+        const mockSentiment = mockLeadScore > 75 ? 'POSITIVE' : (mockLeadScore < 60 ? 'NEGATIVE' : 'NEUTRAL');
+        
+        await prisma.contact.update({
+          where: { id: callLog.contactId },
+          data: {
+            leadScore: mockLeadScore,
+            sentiment: mockSentiment
+          }
+        });
+        console.log(`[AI] Updated Contact ${callLog.contactId} - Score: ${mockLeadScore}, Sentiment: ${mockSentiment}`);
+      }
+
       // --- AUTOMATION BRIDGE : NO_ANSWER_AI ---
       if (finalStatus === 'NO_ANSWER' && callLog?.contactId && callLog?.phoneNumberId) {
         const phoneNumber = await prisma.phoneNumber.findUnique({

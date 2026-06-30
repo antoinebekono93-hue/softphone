@@ -304,6 +304,8 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Entreprise</th>
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Téléphone</th>
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] hidden lg:table-cell">Email</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Score IA</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Sentiment</th>
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] text-right">Actions</th>
                 </tr>
               </thead>
@@ -339,6 +341,20 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                           <div className="flex items-center gap-1.5">
                             <Mail className="w-3.5 h-3.5" /> {contact.email}
                           </div>
+                        ) : "-"}
+                      </td>
+                      <td className="p-4">
+                        {contact.leadScore !== null ? (
+                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${contact.leadScore >= 70 ? 'bg-rose-500/10 text-rose-500' : contact.leadScore >= 40 ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                            {contact.leadScore >= 70 ? '🔥 Chaud' : contact.leadScore >= 40 ? '⭐ Tiède' : '❄️ Froid'} ({contact.leadScore})
+                          </span>
+                        ) : "-"}
+                      </td>
+                      <td className="p-4">
+                        {contact.sentiment ? (
+                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${contact.sentiment === 'POSITIVE' ? 'bg-emerald-500/10 text-emerald-500' : contact.sentiment === 'NEGATIVE' ? 'bg-red-500/10 text-red-500' : 'bg-gray-500/10 text-gray-400'}`}>
+                            {contact.sentiment === 'POSITIVE' ? 'Positif 😊' : contact.sentiment === 'NEGATIVE' ? 'Négatif 😠' : 'Neutre 😐'}
+                          </span>
                         ) : "-"}
                       </td>
                       <td className="p-4 text-right">
