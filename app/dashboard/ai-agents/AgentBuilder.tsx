@@ -26,6 +26,7 @@ export function AgentBuilder({
       id: agent?.id,
       name: formData.get("name") as string,
       prompt: formData.get("prompt") as string,
+      greeting: formData.get("greeting") as string,
       voice: formData.get("voice") as string,
       language: formData.get("language") as string,
       phoneNumberId: formData.get("phoneNumberId") as string || null,
@@ -71,6 +72,12 @@ export function AgentBuilder({
             </div>
 
             <div className="space-y-2">
+              <label className="text-sm font-medium text-[var(--text-secondary)]">Greeting Message</label>
+              <p className="text-xs text-[var(--text-secondary)] mb-2">The first sentence the AI will say when answering. You can use dynamic variables like <code>{`{{first_name}}`}</code>.</p>
+              <input required name="greeting" defaultValue={agent?.greeting || "Hello! How can I help you today?"} type="text" placeholder="e.g. Hello {{first_name}}, how can I help?" className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors text-white" />
+            </div>
+
+            <div className="space-y-2">
               <label className="text-sm font-medium text-[var(--text-secondary)]">System Prompt</label>
               <p className="text-xs text-[var(--text-secondary)] mb-2">Instructions for how the AI should behave, what it should say, and its persona.</p>
               <textarea required name="prompt" defaultValue={agent?.prompt || "You are a helpful virtual assistant. Answer queries concisely and politely."} rows={8} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors text-white font-mono resize-y" />
@@ -79,13 +86,16 @@ export function AgentBuilder({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-[var(--text-secondary)]">Voice</label>
-                <select name="voice" defaultValue={agent?.voice || "alloy"} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors text-white">
-                  <option value="alloy">Alloy (Neutral)</option>
-                  <option value="echo">Echo (Male)</option>
-                  <option value="fable">Fable (British)</option>
-                  <option value="onyx">Onyx (Deep Male)</option>
-                  <option value="nova">Nova (Female)</option>
-                  <option value="shimmer">Shimmer (Female)</option>
+                <select name="voice" defaultValue={agent?.voice || "Telnyx.aura"} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors text-white">
+                  <optgroup label="Telnyx Native">
+                    <option value="Telnyx.aura">Aura (Female, Natural)</option>
+                    <option value="Telnyx.fin">Fin (Male, Natural)</option>
+                  </optgroup>
+                  <optgroup label="OpenAI">
+                    <option value="alloy">Alloy (Neutral)</option>
+                    <option value="echo">Echo (Male)</option>
+                    <option value="nova">Nova (Female)</option>
+                  </optgroup>
                 </select>
               </div>
               <div className="space-y-2">
@@ -100,7 +110,7 @@ export function AgentBuilder({
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-[var(--text-secondary)]">Assign to Phone Number</label>
-              <p className="text-xs text-[var(--text-secondary)] mb-2">Incoming calls to this number will be automatically answered by this AI Agent.</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-2">Incoming calls to this number will be automatically answered by this AI Agent directly on Telnyx's servers.</p>
               <select name="phoneNumberId" defaultValue={agent?.phoneNumberId || ""} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors text-white">
                 <option value="">Unassigned (No number)</option>
                 {numbers.map((num) => (

@@ -13,6 +13,9 @@ type SimCard = {
   dataLimitMB: number | null;
   alertEnabled: boolean;
   lpaCode: string | null;
+  publicIpEnabled?: boolean;
+  voiceEnabled?: boolean;
+  voicePhoneNumber?: string | null;
 };
 
 export default function IotDashboardPage() {
@@ -146,7 +149,7 @@ export default function IotDashboardPage() {
         <div className="glass-panel p-6 flex items-start justify-between">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">SIM Actives</div>
-            <div className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">{sims.filter(s => s.status === 'ACTIVE').length}</div>
+            <div className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">{sims.filter(s => s.status === 'enabled').length}</div>
           </div>
           <div className="p-3 bg-[var(--bg-surface-hover)] rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] shadow-sm">
             <Wifi className="w-6 h-6" />
@@ -176,8 +179,28 @@ export default function IotDashboardPage() {
         </div>
       </div>
 
-      <div className="glass-panel flex flex-col overflow-hidden shadow-sm">
-        {selectedIds.length > 0 ? (
+      <div className="flex border-b border-[var(--border-subtle)] mb-6">
+        <button
+          onClick={() => setActiveTab("fleet")}
+          className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === "fleet" ? "border-cyan-500 text-cyan-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+        >
+          Flotte Connectée
+        </button>
+        <button
+          onClick={() => setActiveTab("network")}
+          className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
+            activeTab === "network" ? "border-cyan-500 text-cyan-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          }`}
+        >
+          Réseau & Sécurité
+        </button>
+      </div>
+
+      {activeTab === "fleet" && (
+        <div className="glass-panel flex flex-col overflow-hidden shadow-sm">
+          {selectedIds.length > 0 ? (
           <div className="bg-cyan-500/10 border-b border-cyan-500/20 p-4 flex items-center justify-between">
             <div className="text-cyan-500 font-semibold text-sm flex items-center gap-2">
               <CheckSquare className="w-4 h-4" /> {selectedIds.length} carte(s) sélectionnée(s)
@@ -203,6 +226,7 @@ export default function IotDashboardPage() {
                 <th className="px-6 py-4 font-medium">Appareil / ICCID</th>
                 <th className="px-6 py-4 font-medium">Statut</th>
                 <th className="px-6 py-4 font-medium">Consommation & Limite</th>
+                <th className="px-6 py-4 font-medium">VoLTE (Téléphonie)</th>
                 <th className="px-6 py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
@@ -233,9 +257,9 @@ export default function IotDashboardPage() {
                       <div className="text-[var(--text-secondary)] text-xs mt-1 font-mono">{item.iccid}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center w-fit gap-1.5 ${item.status === 'ACTIVE' ? 'badge-glass-green' : 'badge-glass-gray'}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-gray-400'}`}></div>
-                        {item.status === 'ACTIVE' ? 'Connecté' : 'Suspendu'}
+                      <span className={`px-2.5 py-1 text-xs font-bold rounded-md flex items-center w-fit gap-1.5 ${item.status === 'enabled' ? 'badge-glass-green' : 'badge-glass-gray'}`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'enabled' ? 'bg-emerald-500' : 'bg-gray-400'}`}></div>
+                        {item.status === 'enabled' ? 'Connecté' : item.status === 'registered' ? 'Enregistré' : 'Suspendu'}
                       </span>
                     </td>
                     <td className="px-6 py-4 min-w-[200px]">
@@ -254,8 +278,45 @@ export default function IotDashboardPage() {
                       )}
                       {item.alertEnabled && <div className="text-[10px] text-amber-500 font-semibold flex items-center gap-1 mt-1"><ShieldAlert className="w-3 h-3"/> Alertes activées</div>}
                     </td>
+                    <td className="px-6 py-4">
+                      {item.voiceEnabled ? (
+                        <div>
+                          <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Voix Active</span>
+                          <div className="text-[var(--text-secondary)] text-xs mt-1 font-mono">{item.voicePhoneNumber}</div>
+                        </div>
+                      ) : (
+                        <span className="text-[var(--text-secondary)] text-xs italic">Désactivée</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-right flex justify-end gap-3 items-center">
                       <button onClick={() => openLimitModal(item)} className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-surface-hover)] transition-colors" title="Configurer Limites"><Settings2 className="w-4 h-4" /></button>
+                      
+                      {!item.voiceEnabled ? (
+                         <button 
+                         onClick={async () => {
+                           if (confirm("Activer la ligne vocale sur cette SIM ? (Coût : 1$/mois)")) {
+                             await fetch(`/api/iot/sims/${item.id}/voice`, { method: "POST" });
+                             fetchSims();
+                           }
+                         }}
+                         className="px-3 py-1.5 bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 rounded-md font-medium text-xs transition-colors"
+                       >
+                         Activer Voix (1$)
+                       </button>
+                      ) : (
+                        <button 
+                        onClick={async () => {
+                          if (confirm("Désactiver la ligne vocale ?")) {
+                            await fetch(`/api/iot/sims/${item.id}/voice`, { method: "DELETE" });
+                            fetchSims();
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-md font-medium text-xs transition-colors"
+                      >
+                        Désactiver Voix
+                      </button>
+                      )}
+
                       {item.type === 'ESIM' && item.lpaCode && (
                         <button onClick={() => setSelectedLpa(item.lpaCode)} className="text-violet-500 hover:text-violet-400 font-medium text-sm flex items-center gap-1 bg-violet-500/10 px-3 py-1.5 rounded-md transition-colors">
                           <QrCode className="w-4 h-4" /> QR
@@ -269,6 +330,113 @@ export default function IotDashboardPage() {
           </table>
         </div>
       </div>
+      )}
+
+      {activeTab === "network" && (
+        <div className="space-y-6">
+          <div className="glass-panel p-6">
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Adresses IP Publiques</h2>
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
+              Attribuez une IP publique statique à vos cartes SIM pour y accéder depuis l'extérieur (SSH, Serveurs Web).
+              <br />
+              <span className="text-rose-400 font-medium mt-1 inline-block">Coût : 3,00 $ / mois par carte SIM. Déduit de votre Wallet.</span>
+            </p>
+            
+            <div className="overflow-x-auto border border-[var(--border-subtle)] rounded-xl">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-[var(--bg-surface-solid)]/30 border-b border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">Carte SIM</th>
+                    <th className="px-6 py-4 font-medium">Statut IP Publique</th>
+                    <th className="px-6 py-4 font-medium text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border-subtle)]">
+                  {sims.map((item) => (
+                    <tr key={item.id} className="hover:bg-[var(--bg-surface-hover)] transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-[var(--text-primary)]">{item.name}</div>
+                        <div className="text-[var(--text-secondary)] text-xs mt-1 font-mono">{item.iccid}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {item.publicIpEnabled ? (
+                          <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Active</span>
+                        ) : (
+                          <span className="px-2.5 py-1 text-xs font-bold rounded-md bg-gray-500/10 text-gray-400 border border-gray-500/20">Désactivée</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {!item.publicIpEnabled ? (
+                          <button 
+                            onClick={async () => {
+                              if (confirm("Attribuer une IP publique ? Cela coûtera 3$/mois.")) {
+                                await fetch(`/api/iot/sims/${item.id}/public-ip`, { method: "POST" });
+                                fetchSims();
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20 rounded-md font-medium text-xs transition-colors"
+                          >
+                            Activer IP Publique (3$/mo)
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={async () => {
+                              await fetch(`/api/iot/sims/${item.id}/public-ip`, { method: "DELETE" });
+                              fetchSims();
+                            }}
+                            className="px-3 py-1.5 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 rounded-md font-medium text-xs transition-colors"
+                          >
+                            Retirer IP Publique
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="glass-panel p-6">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Politiques de Trafic</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">
+                Créez des listes blanches/noires pour restreindre les domaines ou les IP auxquels vos appareils peuvent accéder.
+              </p>
+              
+              <button 
+                onClick={async () => {
+                  const domain = prompt("Entrez le domaine à mettre en liste blanche (ex: api.entreprise.com):");
+                  if (domain) {
+                    await fetch('/api/iot/policies', { method: 'POST', body: JSON.stringify({ domain }) });
+                    alert("Politique créée chez Telnyx !");
+                  }
+                }}
+                className="w-full py-2.5 bg-[var(--bg-surface-solid)] border border-cyan-500/30 text-cyan-500 rounded-lg text-sm font-semibold hover:bg-cyan-500/10 transition-colors"
+              >
+                + Nouvelle Politique de Liste Blanche
+              </button>
+            </div>
+
+            <div className="glass-panel p-6 border-violet-500/30">
+              <h2 className="text-xl font-bold text-violet-400 mb-2">Passerelles Privées (PWG)</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-6">
+                Acheminez tout le trafic de vos SIMs vers votre réseau d'entreprise via un VPN Cloud (VRF/MPLS).
+              </p>
+              
+              <button 
+                onClick={async () => {
+                  await fetch('/api/iot/pwg-ticket', { method: 'POST' });
+                  alert("Une demande a été envoyée au support Telnyx. Ils vous contacteront pour configurer le VPN Cloud et le routage.");
+                }}
+                className="w-full py-2.5 bg-violet-500/10 border border-violet-500/30 text-violet-400 rounded-lg text-sm font-semibold hover:bg-violet-500/20 transition-colors"
+              >
+                Demander une configuration PWG
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Limit Modal */}
       {limitModalSim && (

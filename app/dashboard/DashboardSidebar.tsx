@@ -28,7 +28,12 @@ import {
   Menu,
   X,
   Sun,
-  Moon
+  Moon,
+  Mic2,
+  Sparkles,
+  Server,
+  Brain,
+  Terminal
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 
@@ -68,6 +73,11 @@ export function DashboardSidebar({
       title: "Centre d'applications",
       items: [
         { name: "Agents Vocaux IA", href: "/dashboard/ai-agents", icon: Bot },
+        { name: "Mémoire & RAG", href: "/dashboard/rag-memory", icon: Brain },
+        { name: "Playground IA", href: "/dashboard/ai-playground", icon: Terminal },
+        { name: "LiveKit (Bêta)", href: "/dashboard/livekit", icon: Server },
+        { name: "Laboratoire Vocal", href: "/dashboard/voice-lab", icon: Sparkles },
+        { name: "Studio Vocal (TTS)", href: "/dashboard/tts", icon: Mic2 },
         { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
         { name: "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
         { name: "Numéros de téléphone", href: "/dashboard/numbers", icon: Hash },

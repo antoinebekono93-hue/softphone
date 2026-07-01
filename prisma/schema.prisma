@@ -139,6 +139,10 @@ model Organization {
   internalNotes       InternalNote[]
   contactGroups       ContactGroup[]
   sequences           Sequence[]
+  numberOrders        NumberOrder[]
+  verifyProfiles      VerifyProfile[]
+  verificationLogs    VerificationLog[]
+  rcsSettings         RcsSettings?
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -226,10 +230,16 @@ model CallLog {
   toNumber   String
   duration   Int           @default(0) // in seconds
   
+  // Quality and Diagnostics
+  hangupCause          String?
+  sipHangupCause       String?
+  mosScore             Float?
+
   // AI Intelligence
   recordingUrl         String?
   transcriptionText    String?
   aiSummary            String?
+  amdResult            String? // Answering Machine Detection result
 
   organizationId String
   userId         String?
@@ -262,6 +272,8 @@ model SmsMessage {
   type             String        @default("SMS")
   cost             Float         @default(0.0)
   country          String?
+  mediaUrls        String[]      @default([])
+  agentMessage     String?       // For RCS Rich Cards/Carousels
   
   fromNumber String
   toNumber   String
@@ -335,9 +347,11 @@ model VoiceAIAgent {
   id             String   @id @default(cuid())
   name           String
   prompt         String
+  greeting       String?
   voice          String   @default("alloy")
   language       String   @default("fr-FR")
   isActive       Boolean  @default(true)
+  telnyxId       String?  @unique
   
   organizationId String
   phoneNumberId  String?  @unique
@@ -361,6 +375,11 @@ model SimCard {
   dataUsedMB     Float     @default(0.0)
   dataLimitMB    Float?
   alertEnabled   Boolean   @default(false)
+  publicIpEnabled Boolean  @default(false)
+  voiceEnabled   Boolean   @default(false)
+  voicePhoneNumber String?
+  voiceForwarding  String?
+  voiceScreening   String?
   lpaCode        String?
   
   organizationId String
@@ -572,4 +591,68 @@ model SequenceEnrollment {
   @@unique([sequenceId, contactId])
   @@index([sequenceId])
   @@index([contactId])
+}
+
+model NumberOrder {
+  id               String   @id @default(cuid())
+  telnyxOrderId    String   @unique
+  type             String   // "STANDARD", "BULK", "ADVANCED"
+  status           String   @default("pending") // pending, processing, success, partial_success, failed, exception
+  phoneNumbers     String?  // JSON string of requested numbers or criteria
+  
+  organizationId   String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model VerifyProfile {
+  id               String   @id // Using Telnyx ID
+  name             String
+  language         String   @default("en-US")
+  settings         String?  // JSON string containing sms, call, dtmf_confirm configurations
+  
+  organizationId   String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  logs         VerificationLog[]
+
+  @@index([organizationId])
+}
+
+model VerificationLog {
+  id               String   @id // Using Telnyx ID
+  phoneNumber      String
+  status           String   @default("pending") // pending, accepted, rejected, expired, max_attempts_exceeded, invalid, error
+  type             String   // sms, call, flashcall, dtmf_confirm
+  
+  verifyProfileId  String
+  organizationId   String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  verifyProfile    VerifyProfile @relation(fields: [verifyProfileId], references: [id], onDelete: Cascade)
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([verifyProfileId])
+  @@index([phoneNumber])
+}
+
+model RcsSettings {
+  id                 String   @id @default(cuid())
+  organizationId     String   @unique
+  agentId            String?  // Telnyx RCS Agent ID
+  messagingProfileId String?  // Telnyx Messaging Profile ID assigned to RCS
+  aiAssistantId      String?  // Telnyx AI Assistant ID to automate replies
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }

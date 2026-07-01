@@ -1,41 +1,126 @@
 import { NextResponse } from "next/server";
 import { telnyx } from "@/lib/telnyx";
 import { prisma } from "@/lib/prisma";
-
-// Keep track of gathering states temporarily in memory (For production, use Redis or a DB table)
+import crypto from 'crypto';
 
 async function processEvent(event: any) {
   try {
-    console.log("Telnyx Webhook Event received:", event?.data?.event_type);
+    const eventType = event?.data?.event_type;
+    const payload = event?.data?.payload;
+    if (!eventType || !payload) return;
+    
+    console.log(`[Voice Webhook] ${eventType} - CallControlId: ${payload.call_control_id}`);
+    
+    // Parse client_state if exists
+    let clientState: any = {};
+    if (payload.client_state) {
+        try {
+            clientState = JSON.parse(Buffer.from(payload.client_state, 'base64').toString('utf-8'));
+        } catch (e) {}
+    }
 
-    // Make sure it's a Call Control event
-    if (event?.data?.event_type === "call.initiated") {
-      const callControlId = event.data.payload.call_control_id;
-      const direction = event.data.payload.direction;
+    const call = new telnyx.Call({ call_control_id: payload.call_control_id });
+    const defaultOrg = await prisma.organization.findFirst();
+    const orgId = defaultOrg?.id;
 
-      if (direction === "incoming") {
-        // Answering the incoming call to play audio or bridge
-        const call = new telnyx.Call({ call_control_id: callControlId });
-        await call.answer();
-        
-        // In a real app, you would look up the WebRTC SIP URI of the specific user
-        // For now, we bridge/dial the default SIP connection assigned to the organization
-        // The SIP connection ID is where our frontend WebRTC client is registered
-        const sipConnectionId = process.env.TELNYX_SIP_CONNECTION_ID;
-        
-        if (sipConnectionId) {
-            // Dial out to the WebRTC SIP Connection to ring the Softphone
-            // We use the SIP connection ID as the destination via the 'connection_id' parameter
-            await telnyx.calls.create({
-                connection_id: sipConnectionId,
-                to: "sip:softphone@sip.telnyx.com", // This will ring any WebRTC client registered to this connection
-                from: event.data.payload.from,
-            });
-            
-            // NOTE: When the second leg connects (call.answered event), we would bridge them together.
-            // For simplicity in this demo route, we just dial the SIP connection.
+    switch (eventType) {
+      case "call.initiated":
+        if (payload.direction === "incoming") {
+          const isFromWebRTC = payload.from.includes('sip:');
+          
+          // 1. Answer the incoming leg
+          await call.answer({ command_id: crypto.randomUUID() });
+          
+          // 2. Create CallLog entry
+          if (orgId) {
+              await prisma.callLog.create({
+                  data: {
+                      telnyxCallControlId: payload.call_control_id,
+                      direction: isFromWebRTC ? "OUTBOUND" : "INBOUND",
+                      status: "INITIATED",
+                      fromNumber: payload.from,
+                      toNumber: payload.to,
+                      organizationId: orgId,
+                  }
+              });
+          }
+
+          if (isFromWebRTC) {
+              // Outbound Dialer (WebRTC -> PSTN)
+              const defaultConnId = process.env.TELNYX_SIP_CONNECTION_ID;
+              if (defaultConnId) {
+                  await telnyx.calls.create({
+                      command_id: crypto.randomUUID(),
+                      connection_id: defaultConnId,
+                      to: payload.to,
+                      from: process.env.TELNYX_DEFAULT_OUTBOUND_NUMBER || payload.from.replace('sip:', '').split('@')[0],
+                      client_state: Buffer.from(JSON.stringify({ inboundCallControlId: payload.call_control_id })).toString('base64')
+                  });
+              }
+          } else {
+              // Inbound CCaaS (PSTN -> WebRTC)
+              const sipConnectionId = process.env.TELNYX_SIP_CONNECTION_ID;
+              if (sipConnectionId) {
+                  await telnyx.calls.create({
+                      command_id: crypto.randomUUID(),
+                      connection_id: sipConnectionId,
+                      to: "sip:softphone@sip.telnyx.com", 
+                      from: payload.from,
+                      client_state: Buffer.from(JSON.stringify({ inboundCallControlId: payload.call_control_id })).toString('base64')
+                  });
+              }
+          }
         }
-      }
+        break;
+
+      case "call.answered":
+        if (orgId) {
+            await prisma.callLog.updateMany({
+                where: { telnyxCallControlId: payload.call_control_id },
+                data: { status: "IN_PROGRESS", answeredAt: new Date() }
+            });
+        }
+        
+        // Bridge the two legs if we have an inboundCallControlId in client_state
+        if (clientState && clientState.inboundCallControlId) {
+            console.log(`[Voice Webhook] Bridging ${payload.call_control_id} with ${clientState.inboundCallControlId}`);
+            await call.bridge({
+                command_id: crypto.randomUUID(),
+                call_control_id: clientState.inboundCallControlId
+            });
+        }
+        break;
+
+      case "call.bridged":
+        console.log(`[Voice Webhook] Call successfully bridged: ${payload.call_control_id}`);
+        break;
+
+      case "call.hangup":
+        console.log(`[Voice Webhook] Hangup: ${payload.hangup_cause} (SIP: ${payload.sip_hangup_cause})`);
+        if (orgId) {
+            const now = new Date();
+            const callLogs = await prisma.callLog.findMany({ where: { telnyxCallControlId: payload.call_control_id } });
+            if (callLogs.length > 0) {
+                let duration = 0;
+                if (callLogs[0].answeredAt) {
+                    duration = Math.floor((now.getTime() - callLogs[0].answeredAt.getTime()) / 1000);
+                }
+                await prisma.callLog.updateMany({
+                    where: { telnyxCallControlId: payload.call_control_id },
+                    data: {
+                        status: "COMPLETED",
+                        endedAt: now,
+                        duration: duration,
+                        hangupCause: payload.hangup_cause || null,
+                        sipHangupCause: payload.sip_hangup_cause || null,
+                    }
+                });
+            }
+        }
+        break;
+        
+      default:
+        break;
     }
   } catch (error: any) {
     console.error('[Telnyx Webhook Async Error]', error);
@@ -59,7 +144,6 @@ export async function POST(req: Request) {
         return new NextResponse('Invalid signature', { status: 400 });
       }
     } else {
-      // Fallback if public key is not configured (e.g. local dev)
       console.warn('[Telnyx Webhook] No signature verification performed (missing headers or PUBLIC_KEY)');
       event = JSON.parse(rawBody);
     }

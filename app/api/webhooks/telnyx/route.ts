@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { telnyx } from '@/lib/telnyx';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 // We need the media server URL. Ideally, it's wss://our-domain/media
 const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'wss://your-ngrok-domain.ngrok-free.app/media';
@@ -43,7 +44,7 @@ async function processEvent(event: any) {
           // If there is an active AI Agent assigned to this number, take over the call
           if (phoneNumber.voiceAIAgent && phoneNumber.voiceAIAgent.isActive) {
             const call = new telnyx.Call({ call_control_id: callControlId });
-            await call.answer();
+            await call.answer({ command_id: crypto.randomUUID() });
           }
           // If no AI agent, do nothing here. Telnyx will natively ring the SIP connection 
           // associated with this number (WebRTC softphone).
@@ -75,6 +76,7 @@ async function processEvent(event: any) {
 
         // The custom_parameters can be passed to our WS server to identify the call
         await call.streaming_start({
+          command_id: crypto.randomUUID(),
           stream_url: MEDIA_SERVER_URL,
           stream_track: 'both_tracks', // Send both inbound and outbound audio
           client_state: Buffer.from(JSON.stringify(clientState)).toString('base64')
@@ -107,12 +109,22 @@ async function processEvent(event: any) {
 
       const finalStatus = (duration === 0 || !callLog?.answeredAt) ? 'NO_ANSWER' : 'COMPLETED';
 
+      const hangupCause = event.payload?.hangup_cause || null;
+      const sipHangupCause = event.payload?.sip_hangup_cause || null;
+      let mosScore = null;
+      if (event.payload?.call_quality_stats?.inbound?.mos) {
+        mosScore = parseFloat(event.payload.call_quality_stats.inbound.mos);
+      }
+
       await prisma.callLog.update({
         where: { telnyxCallControlId: callControlId },
         data: {
           status: finalStatus,
           endedAt: ended,
           duration,
+          hangupCause,
+          sipHangupCause,
+          mosScore,
           transcriptionText: duration > 0 ? mockTranscription : null,
           aiSummary: duration > 0 ? mockSummary : null
         }
@@ -178,15 +190,94 @@ async function processEvent(event: any) {
       }
     }
 
+    else if (eventType === 'call.recording.saved') {
+      const callControlId = event.payload.call_control_id;
+      const recordingUrls = event.payload.recording_urls;
+      const url = recordingUrls?.wav || recordingUrls?.mp3;
+      if (url) {
+        await prisma.callLog.update({
+          where: { telnyxCallControlId: callControlId },
+          data: { recordingUrl: url }
+        });
+        console.log(`[Telnyx Webhook] Recording saved for ${callControlId}`);
+      }
+    }
+
+    else if (eventType === 'call.transcription') {
+      const callControlId = event.payload.call_control_id;
+      const transcript = event.payload.transcription_data?.transcript;
+      if (transcript) {
+        // Append transcript in case there are multiple chunks
+        const existingCall = await prisma.callLog.findUnique({
+          where: { telnyxCallControlId: callControlId },
+          select: { transcriptionText: true }
+        });
+        const newText = existingCall?.transcriptionText 
+          ? existingCall.transcriptionText + '\n' + transcript 
+          : transcript;
+          
+        await prisma.callLog.update({
+          where: { telnyxCallControlId: callControlId },
+          data: { transcriptionText: newText }
+        });
+        console.log(`[Telnyx Webhook] Transcription appended for ${callControlId}`);
+      }
+    }
+
+    else if (eventType === 'call.machine.premium.detection.ended') {
+      const callControlId = event.payload.call_control_id;
+      const result = event.payload.result;
+      if (result) {
+        await prisma.callLog.update({
+          where: { telnyxCallControlId: callControlId },
+          data: { amdResult: result }
+        });
+        console.log(`[Telnyx Webhook] AMD Result for ${callControlId}: ${result}`);
+      }
+    }
+
+    else if (eventType === 'call.conversation_insights.generated') {
+      const callControlId = event.payload.call_control_id;
+      const summary = event.payload.insights?.summary;
+      if (summary) {
+        await prisma.callLog.update({
+          where: { telnyxCallControlId: callControlId },
+          data: { aiSummary: summary }
+        });
+        console.log(`[Telnyx Webhook] AI Summary saved for ${callControlId}`);
+      }
+    }
+
+    else if (eventType === 'call.conversation.ended') {
+      const callControlId = event.payload.call_control_id;
+      const reason = event.payload.reason;
+      console.log(`[Telnyx Webhook] AI Conversation ended for ${callControlId} (Reason: ${reason})`);
+    }
+
     // Handle incoming SMS/MMS messages
     else if (eventType === 'message.received') {
-      const fromNumber = event.payload.from.phone_number;
+      const fromNumber = typeof event.payload.from === 'string' ? event.payload.from : event.payload.from?.phone_number;
       const toArray = event.payload.to;
-      const toNumber = toArray && toArray.length > 0 ? toArray[0].phone_number : null;
-      const text = event.payload.text;
-      const messageId = event.payload.id;
+      let toNumber = null;
+      if (typeof toArray === 'string') {
+        toNumber = toArray;
+      } else if (Array.isArray(toArray) && toArray.length > 0) {
+        toNumber = typeof toArray[0] === 'string' ? toArray[0] : toArray[0].phone_number;
+      }
 
-      console.log(`[Telnyx Webhook] SMS Received from ${fromNumber} to ${toNumber}`);
+      const text = event.payload.text || event.payload.postback_data || '';
+      const messageId = event.payload.id;
+      const media = event.payload.media || [];
+      const mediaUrls = media.map((m: any) => m.url);
+      
+      let msgType = mediaUrls.length > 0 ? 'MMS' : 'SMS';
+      if (event.payload.type === 'whatsapp') {
+        msgType = 'WHATSAPP';
+      } else if (event.payload.type === 'RCS' || event.payload.type === 'rcs') {
+        msgType = 'RCS';
+      }
+
+      console.log(`[Telnyx Webhook] ${msgType} Received from ${fromNumber} to ${toNumber}`);
 
       if (toNumber) {
         const phoneNumber = await prisma.phoneNumber.findUnique({
@@ -194,20 +285,64 @@ async function processEvent(event: any) {
         });
 
         if (phoneNumber) {
-          await prisma.smsMessage.create({
+          const smsMessage = await prisma.smsMessage.create({
             data: {
               telnyxMessageId: messageId,
               direction: 'INBOUND',
-              body: text,
+              body: text || '',
               fromNumber: fromNumber,
               toNumber: toNumber,
               organizationId: phoneNumber.organizationId,
               phoneNumberId: phoneNumber.id,
-              status: 'DELIVERED'
+              status: 'DELIVERED',
+              type: msgType,
+              mediaUrls: mediaUrls
             }
           });
+
+          // Try to link to contact
+          const contact = await prisma.contact.findFirst({
+            where: {
+              organizationId: phoneNumber.organizationId,
+              phone: fromNumber
+            }
+          });
+
+          if (contact) {
+            await prisma.smsMessage.update({
+              where: { id: smsMessage.id },
+              data: { contactId: contact.id }
+            });
+          }
         }
       }
+    }
+
+    // Handle outbound message updates
+    else if (eventType === 'message.sent') {
+      const messageId = event.payload.id;
+      console.log(`[Telnyx Webhook] Message ${messageId} sent to carrier`);
+      await prisma.smsMessage.updateMany({
+        where: { telnyxMessageId: messageId },
+        data: { status: 'SENT' }
+      });
+    }
+
+    else if (eventType === 'message.finalized') {
+      const messageId = event.payload.id;
+      const toArray = event.payload.to;
+      const status = toArray && toArray.length > 0 ? toArray[0].status : null; // 'delivered' or 'delivery_failed'
+      const cost = event.payload.cost?.amount ? parseFloat(event.payload.cost.amount) : 0;
+      
+      console.log(`[Telnyx Webhook] Message ${messageId} finalized with status: ${status}`);
+      
+      await prisma.smsMessage.updateMany({
+        where: { telnyxMessageId: messageId },
+        data: { 
+          status: status === 'delivered' ? 'DELIVERED' : (status === 'delivery_failed' ? 'FAILED' : 'FINALIZED'),
+          cost: cost
+        }
+      });
     }
   } catch (error: any) {
     console.error('[Telnyx Webhook Async Error]', error);

@@ -6,6 +6,28 @@ import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Clock, Play, FileText
 export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
   const [logs, setLogs] = useState(initialLogs);
   const [selectedLog, setSelectedLog] = useState<any | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const handleTranscribe = async (logId: string) => {
+    try {
+      setIsTranscribing(true);
+      const res = await fetch(`/api/calls/${logId}/transcribe`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        // Update local state
+        setLogs(logs.map(log => log.id === logId ? { ...log, transcriptionText: data.text } : log));
+        if (selectedLog?.id === logId) {
+          setSelectedLog({ ...selectedLog, transcriptionText: data.text });
+        }
+      } else {
+        alert("Transcription failed: " + (data.error || "Unknown error"));
+      }
+    } catch (e) {
+      alert("Error transcribing audio");
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
 
   const formatDuration = (seconds: number) => {
     if (!seconds) return "00:00";
@@ -40,6 +62,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                 <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Number</th>
                 <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Duration</th>
                 <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Status</th>
+                <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Quality</th>
                 <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">AI Insight</th>
               </tr>
             </thead>
@@ -87,6 +110,17 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                         <span className={`px-2.5 py-1 text-[10px] font-bold rounded-md ${isMissed ? 'badge-glass-red' : 'badge-glass-green'}`}>
                            {log.status === 'COMPLETED' ? 'Answered' : log.status.replace('_', ' ')}
                          </span>
+                      </td>
+                      <td className="p-4 text-sm">
+                        {log.mosScore ? (
+                          <div className="flex items-center text-amber-400 text-xs" title={`MOS: ${log.mosScore}`}>
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <span key={i}>{i < Math.round(log.mosScore) ? '★' : '☆'}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[var(--text-secondary)]">-</span>
+                        )}
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
@@ -138,6 +172,35 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                  </div>
               </div>
 
+              {/* Diagnostics Section */}
+              {(selectedLog.hangupCause || selectedLog.mosScore) && (
+                <div className="mb-6">
+                   <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2 mb-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-amber-500 flex items-center justify-center"><span className="text-[10px] text-amber-500 font-bold">i</span></div> Diagnostics
+                   </h3>
+                   <div className="glass-panel p-4 text-sm leading-relaxed text-[var(--text-primary)] grid grid-cols-2 gap-4">
+                      {selectedLog.mosScore && (
+                        <div>
+                          <p className="text-[var(--text-secondary)] text-xs uppercase mb-1">Quality (MOS)</p>
+                          <p className="font-bold">{selectedLog.mosScore.toFixed(1)} / 5.0</p>
+                        </div>
+                      )}
+                      {selectedLog.hangupCause && (
+                        <div>
+                          <p className="text-[var(--text-secondary)] text-xs uppercase mb-1">Hangup Cause</p>
+                          <p className="font-bold capitalize">{selectedLog.hangupCause.replace(/_/g, ' ')}</p>
+                        </div>
+                      )}
+                      {selectedLog.sipHangupCause && (
+                        <div>
+                          <p className="text-[var(--text-secondary)] text-xs uppercase mb-1">SIP Code</p>
+                          <p className="font-bold">{selectedLog.sipHangupCause}</p>
+                        </div>
+                      )}
+                   </div>
+                </div>
+              )}
+
               {/* AI Summary Section */}
               <div className="mb-6">
                  <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2 mb-3">
@@ -160,6 +223,27 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                  <div className="glass-panel p-4 text-sm leading-relaxed text-[var(--text-primary)] max-h-64 overflow-y-auto">
                     {selectedLog.transcriptionText ? (
                       <div className="whitespace-pre-wrap">{selectedLog.transcriptionText}</div>
+                    ) : selectedLog.recordingUrl ? (
+                      <div className="flex flex-col items-start gap-3">
+                        <span className="text-[var(--text-secondary)] italic">Transcription not available yet, but an audio recording is present.</span>
+                        <button
+                          onClick={() => handleTranscribe(selectedLog.id)}
+                          disabled={isTranscribing}
+                          className="btn-primary flex items-center gap-2 py-1.5 px-3 text-xs"
+                        >
+                          {isTranscribing ? (
+                            <>
+                              <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Transcribing...
+                            </>
+                          ) : (
+                            <>
+                              <Bot className="w-3 h-3" />
+                              Transcribe Audio
+                            </>
+                          )}
+                        </button>
+                      </div>
                     ) : (
                       <span className="text-[var(--text-secondary)] italic">Transcription not available for this call.</span>
                     )}

@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { Phone, MessageSquare, Clock, TrendingUp, Sparkles, Activity, DollarSign } from "lucide-react";
 import Link from "next/link";
-
+import UsageReportClient from "./usage-report-client";
+import SessionAnalysisClient from "./session-analysis-client";
 export const metadata = {
   title: "Analytics | Antigravity",
 };
@@ -212,6 +213,15 @@ export default async function AnalyticsPage() {
            </div>
         </div>
 
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 h-[500px]">
+          <UsageReportClient />
+        </div>
+        <div className="lg:col-span-2 h-[500px]">
+          <SessionAnalysisClient />
+        </div>
       </div>
     </div>
   );
