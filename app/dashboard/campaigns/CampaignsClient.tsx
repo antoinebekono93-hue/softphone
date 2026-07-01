@@ -71,7 +71,7 @@ export function CampaignsClient({ campaigns, numbers, contacts }: { campaigns: a
                 >
                   <option value="">Select a number</option>
                   {numbers.map(n => (
-                    <option key={n.id} value={n.id}>{n.number} {n.name ? `(${n.name})` : ''}</option>
+                    <option key={n.id} value={n.id}>{n.number} {n.friendlyName ? `(${n.friendlyName})` : ''}</option>
                   ))}
                 </select>
               </div>

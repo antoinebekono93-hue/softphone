@@ -18,7 +18,7 @@ export async function getOrganizationNumbers() {
   return numbers.map((n) => ({
     id: n.id,
     number: n.number,
-    name: n.name,
+    name: n.friendlyName,
     whatsappEnabled: n.number.endsWith('1'), // Mock: numbers ending in 1 have WhatsApp
     rcsEnabled: n.number.endsWith('2'),      // Mock: numbers ending in 2 have RCS
   }));
