@@ -1,20 +1,28 @@
 @import "tailwindcss";
 
+@theme {
+  --color-violet-400: var(--text-secondary);
+  --color-violet-500: var(--accent-primary);
+  --color-violet-600: var(--accent-primary);
+  --color-cyan-400: var(--text-secondary);
+  --color-cyan-500: var(--accent-primary);
+  --color-cyan-600: var(--accent-primary);
+}
+
 :root {
-  /* Premium Light Theme (Default) */
-  --bg-base: #f7f7f8;
-  --bg-surface: rgba(255, 255, 255, 0.6);
+  /* Vercel-like Monochrome Light Theme */
+  --bg-base: #fafafa;
+  --bg-surface: rgba(255, 255, 255, 0.7);
   --bg-surface-solid: #ffffff;
-  --bg-surface-hover: rgba(255, 255, 255, 0.9);
-  --border-subtle: rgba(0, 0, 0, 0.06);
-  --border-glow: rgba(14, 165, 233, 0.2);
+  --bg-surface-hover: rgba(255, 255, 255, 0.95);
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(0, 0, 0, 0.15);
   
   --text-primary: #111827;
   --text-secondary: #6b7280;
   
-  --accent-cyan: #0ea5e9;
-  --accent-violet: #8b5cf6;
-  --accent-gradient: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+  --accent-primary: #000000;
+  --accent-foreground: #ffffff;
   
   --success: #10b981;
   --danger: #ef4444;
@@ -24,33 +32,32 @@
 }
 
 :root[data-theme="dark"] {
-  /* Premium Dark Theme */
-  --bg-base: #0a0a0f;
-  --bg-surface: rgba(255, 255, 255, 0.03);
-  --bg-surface-solid: #12121a;
-  --bg-surface-hover: rgba(255, 255, 255, 0.06);
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(0, 212, 255, 0.3);
+  /* Vercel-like Monochrome Dark Theme */
+  --bg-base: #000000;
+  --bg-surface: rgba(20, 20, 20, 0.7);
+  --bg-surface-solid: #111111;
+  --bg-surface-hover: rgba(30, 30, 30, 0.85);
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-glow: rgba(255, 255, 255, 0.25);
   
   --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
   
-  --accent-cyan: #00d4ff;
-  --accent-violet: #7c3aed;
-  --accent-gradient: linear-gradient(135deg, var(--accent-cyan), var(--accent-violet));
+  --accent-primary: #ffffff;
+  --accent-foreground: #000000;
   
   --success: #10b981;
   --danger: #ef4444;
 
-  --shadow-panel: 0 4px 20px rgba(0, 0, 0, 0.2);
-  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-panel: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
 
 body {
   background-color: var(--bg-base);
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(139, 92, 246, 0.03), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.03), transparent 25%);
+  /* A very subtle dot pattern to give depth to the glass effect without color */
+  background-image: radial-gradient(var(--border-subtle) 1px, transparent 1px);
+  background-size: 24px 24px;
   background-attachment: fixed;
   color: var(--text-primary);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -58,21 +65,15 @@ body {
   transition: background-color 0.4s ease, color 0.4s ease;
 }
 
-:root[data-theme="dark"] body {
-  background-image: 
-    radial-gradient(circle at 15% 50%, rgba(124, 58, 237, 0.06), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(0, 212, 255, 0.06), transparent 25%);
-}
-
 /* Glassmorphism Panels */
 .glass-panel {
   background: var(--bg-surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-subtle);
-  border-radius: 1rem;
+  border-radius: 12px;
   box-shadow: var(--shadow-panel);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease-in-out;
 }
 
 .glass-panel:hover {
@@ -80,38 +81,48 @@ body {
   box-shadow: var(--shadow-hover);
 }
 
-/* Gradient Text */
-.text-gradient {
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Premium Buttons */
-.btn-primary-gradient {
-  background: var(--accent-gradient);
-  color: white;
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Premium Buttons (Vercel Style) */
+.apple-btn, .btn-primary, .btn-primary-gradient {
+  background: var(--accent-primary);
+  color: var(--accent-foreground);
+  border: 1px solid transparent;
+  border-radius: 6px; /* Sharper corners for B2B */
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.btn-primary-gradient:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
+.apple-btn:hover:not(:disabled), .btn-primary:hover:not(:disabled), .btn-primary-gradient:hover:not(:disabled) {
+  opacity: 0.85;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.btn-primary-gradient:disabled {
-  opacity: 0.6;
+.apple-btn:disabled, .btn-primary:disabled, .btn-primary-gradient:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--bg-surface-solid);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-glow);
 }
 
 /* Badges */
@@ -119,21 +130,43 @@ body {
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.2);
   color: var(--success);
+  border-radius: 4px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .badge-glass-red {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
   color: var(--danger);
+  border-radius: 4px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .badge-glass-blue {
   background: rgba(59, 130, 246, 0.1);
   border: 1px solid rgba(59, 130, 246, 0.2);
   color: #3b82f6;
+  border-radius: 4px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 .badge-glass-gray {
   background: var(--bg-surface-hover);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Gradient Text Fallback (Removed gradient, made solid) */
+.text-gradient {
+  color: var(--text-primary);
+  font-weight: 700;
 }
 
 /* Form Elements */

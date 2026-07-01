@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+import { auth } from "@/auth";
+
 export async function GET() {
   try {
-    const org = await prisma.organization.findFirst();
-    if (!org) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const messages = await prisma.smsMessage.findMany({
-      where: { organizationId: org.id }
+      where: { organizationId: session.user.organizationId }
     });
 
     const totalMessages = messages.length;

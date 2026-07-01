@@ -1,19 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+import { auth } from "@/auth";
+
 export async function GET(request: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const status = searchParams.get("status");
     const period = searchParams.get("period");
 
-    const org = await prisma.organization.findFirst();
-    if (!org) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
-
-    const whereClause: any = { organizationId: org.id };
+    const whereClause: any = { organizationId: session.user.organizationId };
 
     if (type && type !== "ALL") {
       whereClause.type = type;

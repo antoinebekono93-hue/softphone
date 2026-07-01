@@ -61,7 +61,7 @@ export function TTSClient() {
     const selectedVoice = voices.find(v => v.id === voice);
 
     try {
-      const res = await fetch("/api/telnyx/tts", {
+      const res = await fetch("/api/telecom/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

@@ -33,7 +33,7 @@ export default function UsageReportClient() {
             Rapport de Consommation
           </h3>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            Données d'utilisation (Telnyx API v2)
+            Données d'utilisation et Consommation
           </p>
         </div>
       </div>

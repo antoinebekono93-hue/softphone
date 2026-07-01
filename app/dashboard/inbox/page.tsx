@@ -1,19 +1,27 @@
 import { prisma } from "@/lib/prisma";
 import InboxClient from "./InboxClient";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Boîte de réception | Antigravity",
 };
 
 export default async function InboxPage() {
+  const session = await auth();
+  if (!session?.user?.organizationId) redirect("/login");
+  const orgId = session.user.organizationId;
+
   // 1. Fetch Call Logs
   const calls = await prisma.callLog.findMany({
+    where: { organizationId: orgId },
     orderBy: { startedAt: 'desc' },
     take: 50,
   });
 
   // 2. Fetch SMS Messages
   const sms = await prisma.smsMessage.findMany({
+    where: { organizationId: orgId },
     orderBy: { sentAt: 'desc' },
     take: 50,
   });

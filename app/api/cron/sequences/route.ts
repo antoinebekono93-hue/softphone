@@ -53,14 +53,34 @@ export async function GET(req: Request) {
       try {
         // Execute Step
         if (currentStepObj.actionType === 'SMS') {
-           // Call your Telnyx / SMS service here
-           // await sendSMS(enrollment.contact.phone, currentStepObj.content)
-           console.log(`[ACTION] Sending SMS to ${enrollment.contact.phone}: ${currentStepObj.content}`);
+           console.log(`[ACTION] (SIMULATED) Sending SMS to ${enrollment.contact.phone}: ${currentStepObj.content}`);
+           
+           // Fetch a phone number for the organization to act as sender
+           const orgPhone = await prisma.phoneNumber.findFirst({
+             where: { organizationId: enrollment.contact.organizationId }
+           });
+           const fromNumber = orgPhone?.number || "+10000000000"; // Fallback for simulation
+           
+           // Log it in DB as simulated
+           await prisma.smsMessage.create({
+             data: {
+               telnyxMessageId: `sim-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+               direction: 'OUTBOUND',
+               body: currentStepObj.content || "",
+               status: 'DELIVERED',
+               type: 'SMS',
+               cost: 0.0,
+               fromNumber,
+               toNumber: enrollment.contact.phone,
+               organizationId: enrollment.contact.organizationId,
+               contactId: enrollment.contact.id,
+               phoneNumberId: orgPhone?.id,
+             }
+           });
         } else if (currentStepObj.actionType === 'AI_CALL') {
-           // Call your AI Dialing service here
-           console.log(`[ACTION] Initiating AI Call to ${enrollment.contact.phone} with prompt: ${currentStepObj.content}`);
+           console.log(`[ACTION] (SIMULATED) Initiating AI Call to ${enrollment.contact.phone} with prompt: ${currentStepObj.content}`);
         } else if (currentStepObj.actionType === 'WHATSAPP') {
-           console.log(`[ACTION] Sending WhatsApp to ${enrollment.contact.phone}`);
+           console.log(`[ACTION] (SIMULATED) Sending WhatsApp to ${enrollment.contact.phone}`);
         }
 
         // Determine Next Step

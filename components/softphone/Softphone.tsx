@@ -26,6 +26,23 @@ export function Softphone() {
   const [showKeypad, setShowKeypad] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
+  const [selectedCallerId, setSelectedCallerId] = useState<string>("");
+
+  // Fetch available numbers for caller ID
+  useEffect(() => {
+    fetch('/api/telecom/numbers')
+      .then(res => res.json())
+      .then(data => {
+        if (data.data) {
+          setAvailableNumbers(data.data);
+          if (data.data.length > 0) {
+            setSelectedCallerId(data.data[0].number);
+          }
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   // Timer for call duration
   useEffect(() => {
@@ -73,10 +90,26 @@ export function Softphone() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full px-6">
         {callState === "idle" || callState === "ringing" && !incomingCallerId ? (
-          <Dialpad
-            onCall={makeCall}
-            disabled={!isRegistered || callState === "ringing"}
-          />
+          <div className="w-full flex flex-col items-center gap-4">
+            {availableNumbers.length > 0 && (
+              <div className="w-full max-w-[280px]">
+                <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider mb-1 block">Appeler depuis (Caller ID)</label>
+                <select 
+                  value={selectedCallerId}
+                  onChange={(e) => setSelectedCallerId(e.target.value)}
+                  className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 text-[var(--text-primary)]"
+                >
+                  {availableNumbers.map(n => (
+                    <option key={n.id} value={n.number}>{formatPhoneNumber(n.number)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <Dialpad
+              onCall={(dest) => makeCall(dest, selectedCallerId)}
+              disabled={!isRegistered || callState === "ringing"}
+            />
+          </div>
         ) : (
           <div className="flex flex-col items-center w-full h-full justify-between py-8">
             {/* Call Info Header */}

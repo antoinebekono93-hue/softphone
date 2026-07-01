@@ -13,7 +13,7 @@ interface TelnyxContextValue {
   activeCallId: string | null;
   incomingCallerId: string | null;
   remoteStream: MediaStream | null;
-  makeCall: (destination: string) => void;
+  makeCall: (destination: string, callerId?: string) => void;
   answerCall: () => void;
   rejectCall: () => void;
   hangupCall: () => void;
@@ -130,11 +130,12 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const makeCall = (destination: string) => {
+  const makeCall = (destination: string, callerId?: string) => {
     if (!clientRef.current || !isRegistered) return;
     try {
       const call = clientRef.current.newCall({
         destinationNumber: destination,
+        callerNumber: callerId, // Pass the selected Caller ID here
         audio: true,
         video: false,
       });

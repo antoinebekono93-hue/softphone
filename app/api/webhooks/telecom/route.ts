@@ -64,22 +64,31 @@ async function processEvent(event: any) {
       const agent = callLog?.phoneNumber?.voiceAIAgent;
 
       // Only start streaming if there's an active AI Agent
+      // Only start streaming if there's an active AI Agent
       if (agent && agent.isActive) {
-        // Start streaming audio to our WebSocket server
+        // Option B: LiveKit SIP Architecture
+        // We transfer the answered call to the LiveKit SIP Trunk.
         const call = new telnyx.Call({ call_control_id: callControlId });
         
-        const clientState = {
-          callControlId,
-          agentPrompt: agent.prompt,
-          agentVoice: agent.voice
-        };
+        // Retrieve LiveKit SIP URI from env (can be configured in God Mode later)
+        const livekitSipUri = process.env.LIVEKIT_SIP_URI || "sip:agent@your-project.sip.livekit.cloud";
 
-        // The custom_parameters can be passed to our WS server to identify the call
-        await call.streaming_start({
-          command_id: crypto.randomUUID(),
-          stream_url: MEDIA_SERVER_URL,
-          stream_track: 'both_tracks', // Send both inbound and outbound audio
-          client_state: Buffer.from(JSON.stringify(clientState)).toString('base64')
+        // We inject the AI context via custom SIP headers
+        // LiveKit will receive these headers when the SIP call arrives
+        const customHeaders = [
+          { name: "X-Agent-Name", value: Buffer.from(agent.name).toString('base64') },
+          { name: "X-Agent-Voice", value: agent.voice },
+          { name: "X-Organization-Id", value: callLog?.organizationId || "" },
+          { name: "X-Call-Log-Id", value: callLog?.id || "" }
+          // We don't send the full prompt in headers because SIP headers have size limits (usually ~1KB max).
+          // The LiveKit Agent (Python) will fetch the full prompt from the database using the X-Call-Log-Id.
+        ];
+
+        console.log(`[Telnyx Webhook] Transferring call ${callControlId} to LiveKit SIP: ${livekitSipUri}`);
+
+        await call.transfer({
+          to: livekitSipUri,
+          custom_headers: customHeaders
         });
       }
 
@@ -336,13 +345,34 @@ async function processEvent(event: any) {
       
       console.log(`[Telnyx Webhook] Message ${messageId} finalized with status: ${status}`);
       
+      const newStatus = status === 'delivered' ? 'DELIVERED' : (status === 'delivery_failed' ? 'FAILED' : 'FINALIZED');
+
       await prisma.smsMessage.updateMany({
         where: { telnyxMessageId: messageId },
         data: { 
-          status: status === 'delivered' ? 'DELIVERED' : (status === 'delivery_failed' ? 'FAILED' : 'FINALIZED'),
+          status: newStatus,
           cost: cost
         }
       });
+
+      // Campaign Tracking: If this message belongs to a CampaignRecipient, update it
+      const recipient = await prisma.campaignRecipient.findFirst({
+        where: { messageId: messageId }
+      });
+
+      if (recipient) {
+        await prisma.campaignRecipient.update({
+          where: { id: recipient.id },
+          data: { status: newStatus }
+        });
+
+        if (newStatus === 'DELIVERED') {
+          await prisma.campaign.update({
+            where: { id: recipient.campaignId },
+            data: { deliveredCount: { increment: 1 } }
+          });
+        }
+      }
     }
   } catch (error: any) {
     console.error('[Telnyx Webhook Async Error]', error);

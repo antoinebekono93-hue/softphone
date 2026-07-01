@@ -15,6 +15,12 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
     pricingPlanId: "",
     planStatus: "ACTIVE",
     walletBalance: 0,
+    tenantSettings: {
+      maxNumbers: 5,
+      smsDailyLimit: 10,
+      allowedAIModels: "all",
+      maxVideoParticipants: 4
+    } as any
   });
 
   const openEdit = (tenant: Tenant) => {
@@ -23,6 +29,7 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
       pricingPlanId: tenant.pricingPlanId || "",
       planStatus: tenant.planStatus || "ACTIVE",
       walletBalance: tenant.walletBalance || 0,
+      tenantSettings: tenant.tenantSettings || { maxNumbers: 5, smsDailyLimit: 10, allowedAIModels: "all", maxVideoParticipants: 4 },
     });
   };
 
@@ -35,6 +42,7 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
           pricingPlanId: formData.pricingPlanId || null,
           planStatus: formData.planStatus,
           walletBalance: Number(formData.walletBalance),
+          tenantSettings: formData.tenantSettings,
         });
         setEditingTenant(null);
       } catch (err) {
@@ -163,8 +171,33 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
                   <label className="block text-sm text-[var(--text-secondary)] mb-1">Wallet Balance (USD)</label>
                   <input type="number" step="0.01" value={formData.walletBalance} onChange={e => setFormData({...formData, walletBalance: Number(e.target.value)})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
                 </div>
+                
+                <div className="pt-4 border-t border-[var(--border-subtle)] space-y-4">
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Tenant Restrictions</h3>
+                  
+                  <div>
+                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Max Phone Numbers</label>
+                    <input type="number" value={formData.tenantSettings.maxNumbers} onChange={e => setFormData({...formData, tenantSettings: {...formData.tenantSettings, maxNumbers: Number(e.target.value)}})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Daily SMS Spend Limit ($)</label>
+                    <input type="number" value={formData.tenantSettings.smsDailyLimit} onChange={e => setFormData({...formData, tenantSettings: {...formData.tenantSettings, smsDailyLimit: Number(e.target.value)}})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Max Video Participants</label>
+                    <input type="number" value={formData.tenantSettings.maxVideoParticipants} onChange={e => setFormData({...formData, tenantSettings: {...formData.tenantSettings, maxVideoParticipants: Number(e.target.value)}})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[var(--text-secondary)] mb-1">Allowed AI Models</label>
+                    <select value={formData.tenantSettings.allowedAIModels} onChange={e => setFormData({...formData, tenantSettings: {...formData.tenantSettings, allowedAIModels: e.target.value}})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]">
+                      <option value="all">All Models (GPT-4, Claude)</option>
+                      <option value="basic">Basic Only (LLaMA, GPT-3.5)</option>
+                      <option value="none">Disabled</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div className="pt-4 border-t border-[var(--border-subtle)]">
+              <div className="pt-4 border-t border-[var(--border-subtle)] mt-4">
                 <button type="submit" disabled={isPending} className="w-full py-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium flex justify-center items-center gap-2">
                   {isPending && <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
                   Save Changes

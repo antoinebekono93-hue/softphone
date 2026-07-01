@@ -19,13 +19,9 @@ export default async function GodModeLayout({
 }) {
   const session = await auth();
 
-  // Uncomment in production to lock the route!
-  /*
   if (!session?.user || !session.user.isSuperAdmin) {
     redirect("/login");
   }
-  */
-
   return (
     <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] flex">
       <GodModeSidebar />

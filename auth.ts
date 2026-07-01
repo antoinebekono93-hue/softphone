@@ -84,6 +84,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { id: user.id },
           select: {
             role: true,
+            isSuperAdmin: true,
             organizationId: true,
             organization: {
               select: {
@@ -97,6 +98,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (dbUser) {
           token.role = dbUser.role;
+          token.isSuperAdmin = dbUser.isSuperAdmin || false;
           token.organizationId = dbUser.organizationId;
           token.organizationName = dbUser.organization?.name;
           token.planStatus = dbUser.organization?.planStatus;
@@ -108,6 +110,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+        session.user.isSuperAdmin = token.isSuperAdmin as boolean;
         session.user.organizationId = token.organizationId as string;
         session.user.organizationName = token.organizationName as string;
         session.user.planStatus = token.planStatus as string;

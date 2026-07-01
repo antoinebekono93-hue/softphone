@@ -134,7 +134,7 @@ export default function IotDashboardPage() {
             Connectivité <span className="text-gradient">IoT & eSIM</span>
           </h1>
           <p className="text-[var(--text-secondary)] text-sm md:text-base">
-            Gérez vos eSIMs Telnyx, fixez des limites de coûts et gérez votre flotte en masse.
+            Gérez votre flotte eSIM globale, fixez des limites de coûts et gérez vos cartes en masse.
           </p>
         </div>
         <button 

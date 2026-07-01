@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 const API_BASE = 'https://api.telnyx.com/v2';
 
@@ -25,8 +26,13 @@ export async function GET(request: Request) {
   const reservable = searchParams.get("reservable");
   const limit = searchParams.get("limit") || "20";
 
+  const session = await auth();
+  if (!session?.user?.organizationId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   // Get org API key
-  const org = await prisma.organization.findFirst();
+  const org = await prisma.organization.findUnique({ where: { id: session.user.organizationId } });
   const apiKey = org?.telnyxApiKey || process.env.TELNYX_API_KEY;
 
   if (!apiKey) {

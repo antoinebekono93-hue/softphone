@@ -9,6 +9,7 @@ declare module "next-auth" {
       organizationName: string;
       plan: string;
       planStatus: string;
+      isSuperAdmin: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -21,5 +22,6 @@ declare module "next-auth/jwt" {
     organizationName: string;
     plan: string;
     planStatus: string;
+    isSuperAdmin: boolean;
   }
 }

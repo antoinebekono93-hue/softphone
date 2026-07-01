@@ -87,9 +87,9 @@ export function AgentBuilder({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-[var(--text-secondary)]">Voice</label>
                 <select name="voice" defaultValue={agent?.voice || "Telnyx.aura"} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors text-white">
-                  <optgroup label="Telnyx Native">
-                    <option value="Telnyx.aura">Aura (Female, Natural)</option>
-                    <option value="Telnyx.fin">Fin (Male, Natural)</option>
+                  <optgroup label="Voix Natives Premium">
+                    <option value="Telnyx.aura">Aura (Voix Féminine)</option>
+                    <option value="Telnyx.fin">Fin (Voix Masculine)</option>
                   </optgroup>
                   <optgroup label="OpenAI">
                     <option value="alloy">Alloy (Neutral)</option>
@@ -110,7 +110,7 @@ export function AgentBuilder({
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-[var(--text-secondary)]">Assign to Phone Number</label>
-              <p className="text-xs text-[var(--text-secondary)] mb-2">Incoming calls to this number will be automatically answered by this AI Agent directly on Telnyx's servers.</p>
+              <p className="text-xs text-[var(--text-secondary)] mb-2">Les appels entrants vers ce numéro seront automatiquement gérés par l'Agent IA sur notre réseau vocal ultra-faible latence.</p>
               <select name="phoneNumberId" defaultValue={agent?.phoneNumberId || ""} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-cyan-500 transition-colors text-white">
                 <option value="">Unassigned (No number)</option>
                 {numbers.map((num) => (

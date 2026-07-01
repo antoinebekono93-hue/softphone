@@ -9,6 +9,7 @@ export async function updateTenant(tenantId: string, data: {
   pricingPlanId?: string | null;
   walletBalance?: number;
   planStatus?: string;
+  tenantSettings?: any;
 }) {
   await prisma.organization.update({
     where: { id: tenantId },
@@ -16,6 +17,7 @@ export async function updateTenant(tenantId: string, data: {
       pricingPlanId: data.pricingPlanId,
       walletBalance: data.walletBalance,
       planStatus: data.planStatus,
+      tenantSettings: data.tenantSettings || {},
     }
   });
   revalidatePath("/god-mode/tenants");

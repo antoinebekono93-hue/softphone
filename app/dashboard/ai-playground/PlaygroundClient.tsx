@@ -51,7 +51,7 @@ const AVAILABLE_TOOLS = [
 
 export default function PlaygroundClient() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "system", content: "Vous êtes un assistant IA utile, spécialisé dans la démonstration des capacités d'inférence de Telnyx (Raisonnement, Appels de Fonctions)." }
+    { role: "system", content: "Vous êtes un assistant IA utile, spécialisé dans la démonstration des capacités d'inférence avancées (Raisonnement, Appels de Fonctions)." }
   ]);
   const [input, setInput] = useState("");
   const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].id);
@@ -107,7 +107,7 @@ export default function PlaygroundClient() {
       // Append an empty assistant message to hold the streaming response
       setMessages(prev => [...prev, { role: "assistant", content: "", reasoning_content: "", tool_calls: [] }]);
       
-      const res = await fetch("/api/telnyx/inference/chat", {
+      const res = await fetch("/api/telecom/inference/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,8 +213,7 @@ export default function PlaygroundClient() {
             Playground IA (Inférence)
           </h1>
           <p className="text-[var(--text-secondary)] mt-2 max-w-2xl">
-            Testez les modèles hébergés sur l'infrastructure GPU de Telnyx. 
-            Expérimentez le Raisonnement (Chain of Thought) et les Appels de Fonctions (Tool Calling).
+            Testez les modèles hébergés sur notre infrastructure cloud sécurisée. Expérimentez le Raisonnement (Chain of Thought) et les Appels de Fonctions (Tool Calling).
           </p>
         </div>
       </div>

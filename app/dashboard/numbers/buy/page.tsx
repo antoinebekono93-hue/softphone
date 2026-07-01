@@ -23,7 +23,7 @@ export default function BuyNumberPage() {
     setLoading(true);
     setNumbers([]);
     try {
-      const res = await fetch(`/api/telnyx/numbers/search?country=${country}`);
+      const res = await fetch(`/api/telecom/numbers/search?country=${country}`);
       if (res.ok) {
         const data = await res.json();
         setNumbers(data.numbers || []);

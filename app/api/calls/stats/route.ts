@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+import { auth } from "@/auth";
+
 export async function GET() {
   try {
-    const org = await prisma.organization.findFirst();
-    if (!org) return NextResponse.json({ error: "No org" }, { status: 404 });
+    const session = await auth();
+    if (!session?.user?.organizationId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const orgId = session.user.organizationId;
+    
+    // Instead of loading all into memory, let's just count (better for scale, though rates still need logic)
+    // We'll keep the current logic but scoped to the org for safety.
     const calls = await prisma.callLog.findMany({
-      where: { organizationId: org.id }
+      where: { organizationId: orgId },
+      select: { status: true }
     });
 
     const totalCalls = calls.length;

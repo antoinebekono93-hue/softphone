@@ -15,6 +15,7 @@
     "@prisma/client": "6.19.3",
     "@stripe/stripe-js": "^9.8.0",
     "@tailwindcss/postcss": "^4.3.1",
+    "@telnyx/video": "^1.0.2",
     "@telnyx/webrtc": "^2.27.1",
     "@types/ws": "^8.18.1",
     "bcryptjs": "^3.0.3",

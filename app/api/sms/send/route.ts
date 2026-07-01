@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { telnyx } from '@/lib/telnyx';
+import { auth } from '@/auth';
 
 export async function POST(request: Request) {
   try {
@@ -20,9 +21,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Message must contain text or mediaUrls' }, { status: 400 });
     }
 
-    // 1. Find the Phone Number in our DB to get organizationId
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 1. Find the Phone Number in our DB to ensure it belongs to the user's org
     const phoneNumber = await prisma.phoneNumber.findFirst({
-      where: { number: from }
+      where: { 
+        number: from,
+        organizationId: session.user.organizationId
+      }
     });
 
     if (!phoneNumber) {

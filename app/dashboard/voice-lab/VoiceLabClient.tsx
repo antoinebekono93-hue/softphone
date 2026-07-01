@@ -53,7 +53,7 @@ export function VoiceLabClient() {
   const fetchClones = async () => {
     setIsLoadingClones(true);
     try {
-      const res = await fetch("/api/telnyx/voice-clones");
+      const res = await fetch("/api/telecom/voice-clones");
       if (res.ok) {
         const data = await res.json();
         setClones(data.data || []);
@@ -72,7 +72,7 @@ export function VoiceLabClient() {
     setCurrentDesignId(null);
 
     try {
-      const res = await fetch("/api/telnyx/voice-designs", {
+      const res = await fetch("/api/telecom/voice-designs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -90,7 +90,7 @@ export function VoiceLabClient() {
       setCurrentDesignId(data.data.id);
       
       // Fetch sample
-      const sampleRes = await fetch(`/api/telnyx/voice-designs/${data.data.id}/sample`);
+      const sampleRes = await fetch(`/api/telecom/voice-designs/${data.data.id}/sample`);
       if (sampleRes.ok) {
         const blob = await sampleRes.blob();
         setDesignSampleUrl(URL.createObjectURL(blob));
@@ -108,7 +108,7 @@ export function VoiceLabClient() {
     setError("");
 
     try {
-      const res = await fetch("/api/telnyx/voice-clones", {
+      const res = await fetch("/api/telecom/voice-clones", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

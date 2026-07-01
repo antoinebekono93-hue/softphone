@@ -5,9 +5,6 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 let prismaUrl = process.env.DATABASE_URL;
-if (prismaUrl && !prismaUrl.includes('pgbouncer=true')) {
-  prismaUrl += (prismaUrl.includes('?') ? '&' : '?') + 'pgbouncer=true';
-}
 
 export const prisma =
   globalForPrisma.prisma ??

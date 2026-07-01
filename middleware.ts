@@ -43,13 +43,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Temporarily bypassed for UI Demo
-  // const token = await getToken({ req, secret: process.env.AUTH_SECRET });
-  // if (!token) {
-  //   const loginUrl = new URL("/login", req.url);
-  //   loginUrl.searchParams.set("callbackUrl", pathname);
-  //   return NextResponse.redirect(loginUrl);
-  // }
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET });
+  if (!token) {
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   // We need to fetch the token if they are on a protected dashboard route
   if (pathname.startsWith("/dashboard")) {

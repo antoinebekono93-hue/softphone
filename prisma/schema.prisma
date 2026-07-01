@@ -118,6 +118,15 @@ model Organization {
   // Wallet & Prepaid
   walletBalance Float @default(0.0) // Balance in USD for prepaid services
 
+  // God Mode Configuration (Quotas & Limits)
+  tenantSettings Json?
+
+  // KYC & Compliance
+  kycStatus      String  @default("UNVERIFIED") // UNVERIFIED, PENDING, APPROVED, REJECTED
+  kycDocumentUrl String?
+  businessName   String?
+  businessRegistrationNumber String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -169,6 +178,7 @@ model PhoneNumber {
   voiceAIAgent VoiceAIAgent?
   callLogs     CallLog[]
   smsMessages  SmsMessage[]
+  campaigns    Campaign[]
 
   @@index([organizationId])
   @@index([number])
@@ -437,12 +447,14 @@ model Campaign {
   // Content
   templateId     String?
   body           String?  // text content if not using a template
+  phoneNumberId  String?  // The sender number
 
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phoneNumber    PhoneNumber?        @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
   template       WhatsAppTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
   recipients     CampaignRecipient[]
 
