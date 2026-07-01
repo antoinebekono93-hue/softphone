@@ -63,8 +63,10 @@ export async function GET(req: Request) {
           // Format the message body (allow variable replacement like {{firstName}})
           let text = campaign.body || "";
           if (recipient.contact) {
-            text = text.replace("{{firstName}}", recipient.contact.firstName || "");
-            text = text.replace("{{lastName}}", recipient.contact.lastName || "");
+            const contactName = recipient.contact.name || "";
+            text = text.replace("{{name}}", contactName);
+            text = text.replace("{{firstName}}", contactName.split(" ")[0] || "");
+            text = text.replace("{{lastName}}", contactName.split(" ").slice(1).join(" ") || "");
           }
 
           // Call the Unified Messaging Engine internally

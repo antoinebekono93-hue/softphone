@@ -102,7 +102,7 @@ export function CampaignsClient({ campaigns, numbers, contacts }: { campaigns: a
                       className="rounded border-[var(--border-subtle)] text-violet-500 focus:ring-violet-500 bg-transparent"
                     />
                     <div>
-                      <p className="text-sm font-medium text-[var(--text-primary)]">{contact.firstName} {contact.lastName}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">{contact.name || 'Unnamed Contact'}</p>
                       <p className="text-xs text-[var(--text-secondary)]">{contact.phone}</p>
                     </div>
                   </label>
