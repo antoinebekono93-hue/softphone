@@ -1,14 +1,19 @@
 import { CampaignsClient } from "./CampaignsClient";
 import { getCampaigns } from "./actions";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/auth";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export const metadata = {
   title: "Campaigns | Antigravity",
 };
 
 export default async function CampaignsPage() {
-  const user = await requireUser();
+  const session = await auth();
+  if (!session?.user?.organizationId) {
+    redirect("/login");
+  }
+  const user = session.user;
   const campaigns = await getCampaigns();
   
   const numbers = await prisma.phoneNumber.findMany({

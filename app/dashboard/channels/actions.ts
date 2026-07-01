@@ -1,11 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/auth";
+import { auth } from "@/auth";
 
 export async function getOrganizationNumbers() {
-  const user = await requireUser();
-  if (!user.organizationId) throw new Error("No organization found");
+  const session = await auth();
+  if (!session?.user?.organizationId) throw new Error("Unauthorized");
+  const user = session.user;
 
   const numbers = await prisma.phoneNumber.findMany({
     where: { organizationId: user.organizationId },

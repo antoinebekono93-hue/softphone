@@ -1,12 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/auth";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export async function getCampaigns() {
-  const user = await requireUser();
-  if (!user.organizationId) throw new Error("No organization found");
+  const session = await auth();
+  if (!session?.user?.organizationId) throw new Error("No organization found");
+  const user = session.user;
 
   return await prisma.campaign.findMany({
     where: { organizationId: user.organizationId },
@@ -21,8 +22,9 @@ export async function getCampaigns() {
 }
 
 export async function createCampaign(data: { name: string, body: string, phoneNumberId: string, contactIds: string[] }) {
-  const user = await requireUser();
-  if (!user.organizationId) throw new Error("No organization found");
+  const session = await auth();
+  if (!session?.user?.organizationId) throw new Error("No organization found");
+  const user = session.user;
 
   const campaign = await prisma.campaign.create({
     data: {
@@ -45,8 +47,9 @@ export async function createCampaign(data: { name: string, body: string, phoneNu
 }
 
 export async function getCampaignDetails(id: string) {
-  const user = await requireUser();
-  if (!user.organizationId) throw new Error("No organization found");
+  const session = await auth();
+  if (!session?.user?.organizationId) throw new Error("No organization found");
+  const user = session.user;
 
   return await prisma.campaign.findUnique({
     where: { id, organizationId: user.organizationId },
