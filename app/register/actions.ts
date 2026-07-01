@@ -49,6 +49,6 @@ export async function registerUser(data: any) {
     return { success: true };
   } catch (error: any) {
     console.error("[Register Error]", error);
-    return { error: "An unexpected error occurred" };
+    return { error: error?.message || "An unexpected error occurred" };
   }
 }
