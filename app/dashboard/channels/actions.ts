@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireUser } from "@/auth";
 
 export async function getOrganizationNumbers() {
   const user = await requireUser();

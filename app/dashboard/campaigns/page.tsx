@@ -1,7 +1,7 @@
 import { CampaignsClient } from "./CampaignsClient";
 import { getCampaigns } from "./actions";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireUser } from "@/auth";
 
 export const metadata = {
   title: "Campaigns | Antigravity",

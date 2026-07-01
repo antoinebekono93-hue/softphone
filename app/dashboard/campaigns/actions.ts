@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/auth";
+import { requireUser } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export async function getCampaigns() {
