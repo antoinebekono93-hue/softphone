@@ -1,31 +1,33 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-export default auth((req) => {
-  const { pathname } = req.nextUrl;
+const publicPaths = [
+  "/",
+  "/login",
+  "/register",
+  "/pricing",
+  "/features",
+  "/api/auth",
+  "/api/voice/webhook",
+  "/api/voice/twiml",
+  "/api/voice/status",
+  "/api/stripe/webhook",
+  "/api/webhooks",
+  "/api/cron",
+];
 
-  // Public paths - no auth required
-  const publicPaths = [
-    "/",
-    "/login",
-    "/register",
-    "/pricing",
-    "/features",
-    "/api/auth",
-    "/api/voice/webhook",
-    "/api/voice/twiml",
-    "/api/voice/status",
-    "/api/stripe/webhook",
-    "/api/webhooks",
-    "/api/cron",
-  ];
-
-  const isPublic = publicPaths.some(
+function isPublicPath(pathname: string): boolean {
+  return publicPaths.some(
     (path) => pathname === path || pathname.startsWith(path + "/")
   );
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
   if (
-    isPublic ||
+    isPublicPath(pathname) ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/icons") ||
     pathname.startsWith("/sounds") ||
@@ -36,8 +38,21 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // If not authenticated, redirect to login
-  if (!req.auth) {
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "f62a4b8cd9a714e897b2354c86e0fc21568b209a3c94d12b";
+  
+  // NextAuth v5 uses "authjs.session-token" cookie name (not "next-auth.session-token")
+  // On HTTPS (Vercel), it becomes "__Secure-authjs.session-token"
+  const isSecure = req.url.startsWith("https://");
+  const cookieName = isSecure ? "__Secure-authjs.session-token" : "authjs.session-token";
+
+  const token = await getToken({ 
+    req, 
+    secret,
+    cookieName,
+    salt: cookieName,
+  });
+
+  if (!token) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
@@ -45,21 +60,19 @@ export default auth((req) => {
 
   // Plan status check for dashboard routes
   if (pathname.startsWith("/dashboard")) {
-    const planStatus = req.auth.user?.planStatus as string | undefined;
+    const planStatus = token?.planStatus as string | undefined;
 
-    // Allow billing page always
     if (pathname === "/dashboard/billing") {
       return NextResponse.next();
     }
 
-    // Block if plan is inactive
     if (planStatus && planStatus !== "ACTIVE" && planStatus !== "TRIALING") {
       return NextResponse.redirect(new URL("/dashboard/billing", req.url));
     }
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [
