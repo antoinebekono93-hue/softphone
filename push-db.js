@@ -2,14 +2,16 @@ const { execSync } = require('child_process');
 
 let url = process.env.DATABASE_URL || "";
 if (url) {
-  // Sanitize URL for prisma db push (remove pgbouncer which causes search_path errors on direct push)
-  url = url.replace("&pgbouncer=true", "").replace("?pgbouncer=true", "");
-  url = url.replace("&schema=public", "").replace("?schema=public", "");
-  
-  const separator = url.includes("?") ? "&" : "?";
-  if (!url.includes("connection_limit=")) {
-    url += `${separator}connection_limit=1`;
-  }
+try {
+  const parsedUrl = new URL(url);
+  // Remove problematic params for direct push
+  parsedUrl.searchParams.delete("pgbouncer");
+  parsedUrl.searchParams.delete("schema");
+  parsedUrl.searchParams.set("connection_limit", "1");
+  url = parsedUrl.toString();
+} catch (e) {
+  // Ignore parsing errors, try the original URL
+}
 }
 
 console.log("Running prisma db push with sanitized connection string...");
