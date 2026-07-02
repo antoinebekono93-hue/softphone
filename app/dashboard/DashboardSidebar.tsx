@@ -42,7 +42,8 @@ export function DashboardSidebar({
   planName,
   planStatus,
   userEmail,
-  walletBalance
+  walletBalance,
+  isSuperAdmin
 }: {
   organizationName?: string | null;
   planName?: string | null;
