@@ -106,7 +106,7 @@ export function DashboardSidebar({
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 glass-panel rounded-none border-t-0 border-x-0 flex items-center justify-between px-4 z-40">
         <div className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-500 text-white flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(0,212,255,0.3)]">
+          <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-sm shadow-sm">
             {organizationName?.charAt(0) || "A"}
           </div>
           Antigravité
@@ -126,7 +126,7 @@ export function DashboardSidebar({
 
       {/* Sidebar */}
       <div 
-        className={`fixed md:relative top-0 left-0 h-screen z-50 flex flex-col glass-panel rounded-none border-y-0 border-l-0 transition-all duration-300 ease-out
+        className={`fixed md:relative top-0 left-0 h-screen z-50 flex flex-col bg-[var(--bg-base)] border-r border-[var(--border-subtle)] transition-all duration-300 ease-out
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
           ${isCollapsed ? 'w-[72px]' : 'w-[260px]'}
         `}
@@ -142,18 +142,18 @@ export function DashboardSidebar({
         {/* Top section: Org Info */}
         <div className={`p-4 border-b border-[var(--border-subtle)] flex items-center h-[72px] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           {isCollapsed ? (
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-500 text-white flex items-center justify-center font-bold text-lg shadow-[0_0_15px_rgba(0,212,255,0.3)]">
+            <div className="w-10 h-10 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-lg shadow-sm">
               {organizationName?.charAt(0) || "A"}
             </div>
           ) : (
             <div className="flex items-center justify-between w-full cursor-pointer hover:bg-[var(--bg-surface-hover)] p-2 -m-2 rounded-xl transition-all">
                <div className="flex items-center gap-3 overflow-hidden">
-                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-violet-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-[0_0_15px_rgba(0,212,255,0.3)]">
+                 <div className="w-10 h-10 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
                    {organizationName?.charAt(0) || "A"}
                  </div>
                  <div className="truncate">
                    <div className="font-semibold text-sm text-[var(--text-primary)] truncate">{organizationName || "Antigravité"}</div>
-                   <div className="text-xs text-cyan-400 truncate">{planName || "PLAN GRATUIT"}</div>
+                   <div className="text-xs text-[var(--text-secondary)] font-medium truncate">{planName || "PLAN GRATUIT"}</div>
                  </div>
                </div>
                <ChevronDown className="w-4 h-4 text-[var(--text-secondary)] shrink-0 hidden md:block" />
@@ -181,13 +181,13 @@ export function DashboardSidebar({
                         onClick={() => setIsMobileOpen(false)}
                         className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                           isActive 
-                            ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(0,212,255,0.05)]' 
+                            ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] font-semibold shadow-sm border border-[var(--border-subtle)]' 
                             : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'
                         } ${isCollapsed ? 'justify-center' : ''}`}
                         title={isCollapsed ? item.name : undefined}
                       >
-                        <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:text-cyan-400'}`} />
-                        {!isCollapsed && <span className="truncate font-medium">{item.name}</span>}
+                        <Icon className={`w-5 h-5 shrink-0 transition-transform duration-200 ${isActive ? 'scale-110 text-[var(--text-primary)]' : 'group-hover:scale-110 group-hover:text-[var(--text-primary)]'}`} />
+                        {!isCollapsed && <span className="truncate">{item.name}</span>}
                       </Link>
                     </li>
                   );
@@ -199,8 +199,7 @@ export function DashboardSidebar({
 
         {/* Wallet Balance */}
         {!isCollapsed && (
-          <div className="mx-4 mb-4 p-4 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] flex justify-between items-center relative overflow-hidden shadow-sm">
-            <div className="absolute top-0 right-0 w-16 h-16 bg-cyan-500/10 blur-xl rounded-full"></div>
+          <div className="mx-4 mb-4 p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex justify-between items-center relative overflow-hidden shadow-sm">
             <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider z-10">Wallet</span>
             <span className="text-sm font-bold text-[var(--text-primary)] z-10">${walletBalance?.toFixed(2) || "0.00"}</span>
           </div>
