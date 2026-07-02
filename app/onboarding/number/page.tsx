@@ -53,11 +53,12 @@ export default function OnboardingNumberPage() {
   };
 
   return (
-    <div className="w-full max-w-2xl apple-surface p-8 sm:p-12 relative">
-      <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold mb-3 tracking-tight">Pick your phone number</h1>
-        <p className="text-[var(--apple-text-secondary)] text-[16px]">Choose a local or toll-free number for your business. Your first number is free during the trial.</p>
-      </div>
+    <div className="w-full max-w-md apple-surface p-8 sm:p-10 relative mx-auto mt-10">
+      <div className="relative z-10">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-2 tracking-tight">Pick a phone number</h1>
+          <p className="text-[var(--apple-text-secondary)] text-[15px]">Choose a local or toll-free number for your business. (Free during trial).</p>
+        </div>
 
       {error && (
         <div className="mb-8 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[14px]">
@@ -65,11 +66,11 @@ export default function OnboardingNumberPage() {
         </div>
       )}
 
-      <div className="flex gap-4 mb-8">
+      <div className="flex flex-col sm:flex-row gap-3 mb-8">
         <select 
           value={country}
           onChange={(e) => setCountry(e.target.value)}
-          className="bg-[var(--apple-bg-primary)] border border-[var(--apple-border)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--apple-accent)] transition-colors"
+          className="bg-[var(--apple-bg-primary)] border border-[var(--apple-border)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--apple-accent)] transition-colors flex-1"
         >
           <option value="US">United States (+1)</option>
           <option value="CA">Canada (+1)</option>
@@ -79,10 +80,10 @@ export default function OnboardingNumberPage() {
         <button 
           onClick={handleSearch}
           disabled={isSearching}
-          className="flex-1 apple-btn flex justify-center items-center gap-2"
+          className="apple-btn flex justify-center items-center gap-2 py-3 px-6 text-[15px]"
         >
           {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          {isSearching ? "Searching..." : "Search Available Numbers"}
+          {isSearching ? "Searching" : "Search"}
         </button>
       </div>
 
@@ -117,13 +118,14 @@ export default function OnboardingNumberPage() {
         ))}
       </div>
 
-      <div className="mt-12 text-center">
+      <div className="mt-8 text-center">
         <button 
           onClick={() => router.push("/dashboard")}
-          className="text-sm font-medium text-[var(--apple-text-secondary)] hover:text-[var(--apple-text-primary)] transition-colors underline-offset-4 hover:underline"
+          className="text-[14px] font-medium text-[var(--apple-text-secondary)] hover:text-[var(--apple-text-primary)] transition-colors underline-offset-4 hover:underline"
         >
-          Skip this step for now (I'll do it later)
+          Skip this step for now
         </button>
+      </div>
       </div>
     </div>
   );
