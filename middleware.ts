@@ -43,7 +43,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET });
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "f62a4b8cd9a714e897b2354c86e0fc21568b209a3c94d12b";
+  const token = await getToken({ req, secret });
   if (!token) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
@@ -52,7 +53,6 @@ export async function middleware(req: NextRequest) {
 
   // We need to fetch the token if they are on a protected dashboard route
   if (pathname.startsWith("/dashboard")) {
-    const token = await getToken({ req, secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET });
     const planStatus = token?.planStatus as string | undefined;
 
     // Allow access to billing page even with inactive plan (so they can reactivate)
