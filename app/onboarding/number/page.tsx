@@ -116,6 +116,15 @@ export default function OnboardingNumberPage() {
           </div>
         ))}
       </div>
+
+      <div className="mt-12 text-center">
+        <button 
+          onClick={() => router.push("/dashboard")}
+          className="text-sm font-medium text-[var(--apple-text-secondary)] hover:text-[var(--apple-text-primary)] transition-colors underline-offset-4 hover:underline"
+        >
+          Skip this step for now (I'll do it later)
+        </button>
+      </div>
     </div>
   );
 }
