@@ -109,13 +109,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
+      if (process.env.MOCK_AUTH === "true") {
+        session.user.id = "mock-id";
+        session.user.role = "USER";
+        session.user.organizationId = "mock-org-id";
+        session.user.organizationName = "Mock Org";
+        session.user.isSuperAdmin = true;
+        return session;
+      }
+      if (token) {
+        session.user.id = token.sub!;
+        session.user.role = token.role as any;
         session.user.isSuperAdmin = token.isSuperAdmin as boolean;
-        session.user.organizationId = token.organizationId as string;
-        session.user.organizationName = token.organizationName as string;
-        session.user.planStatus = token.planStatus as string;
+        session.user.organizationId = token.organizationId as string | undefined;
+        session.user.organizationName = token.organizationName as string | undefined;
+        session.user.plan = token.plan as string | undefined;
+        session.user.planStatus = token.planStatus as string | undefined;
       }
       return session;
     },
