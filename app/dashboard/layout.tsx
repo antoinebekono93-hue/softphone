@@ -33,6 +33,7 @@ export default async function DashboardLayout({
         planStatus={session?.user?.planStatus}
         userEmail={session?.user?.email}
         walletBalance={walletBalance}
+        isSuperAdmin={session?.user?.isSuperAdmin}
       />
 
       {/* Main Content */}

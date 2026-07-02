@@ -6,9 +6,12 @@ import AdminSettingsClient from "./AdminSettingsClient";
 
 export default async function AdminDashboardPage() {
   const session = await auth();
-  // Dans un vrai projet, on vérifierait si session.user.role === 'ADMIN'
   if (!session?.user) {
     redirect("/login");
+  }
+  
+  if (!session.user.isSuperAdmin) {
+    redirect("/dashboard"); // Redirect normal users back to their dashboard
   }
 
   const organizations = await prisma.organization.findMany({

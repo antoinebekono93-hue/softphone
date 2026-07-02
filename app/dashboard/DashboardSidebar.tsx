@@ -49,6 +49,7 @@ export function DashboardSidebar({
   planStatus?: string | null;
   userEmail?: string | null;
   walletBalance?: number;
+  isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -92,7 +93,7 @@ export function DashboardSidebar({
         { name: "Équipe", href: "/dashboard/team", icon: UsersRound },
         { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
         { name: "Facturation & Wallet", href: "/dashboard/billing", icon: CreditCard },
-        { name: "Administration", href: "/dashboard/admin", icon: Shield },
+        ...(isSuperAdmin ? [{ name: "Administration", href: "/dashboard/admin", icon: Shield }] : []),
       ]
     }
   ];
