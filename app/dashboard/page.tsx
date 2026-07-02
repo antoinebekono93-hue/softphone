@@ -111,51 +111,43 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Stats Cards */}
-        <div className="glass-panel p-6 flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-[var(--accent-cyan)] flex items-center justify-center">
-              <Phone className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[var(--text-secondary)]">Appels aujourd'hui</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{callsToday}</p>
-            </div>
+        <div className="glass-panel p-6 flex flex-col gap-2">
+          <div className="flex justify-between items-start">
+            <p className="text-sm font-medium text-[var(--text-secondary)]">Appels aujourd'hui</p>
+            <div className="badge-glass-green">+12%</div>
+          </div>
+          <div className="mt-2">
+            <p className="text-3xl font-bold text-[var(--text-primary)]">{callsToday}</p>
           </div>
         </div>
 
-        <div className="glass-panel p-6 flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-[var(--accent-violet)] flex items-center justify-center">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[var(--text-secondary)]">Contacts totaux</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">{contactsCount}</p>
-            </div>
+        <div className="glass-panel p-6 flex flex-col gap-2">
+          <div className="flex justify-between items-start">
+            <p className="text-sm font-medium text-[var(--text-secondary)]">Contacts totaux</p>
+            <div className="badge-glass-green">+5%</div>
+          </div>
+          <div className="mt-2">
+            <p className="text-3xl font-bold text-[var(--text-primary)]">{contactsCount}</p>
           </div>
         </div>
 
-        <div className="glass-panel p-6 flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-              <Wallet className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[var(--text-secondary)]">Solde Wallet</p>
-              <p className="text-2xl font-bold text-[var(--text-primary)]">${org?.walletBalance?.toFixed(2) || "0.00"}</p>
-            </div>
+        <div className="glass-panel p-6 flex flex-col gap-2">
+          <div className="flex justify-between items-start">
+            <p className="text-sm font-medium text-[var(--text-secondary)]">Solde Wallet</p>
+            <div className="badge-glass-gray">Stable</div>
+          </div>
+          <div className="mt-2">
+            <p className="text-3xl font-bold text-[var(--text-primary)]">${org?.walletBalance?.toFixed(2) || "0.00"}</p>
           </div>
         </div>
 
-        <div className="glass-panel p-6 flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
-              <Activity className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-[var(--text-secondary)]">Statut système</p>
-              <p className="text-lg font-bold text-emerald-500">Opérationnel</p>
-            </div>
+        <div className="glass-panel p-6 flex flex-col gap-2">
+          <div className="flex justify-between items-start">
+            <p className="text-sm font-medium text-[var(--text-secondary)]">Statut système</p>
+            <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+          </div>
+          <div className="mt-2">
+            <p className="text-2xl font-bold text-emerald-500">Opérationnel</p>
           </div>
         </div>
       </div>
