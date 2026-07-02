@@ -6,8 +6,9 @@ export const metadata = {
   title: "Éditeur de Séquence | Antigravity",
 };
 
-export default async function SequenceEditorPage({ params }: { params: { id: string } }) {
-  const sequence = await getSequence(params.id);
+export default async function SequenceEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
+  const sequence = await getSequence(resolvedParams.id);
   
   if (!sequence) {
     notFound();
