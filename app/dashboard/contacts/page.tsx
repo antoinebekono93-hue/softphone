@@ -9,5 +9,10 @@ export default async function ContactsPage() {
   const contacts = await getContacts();
   const groups = await getContactGroups();
 
-  return <ContactsClient initialContacts={contacts} initialGroups={groups} />;
+  return (
+    <ContactsClient 
+      initialContacts={JSON.parse(JSON.stringify(contacts))} 
+      initialGroups={JSON.parse(JSON.stringify(groups))} 
+    />
+  );
 }

@@ -7,5 +7,5 @@ export const metadata = {
 
 export default async function SequencesPage() {
   const sequences = await getSequences();
-  return <SequencesClient initialSequences={sequences} />;
+  return <SequencesClient initialSequences={JSON.parse(JSON.stringify(sequences))} />;
 }
