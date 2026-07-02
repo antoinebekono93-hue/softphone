@@ -36,10 +36,10 @@ export default function LandingPage() {
           </nav>
           <div className="flex gap-4 items-center flex-1 justify-end">
             <ThemeToggle />
-            <Link href="/login" className="text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors hidden sm:block">
+            <Link href="/login" className="text-sm font-medium text-[var(--text-primary)] hover:text-gray-600 transition-colors hidden sm:block">
               Connexion
             </Link>
-            <Link href="/register" className="text-sm font-bold btn-primary-gradient px-4 py-2 rounded-full hover:scale-105 transition-transform">
+            <Link href="/register" className="text-sm font-medium bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-4 py-2 rounded-full transition-transform">
               Essai Gratuit
             </Link>
           </div>
@@ -53,60 +53,63 @@ export default function LandingPage() {
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-cyan-500/20 blur-[100px] rounded-full pointer-events-none -z-10"></div>
 
         {/* Badge */}
-        <div className="opacity-0 animate-fade-up inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] text-xs font-bold text-cyan-500 mb-8 backdrop-blur-md shadow-sm">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-          </span>
-          ✨ Nouveauté : Résumés d'appels par l'IA
+        <div className="opacity-0 animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-xs font-semibold text-[var(--text-primary)] mb-8 shadow-sm">
+          <span className="text-amber-500">✨</span>
+          Nouveau : Résumés d'appels par l'IA
         </div>
         
         {/* H1 */}
-        <h1 className="opacity-0 animate-fade-up [animation-delay:100ms] text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 max-w-5xl leading-[1.1] text-[var(--text-primary)]">
-          Le Softphone IA qui <br className="hidden md:block"/>
-          <span className="text-gradient">révolutionne votre relation client.</span>
+        <h1 className="opacity-0 animate-fade-up [animation-delay:100ms] text-5xl md:text-[5.5rem] font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.05] text-[var(--text-primary)]">
+          Le Softphone IA qui révolutionne votre <span className="text-gradient">relation client.</span>
         </h1>
         
         {/* Subtitle */}
-        <p className="opacity-0 animate-fade-up [animation-delay:200ms] text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mb-10 font-medium">
+        <p className="opacity-0 animate-fade-up [animation-delay:200ms] text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mb-10 font-normal">
           Passez des appels, analysez vos conversations avec l'IA et intégrez le tout à vos outils métiers en 3 clics. Déployez une téléphonie d'entreprise sans matériel ni limites.
         </p>
         
         {/* CTAs */}
         <div className="opacity-0 animate-fade-up [animation-delay:300ms] flex flex-col sm:flex-row gap-4 items-center mb-20">
-          <Link href="/register" className="text-base font-bold btn-primary-gradient px-8 py-4 rounded-full shadow-[0_0_40px_rgba(34,211,238,0.4)] hover:scale-105 transition-all">
-            Démarrer l'essai gratuit de 14 jours
+          <Link href="/register" className="text-base font-semibold bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-8 py-4 rounded-full shadow-sm hover:opacity-90 transition-all flex items-center gap-2">
+            Commencer <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </Link>
-          <Link href="/dashboard/softphone" className="text-base font-bold bg-[var(--bg-surface-solid)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-8 py-4 rounded-full hover:bg-[var(--bg-surface-hover)] transition-all flex items-center gap-2 shadow-sm">
-            Voir une Démo Live
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          <Link href="/dashboard/softphone" className="text-base font-semibold text-[var(--text-primary)] bg-transparent hover:bg-gray-100 px-8 py-4 rounded-full transition-all flex items-center gap-2">
+            Documentation
           </Link>
         </div>
 
         {/* Hero Visual Mockup */}
         <div className="opacity-0 animate-fade-up [animation-delay:400ms] w-full max-w-5xl relative">
-          <div className="aspect-[21/9] md:aspect-[16/9] rounded-[40px] border border-[var(--border-subtle)] glass-panel bg-[var(--bg-surface-solid)]/50 overflow-hidden flex items-end justify-center relative shadow-[0_30px_100px_rgba(0,0,0,0.4)]">
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg-base)] via-transparent to-transparent z-10 pointer-events-none"></div>
+          <div className="aspect-[21/9] md:aspect-[16/9] rounded-[24px] border border-[var(--border-subtle)] bg-[#f3f4f6] overflow-hidden flex flex-col relative shadow-xl">
+            {/* MacOS Header */}
+            <div className="h-12 border-b border-[var(--border-subtle)] bg-white/50 flex items-center px-4 gap-2">
+              <div className="w-3 h-3 rounded-full bg-rose-400"></div>
+              <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+              <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
+            </div>
             
-            {/* Fake Softphone UI */}
-            <div className="w-80 h-[80%] rounded-t-[2rem] border-t border-x border-[var(--border-subtle)] glass-panel shadow-2xl relative z-0 flex flex-col p-6 overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1/2 bg-cyan-500/10 blur-[50px]"></div>
-              <div className="w-full flex justify-between items-center mb-8">
-                <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">Appel en cours</div>
-                <div className="text-emerald-500 text-xs font-mono font-bold">04:12</div>
-              </div>
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-cyan-500 to-violet-500 mx-auto flex items-center justify-center text-3xl font-bold shadow-[0_0_30px_rgba(0,212,255,0.3)] mb-4 text-white">
-                JD
-              </div>
-              <div className="text-2xl text-center font-bold text-[var(--text-primary)] mb-1">Jean Dupont</div>
-              <div className="text-[var(--text-secondary)] text-center text-sm font-medium mb-12">Entreprise BTP S.A.</div>
-
-              <div className="flex justify-center gap-6 mt-auto">
-                <div className="w-14 h-14 rounded-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] flex items-center justify-center shadow-sm">
-                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-primary)]"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+            <div className="flex-1 flex items-end justify-center relative">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#f3f4f6] via-transparent to-transparent z-10 pointer-events-none"></div>
+              
+              {/* Fake Softphone UI */}
+              <div className="w-80 h-[90%] rounded-t-2xl border-t border-x border-[var(--border-subtle)] bg-white shadow-2xl relative z-0 flex flex-col p-6 overflow-hidden">
+                <div className="w-full flex justify-between items-center mb-8">
+                  <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">Appel en cours</div>
+                  <div className="text-emerald-500 text-xs font-mono font-bold">04:12</div>
                 </div>
-                <div className="w-14 h-14 rounded-full bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.4)] flex items-center justify-center text-white">
-                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" x2="1" y1="1" y2="23"></line></svg>
+                <div className="w-24 h-24 rounded-full bg-black mx-auto flex items-center justify-center text-3xl font-bold mb-4 text-white">
+                  JD
+                </div>
+                <div className="text-2xl text-center font-bold text-[var(--text-primary)] mb-1">Jean Dupont</div>
+                <div className="text-[var(--text-secondary)] text-center text-sm font-medium mb-12">Entreprise BTP S.A.</div>
+
+                <div className="flex justify-center gap-6 mt-auto">
+                  <div className="w-14 h-14 rounded-full bg-white border border-[var(--border-subtle)] flex items-center justify-center shadow-sm">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-primary)]"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  </div>
+                  <div className="w-14 h-14 rounded-full bg-rose-500 shadow-sm flex items-center justify-center text-white">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" x2="1" y1="1" y2="23"></line></svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -243,10 +246,10 @@ export default function LandingPage() {
 
       {/* 7. Final CTA */}
       <section className="py-32 px-4 max-w-7xl mx-auto w-full text-center">
-        <h2 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-8 text-[var(--text-primary)]">Prêt à moderniser <br/> <span className="text-gradient">votre téléphonie ?</span></h2>
+        <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 text-[var(--text-primary)]">Prêt à moderniser <br/> <span className="text-gradient">votre téléphonie ?</span></h2>
         <p className="text-xl text-[var(--text-secondary)] mb-12 font-medium">Déployable en 2 minutes. Sans engagement.</p>
-        <Link href="/register" className="inline-block text-lg font-bold btn-primary-gradient px-10 py-5 rounded-full shadow-[0_0_40px_rgba(34,211,238,0.4)] hover:scale-105 transition-all">
-          Commencer l'essai gratuit de 14 jours
+        <Link href="/register" className="inline-flex text-lg font-semibold bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-10 py-5 rounded-full shadow-sm hover:opacity-90 transition-all items-center gap-2">
+          Commencer l'essai gratuit de 14 jours <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </Link>
       </section>
 
