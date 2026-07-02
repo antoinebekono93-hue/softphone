@@ -53,11 +53,11 @@ export default function OnboardingNumberPage() {
   };
 
   return (
-    <div className="w-full max-w-md apple-surface p-8 sm:p-10 relative mx-auto mt-10">
+    <div className="w-full max-w-md glass-panel p-8 sm:p-10 relative mx-auto mt-10">
       <div className="relative z-10">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-2 tracking-tight">Pick a phone number</h1>
-          <p className="text-[var(--apple-text-secondary)] text-[15px]">Choose a local or toll-free number for your business. (Free during trial).</p>
+          <h1 className="text-2xl font-bold mb-2 tracking-tight text-[var(--text-primary)]">Pick a phone number</h1>
+          <p className="text-[var(--text-secondary)] text-[15px]">Choose a local or toll-free number for your business. (Free during trial).</p>
         </div>
 
       {error && (
@@ -70,7 +70,7 @@ export default function OnboardingNumberPage() {
         <select 
           value={country}
           onChange={(e) => setCountry(e.target.value)}
-          className="bg-[var(--apple-bg-primary)] border border-[var(--apple-border)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--apple-accent)] transition-colors flex-1"
+          className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--border-glow)] transition-colors flex-1"
         >
           <option value="US">United States (+1)</option>
           <option value="CA">Canada (+1)</option>
@@ -80,7 +80,7 @@ export default function OnboardingNumberPage() {
         <button 
           onClick={handleSearch}
           disabled={isSearching}
-          className="apple-btn flex justify-center items-center gap-2 py-3 px-6 text-[15px]"
+          className="btn-primary flex justify-center items-center gap-2 py-3 px-6 text-[15px]"
         >
           {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           {isSearching ? "Searching" : "Search"}
@@ -89,20 +89,20 @@ export default function OnboardingNumberPage() {
 
       <div className="space-y-4">
         {numbers.length === 0 && !isSearching && (
-          <div className="text-center py-10 text-[var(--apple-text-secondary)] border border-dashed border-[var(--apple-border)] rounded-xl">
+          <div className="text-center py-10 text-[var(--text-secondary)] border border-dashed border-[var(--border-subtle)] rounded-xl bg-[var(--bg-surface-solid)]/50">
             No numbers found for this region.
           </div>
         )}
 
         {numbers.map((num) => (
-          <div key={num.phone_number} className="flex items-center justify-between p-5 rounded-xl border border-[var(--apple-border)] hover:border-[var(--apple-accent)]/50 bg-[var(--apple-bg-primary)] transition-colors group">
+          <div key={num.phone_number} className="flex items-center justify-between p-5 rounded-xl border border-[var(--border-subtle)] hover:border-[var(--border-glow)] bg-[var(--bg-surface-solid)] transition-colors group">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-cyan-500/10 text-cyan-500 flex items-center justify-center border border-cyan-500/20">
                 <Phone className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-lg font-semibold tracking-wide">{num.phone_number}</div>
-                <div className="text-sm text-[var(--apple-text-secondary)]">
+                <div className="text-lg font-bold tracking-tight text-[var(--text-primary)]">{num.phone_number}</div>
+                <div className="text-sm text-[var(--text-secondary)] font-medium">
                   {num.locality ? `${num.locality}, ${num.administrative_area}` : "National"}
                 </div>
               </div>
@@ -110,7 +110,7 @@ export default function OnboardingNumberPage() {
             <button 
               onClick={() => handleBuy(num.phone_number)}
               disabled={isBuying !== null}
-              className="px-6 py-2.5 rounded-full font-medium text-sm transition-all duration-200 bg-[var(--apple-text-primary)] text-[var(--apple-bg-primary)] hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              className="px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-200 bg-[var(--bg-base)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] disabled:opacity-50 disabled:hover:bg-[var(--bg-base)]"
             >
               {isBuying === num.phone_number ? <Loader2 className="w-4 h-4 animate-spin" /> : "Select"}
             </button>
@@ -121,7 +121,7 @@ export default function OnboardingNumberPage() {
       <div className="mt-8 text-center">
         <button 
           onClick={() => router.push("/dashboard")}
-          className="text-[14px] font-medium text-[var(--apple-text-secondary)] hover:text-[var(--apple-text-primary)] transition-colors underline-offset-4 hover:underline"
+          className="text-[14px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors underline-offset-4 hover:underline"
         >
           Skip this step for now
         </button>
