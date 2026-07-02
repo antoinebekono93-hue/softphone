@@ -37,15 +37,15 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--apple-bg-primary)] text-[var(--apple-text-primary)] flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] flex flex-col items-center justify-center p-4">
       <Link href="/" className="absolute top-8 left-8 text-2xl font-bold tracking-tight">
         Antigravity
       </Link>
       
-      <div className="w-full max-w-md apple-surface p-8 sm:p-10 relative">
+      <div className="w-full max-w-md glass-panel p-8 sm:p-10 relative">
         <div className="relative z-10">
           <h1 className="text-2xl font-bold mb-2 tracking-tight">Create your account</h1>
-          <p className="text-[var(--apple-text-secondary)] mb-8 text-[15px]">Start your 14-day free trial. No credit card required.</p>
+          <p className="text-[var(--text-secondary)] mb-8 text-[15px]">Start your 14-day free trial. No credit card required.</p>
           
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[14px]">
@@ -55,27 +55,27 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
              <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-medium text-[var(--apple-text-secondary)]">Organization Name</label>
-              <input required name="orgName" type="text" placeholder="Acme Corp" className="w-full bg-[var(--apple-bg-primary)] border border-[var(--apple-border)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--apple-accent)] transition-colors" />
+              <label className="text-[13px] font-medium text-[var(--text-secondary)]">Organization Name</label>
+              <input required name="orgName" type="text" placeholder="Acme Corp" className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--border-glow)] transition-colors" />
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-medium text-[var(--apple-text-secondary)]">Email</label>
-              <input required name="email" type="email" placeholder="name@company.com" className="w-full bg-[var(--apple-bg-primary)] border border-[var(--apple-border)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--apple-accent)] transition-colors" />
+              <label className="text-[13px] font-medium text-[var(--text-secondary)]">Email</label>
+              <input required name="email" type="email" placeholder="name@company.com" className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--border-glow)] transition-colors" />
             </div>
             
             <div className="flex flex-col gap-2">
-              <label className="text-[13px] font-medium text-[var(--apple-text-secondary)]">Password</label>
-              <input required name="password" type="password" placeholder="••••••••" minLength={6} className="w-full bg-[var(--apple-bg-primary)] border border-[var(--apple-border)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--apple-accent)] transition-colors" />
+              <label className="text-[13px] font-medium text-[var(--text-secondary)]">Password</label>
+              <input required name="password" type="password" placeholder="••••••••" minLength={6} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[15px] focus:outline-none focus:border-[var(--border-glow)] transition-colors" />
             </div>
 
-            <button disabled={isLoading} type="submit" className="mt-4 w-full apple-btn text-[15px]">
+            <button disabled={isLoading} type="submit" className="mt-4 w-full btn-primary text-[15px]">
               {isLoading ? "Creating account..." : "Continue"}
             </button>
           </form>
 
-          <p className="mt-8 text-center text-[14px] text-[var(--apple-text-secondary)]">
-            Already have an account? <Link href="/login" className="text-[var(--apple-accent)] hover:text-[var(--apple-accent-hover)] transition-colors">Log in</Link>
+          <p className="mt-8 text-center text-[14px] text-[var(--text-secondary)]">
+            Already have an account? <Link href="/login" className="text-cyan-500 hover:text-cyan-400 transition-colors">Log in</Link>
           </p>
         </div>
       </div>

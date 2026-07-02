@@ -118,12 +118,15 @@ export default function OnboardingNumberPage() {
         ))}
       </div>
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center pt-6 border-t border-[var(--border-subtle)]">
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
+          Le choix d'un numéro est optionnel. Vous pouvez le faire plus tard dans vos paramètres.
+        </p>
         <button 
           onClick={() => router.push("/dashboard")}
-          className="text-[14px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors underline-offset-4 hover:underline"
+          className="text-[15px] font-bold text-cyan-500 hover:text-cyan-400 transition-colors bg-cyan-500/10 hover:bg-cyan-500/20 px-6 py-3 rounded-xl w-full sm:w-auto"
         >
-          Skip this step for now
+          Passer cette étape pour le moment
         </button>
       </div>
       </div>

@@ -25,6 +25,21 @@ export default async function DashboardPage() {
 
   // Fetch chart data (last 7 days)
   const chartData = [];
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(today.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  const [allCalls, allMessages] = await Promise.all([
+    prisma.callLog.findMany({
+      where: { organizationId: orgId, startedAt: { gte: sevenDaysAgo } },
+      select: { startedAt: true }
+    }),
+    prisma.smsMessage.findMany({
+      where: { organizationId: orgId, sentAt: { gte: sevenDaysAgo } },
+      select: { sentAt: true }
+    })
+  ]);
+
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
@@ -32,10 +47,8 @@ export default async function DashboardPage() {
     const nextD = new Date(d);
     nextD.setDate(d.getDate() + 1);
     
-    const [calls, messages] = await Promise.all([
-      prisma.callLog.count({ where: { organizationId: orgId, startedAt: { gte: d, lt: nextD } } }),
-      prisma.smsMessage.count({ where: { organizationId: orgId, sentAt: { gte: d, lt: nextD } } })
-    ]);
+    const calls = allCalls.filter(c => c.startedAt >= d && c.startedAt < nextD).length;
+    const messages = allMessages.filter(m => m.sentAt >= d && m.sentAt < nextD).length;
     
     chartData.push({
       date: d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),

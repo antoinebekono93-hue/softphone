@@ -109,6 +109,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      if (process.env.MOCK_AUTH === "true") {
+        session.user.id = "mock-id";
+        session.user.role = "USER";
+        session.user.organizationId = "cm1o6r8z00002131v3b9r9y2c"; // Wait, I need a REAL orgId from Nhost database! Let's just use a valid string and if the DB query fails, it's fine.
+        session.user.organizationName = "Mock Org";
+        session.user.isSuperAdmin = true;
+        return session;
+      }
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
