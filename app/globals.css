@@ -11,7 +11,7 @@
 
 :root {
   /* Supastarter-like Clean Light Theme */
-  --bg-base: #f9fafb; /* Very light gray/off-white */
+  --bg-base: #fafafa; /* Very light gray/off-white */
   --bg-surface: #ffffff; /* Pure white for cards */
   --bg-surface-solid: #ffffff;
   --bg-surface-hover: #f3f4f6; /* Hover state for rows/cards */

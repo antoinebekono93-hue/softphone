@@ -23,7 +23,7 @@ export default function LandingPage() {
       `}} />
 
       {/* 1. Header (Minimalist Navigation) */}
-      <header className="fixed top-0 inset-x-0 h-16 flex items-center justify-between px-6 mx-auto w-full z-50 bg-[var(--bg-surface-solid)]/40 backdrop-blur-xl border-b border-[var(--border-subtle)]">
+      <header className="fixed top-0 inset-x-0 h-16 flex items-center justify-between px-6 mx-auto w-full z-50 bg-[var(--bg-base)] border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-2 flex-1">
             <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-cyan-500 to-violet-500 shadow-[0_0_15px_rgba(0,212,255,0.3)]"></div>
@@ -53,9 +53,9 @@ export default function LandingPage() {
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-cyan-500/20 blur-[100px] rounded-full pointer-events-none -z-10"></div>
 
         {/* Badge */}
-        <div className="opacity-0 animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-xs font-semibold text-[var(--text-primary)] mb-8 shadow-sm">
-          <span className="text-amber-500">✨</span>
-          Nouveau : Résumés d'appels par l'IA
+        <div className="opacity-0 animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 bg-white text-xs text-[var(--text-primary)] mb-8 shadow-sm">
+          <span className="font-bold">Nouveau :</span>
+          <span>Fonctionnalité incroyable de votre SaaS</span>
         </div>
         
         {/* H1 */}
@@ -64,8 +64,8 @@ export default function LandingPage() {
         </h1>
         
         {/* Subtitle */}
-        <p className="opacity-0 animate-fade-up [animation-delay:200ms] text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mb-10 font-normal">
-          Passez des appels, analysez vos conversations avec l'IA et intégrez le tout à vos outils métiers en 3 clics. Déployez une téléphonie d'entreprise sans matériel ni limites.
+        <p className="opacity-0 animate-fade-up [animation-delay:200ms] text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 font-normal leading-relaxed">
+          Ceci est une application de démonstration construite avec supastarter. Elle vous fera gagner beaucoup de temps et d'efforts pour construire votre prochain SaaS.
         </p>
         
         {/* CTAs */}
@@ -79,36 +79,49 @@ export default function LandingPage() {
         </div>
 
         {/* Hero Visual Mockup */}
-        <div className="opacity-0 animate-fade-up [animation-delay:400ms] w-full max-w-5xl relative">
-          <div className="aspect-[21/9] md:aspect-[16/9] rounded-[24px] border border-[var(--border-subtle)] bg-[#f3f4f6] overflow-hidden flex flex-col relative shadow-xl">
-            {/* MacOS Header */}
-            <div className="h-12 border-b border-[var(--border-subtle)] bg-white/50 flex items-center px-4 gap-2">
-              <div className="w-3 h-3 rounded-full bg-rose-400"></div>
-              <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-              <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-            </div>
-            
-            <div className="flex-1 flex items-end justify-center relative">
-              <div className="absolute inset-0 bg-gradient-to-t from-[#f3f4f6] via-transparent to-transparent z-10 pointer-events-none"></div>
-              
-              {/* Fake Softphone UI */}
-              <div className="w-80 h-[90%] rounded-t-2xl border-t border-x border-[var(--border-subtle)] bg-white shadow-2xl relative z-0 flex flex-col p-6 overflow-hidden">
-                <div className="w-full flex justify-between items-center mb-8">
-                  <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">Appel en cours</div>
-                  <div className="text-emerald-500 text-xs font-mono font-bold">04:12</div>
+        <div className="opacity-0 animate-fade-up [animation-delay:400ms] w-full max-w-5xl relative mt-8">
+          <div className="rounded-3xl bg-[#f3f4f6] p-4 md:p-8 overflow-hidden relative">
+            <div className="rounded-xl bg-white shadow-2xl overflow-hidden border border-gray-200">
+              {/* MacOS / Browser Header */}
+              <div className="h-12 border-b border-gray-200 bg-white flex items-center justify-between px-4">
+                <div className="flex items-center gap-2 w-1/3">
+                  <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
+                  <div className="w-3 h-3 rounded-full bg-[#ffbd2e]"></div>
+                  <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
                 </div>
-                <div className="w-24 h-24 rounded-full bg-black mx-auto flex items-center justify-center text-3xl font-bold mb-4 text-white">
-                  JD
-                </div>
-                <div className="text-2xl text-center font-bold text-[var(--text-primary)] mb-1">Jean Dupont</div>
-                <div className="text-[var(--text-secondary)] text-center text-sm font-medium mb-12">Entreprise BTP S.A.</div>
-
-                <div className="flex justify-center gap-6 mt-auto">
-                  <div className="w-14 h-14 rounded-full bg-white border border-[var(--border-subtle)] flex items-center justify-center shadow-sm">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-primary)]"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                <div className="w-1/3 flex justify-center">
+                  <div className="bg-gray-100 rounded-md text-xs text-gray-500 py-1.5 px-4 font-medium flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    app-demo.supastarter.dev
                   </div>
-                  <div className="w-14 h-14 rounded-full bg-rose-500 shadow-sm flex items-center justify-center text-white">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" x2="1" y1="1" y2="23"></line></svg>
+                </div>
+                <div className="w-1/3 flex justify-end gap-3 text-gray-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/><line x1="16" x2="22" y1="5" y2="5"/><line x1="19" x2="19" y1="2" y2="8"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                </div>
+              </div>
+              
+              {/* Fake Dashboard Inner Content */}
+              <div className="aspect-[21/9] md:aspect-[16/9] flex items-center justify-center relative bg-[#fafafa]">
+                {/* Fake Softphone UI */}
+                <div className="w-80 h-[80%] rounded-2xl border border-[var(--border-subtle)] bg-white shadow-lg relative z-0 flex flex-col p-6 overflow-hidden mt-8">
+                  <div className="w-full flex justify-between items-center mb-8">
+                    <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">Appel en cours</div>
+                    <div className="text-emerald-500 text-xs font-mono font-bold">04:12</div>
+                  </div>
+                  <div className="w-24 h-24 rounded-full bg-black mx-auto flex items-center justify-center text-3xl font-bold mb-4 text-white">
+                    JD
+                  </div>
+                  <div className="text-2xl text-center font-bold text-[var(--text-primary)] mb-1">Jean Dupont</div>
+                  <div className="text-[var(--text-secondary)] text-center text-sm font-medium mb-12">Entreprise BTP S.A.</div>
+
+                  <div className="flex justify-center gap-6 mt-auto">
+                    <div className="w-14 h-14 rounded-full bg-white border border-[var(--border-subtle)] flex items-center justify-center shadow-sm">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--text-primary)]"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                    </div>
+                    <div className="w-14 h-14 rounded-full bg-rose-500 shadow-sm flex items-center justify-center text-white">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path><line x1="23" x2="1" y1="1" y2="23"></line></svg>
+                    </div>
                   </div>
                 </div>
               </div>
