@@ -65,7 +65,7 @@ export default async function SettingsPage() {
                WhatsApp Business Integration
             </h3>
             <p className="text-sm text-[var(--text-secondary)] mb-4">Connect your WhatsApp Business account directly to reply to customers from our inbox.</p>
-            <EmbeddedSignupButton appId={process.env.NEXT_PUBLIC_META_APP_ID || "YOUR_META_APP_ID"} onSuccess={(token) => console.log("Linked! Token:", token)} />
+            <EmbeddedSignupButton appId={process.env.NEXT_PUBLIC_META_APP_ID || "YOUR_META_APP_ID"} />
           </div>
         </div>
 
