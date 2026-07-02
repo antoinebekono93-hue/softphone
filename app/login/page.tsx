@@ -17,17 +17,29 @@ export default function LoginPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    if (res?.error) {
-      setError("Invalid email or password");
+      console.log("signIn response:", JSON.stringify(res));
+
+      if (res?.error) {
+        setError("Invalid email or password. Details: " + res.error);
+        setIsLoading(false);
+      } else if (res?.ok) {
+        // Use router-based redirect instead of window.location
+        window.location.href = "/dashboard";
+      } else {
+        setError("Unexpected response: " + JSON.stringify(res));
+        setIsLoading(false);
+      }
+    } catch (err: any) {
+      console.error("signIn exception:", err);
+      setError("Exception during sign in: " + (err?.message || String(err)));
       setIsLoading(false);
-    } else {
-      window.location.href = "/dashboard/softphone";
     }
   };
 
