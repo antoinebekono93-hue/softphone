@@ -57,47 +57,78 @@ export function DashboardSidebar({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  // Grouped Navigation
-  const navGroups = [
-    {
-      title: "Services de base",
-      items: [
-        { name: "Aperçu du projet", href: "/dashboard", icon: Home },
-        { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
-        { name: "Séquences", href: "/dashboard/sequences", icon: Workflow },
-        { name: "Boîte de réception", href: "/dashboard/inbox", icon: Inbox },
-        { name: "Softphone", href: "/dashboard/softphone", icon: Phone },
-        { name: "Analyse & Rapports", href: "/dashboard/analytics", icon: BarChart2 },
-        { name: "CRM (Pipeline)", href: "/dashboard/crm", icon: Users },
-      ]
-    },
-    {
-      title: "Centre d'applications",
-      items: [
-        { name: "Agents Vocaux IA", href: "/dashboard/ai-agents", icon: Bot },
-        { name: "Mémoire & RAG", href: "/dashboard/rag-memory", icon: Brain },
-        { name: "Playground IA", href: "/dashboard/ai-playground", icon: Terminal },
-        { name: "LiveKit (Bêta)", href: "/dashboard/livekit", icon: Server },
-        { name: "Laboratoire Vocal", href: "/dashboard/voice-lab", icon: Sparkles },
-        { name: "Studio Vocal (TTS)", href: "/dashboard/tts", icon: Mic2 },
-        { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
-        { name: "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
-        { name: "Numéros de téléphone", href: "/dashboard/numbers", icon: Hash },
-        { name: "Connectivité IoT", href: "/dashboard/iot", icon: Wifi },
-        { name: "Vérification OTP", href: "/dashboard/verify", icon: ShieldCheck },
-      ]
-    },
-    {
-      title: "Configuration",
-      items: [
-        { name: "SVI & Routage", href: "/dashboard/ivr", icon: GitMerge },
-        { name: "Équipe", href: "/dashboard/team", icon: UsersRound },
-        { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
-        { name: "Facturation & Wallet", href: "/dashboard/billing", icon: CreditCard },
-        ...(isSuperAdmin ? [{ name: "Administration", href: "/dashboard/admin", icon: Shield }] : []),
-      ]
-    }
-  ];
+  // Grouped Navigation by Module
+  const getActiveModule = () => {
+    if (pathname.includes("/dashboard/sms")) return "sms";
+    if (pathname.includes("/dashboard/whatsapp")) return "whatsapp";
+    if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice") || pathname.includes("/dashboard/tts")) return "ai";
+    return "phone"; // Default
+  };
+
+  const activeModule = getActiveModule();
+
+  const allNavGroups = {
+    phone: [
+      {
+        title: "Téléphone & CRM",
+        items: [
+          { name: "Tableau de bord", href: "/dashboard", icon: Home },
+          { name: "Softphone", href: "/dashboard/softphone", icon: Phone },
+          { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
+          { name: "Séquences d'appels", href: "/dashboard/sequences", icon: Workflow },
+          { name: "Boîte de réception", href: "/dashboard/inbox", icon: Inbox },
+          { name: "Analyse & Rapports", href: "/dashboard/analytics", icon: BarChart2 },
+        ]
+      },
+      {
+        title: "Configuration",
+        items: [
+          { name: "Numéros de téléphone", href: "/dashboard/numbers", icon: Hash },
+          { name: "SVI & Routage", href: "/dashboard/ivr", icon: GitMerge },
+          { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
+        ]
+      }
+    ],
+    sms: [
+      {
+        title: "Messagerie SMS",
+        items: [
+          { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
+          { name: "Boîte de réception", href: "/dashboard/sms-inbox", icon: Inbox },
+          { name: "Modèles SMS", href: "/dashboard/sms-templates", icon: BookUser },
+        ]
+      }
+    ],
+    whatsapp: [
+      {
+        title: "WhatsApp Business",
+        items: [
+          { name: "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
+          { name: "Chat WhatsApp", href: "/dashboard/whatsapp-chat", icon: Inbox },
+          { name: "Modèles approuvés", href: "/dashboard/whatsapp-templates", icon: ShieldCheck },
+        ]
+      }
+    ],
+    ai: [
+      {
+        title: "Employés Virtuels",
+        items: [
+          { name: "Mes Agents Vocaux", href: "/dashboard/ai-agents", icon: Bot },
+          { name: "Mémoire & RAG", href: "/dashboard/rag-memory", icon: Brain },
+          { name: "Playground IA", href: "/dashboard/ai-playground", icon: Terminal },
+        ]
+      },
+      {
+        title: "Outils Avancés",
+        items: [
+          { name: "Laboratoire Vocal", href: "/dashboard/voice-lab", icon: Sparkles },
+          { name: "Studio Vocal (TTS)", href: "/dashboard/tts", icon: Mic2 },
+        ]
+      }
+    ]
+  };
+
+  const navGroups = allNavGroups[activeModule as keyof typeof allNavGroups] || allNavGroups.phone;
 
   const closeMobile = () => setIsMobileOpen(false);
 
@@ -139,30 +170,8 @@ export function DashboardSidebar({
           <X className="w-5 h-5" />
         </button>
 
-        {/* Top section: Org Info */}
-        <div className={`p-4 border-b border-[var(--border-subtle)] flex items-center h-[72px] ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-          {isCollapsed ? (
-            <div className="w-10 h-10 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-lg shadow-sm">
-              {organizationName?.charAt(0) || "A"}
-            </div>
-          ) : (
-            <div className="flex items-center justify-between w-full cursor-pointer hover:bg-[var(--bg-surface-hover)] p-2 -m-2 rounded-xl transition-all">
-               <div className="flex items-center gap-3 overflow-hidden">
-                 <div className="w-10 h-10 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
-                   {organizationName?.charAt(0) || "A"}
-                 </div>
-                 <div className="truncate">
-                   <div className="font-semibold text-sm text-[var(--text-primary)] truncate">{organizationName || "Antigravité"}</div>
-                   <div className="text-xs text-[var(--text-secondary)] font-medium truncate">{planName || "PLAN GRATUIT"}</div>
-                 </div>
-               </div>
-               <ChevronDown className="w-4 h-4 text-[var(--text-secondary)] shrink-0 hidden md:block" />
-            </div>
-          )}
-        </div>
-
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8">
+        <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8 mt-12 md:mt-0">
           {navGroups.map((group, idx) => (
             <div key={idx}>
               {!isCollapsed && (
@@ -196,14 +205,6 @@ export function DashboardSidebar({
             </div>
           ))}
         </div>
-
-        {/* Wallet Balance */}
-        {!isCollapsed && (
-          <div className="mx-4 mb-4 p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex justify-between items-center relative overflow-hidden shadow-sm">
-            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider z-10">Wallet</span>
-            <span className="text-sm font-bold text-[var(--text-primary)] z-10">${walletBalance?.toFixed(2) || "0.00"}</span>
-          </div>
-        )}
 
         {/* Bottom section */}
         <div className="p-4 border-t border-[var(--border-subtle)] flex flex-col gap-2">
