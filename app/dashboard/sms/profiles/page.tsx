@@ -7,10 +7,11 @@ import { toast } from "sonner";
 
 type MessagingProfile = {
   id: string;
+  telnyxId: string;
   name: string;
-  created_at: string;
-  updated_at: string;
-  record_type: string;
+  webhookUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export default function MessagingProfilesPage() {
@@ -161,22 +162,24 @@ export default function MessagingProfilesPage() {
               <tbody>
                 {profiles.map((profile) => (
                   <tr key={profile.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)]/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-[var(--text-primary)] flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
-                        <MessageSquare className="w-4 h-4 text-cyan-500" />
-                      </div>
-                      {profile.name}
+                    <td className="px-6 py-4 font-medium text-[var(--text-primary)]">
+                      <Link href={`/dashboard/sms/profiles/${profile.telnyxId}`} className="flex items-center gap-3 hover:text-cyan-500 transition-colors">
+                        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                          <MessageSquare className="w-4 h-4 text-cyan-500" />
+                        </div>
+                        {profile.name}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 font-mono text-[var(--text-secondary)] text-xs">
-                      {profile.id}
+                      {profile.telnyxId}
                     </td>
                     <td className="px-6 py-4 text-[var(--text-secondary)]">
-                      {new Date(profile.created_at).toLocaleDateString()}
+                      {new Date(profile.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-solid)] rounded-lg transition-colors">
+                      <Link href={`/dashboard/sms/profiles/${profile.telnyxId}`} className="p-2 inline-flex text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-solid)] rounded-lg transition-colors">
                         <MoreVertical className="w-4 h-4" />
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

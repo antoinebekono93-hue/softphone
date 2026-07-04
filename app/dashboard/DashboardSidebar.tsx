@@ -84,7 +84,6 @@ export function DashboardSidebar({
         title: "Configuration",
         items: [
           { name: "Numéros de téléphone", href: "/dashboard/numbers", icon: Hash },
-          { name: "Profils de messagerie", href: "/dashboard/settings/messaging-profiles", icon: MessageSquare },
           { name: "SVI & Routage", href: "/dashboard/ivr", icon: GitMerge },
           { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
         ]
@@ -96,6 +95,7 @@ export function DashboardSidebar({
         items: [
           { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
           { name: "Boîte de réception", href: "/dashboard/sms-inbox", icon: Inbox },
+          { name: "Profils SMS", href: "/dashboard/sms/profiles", icon: Settings },
           { name: "Modèles (Bientôt)", href: "/dashboard/sms", icon: BookUser },
         ]
       }

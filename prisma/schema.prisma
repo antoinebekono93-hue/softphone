@@ -133,6 +133,7 @@ model Organization {
   // Relations
   users               User[]
   phoneNumbers        PhoneNumber[]
+  messagingProfiles   MessagingProfile[]
   simCards            SimCard[]
   callLogs            CallLog[]
   contacts            Contact[]
@@ -158,30 +159,49 @@ model Organization {
   @@index([stripeCustomerId])
 }
 
-model PhoneNumber {
-  id           String            @id @default(cuid())
-  number       String            @unique // E.164 format
-  friendlyName String?
-  telnyxId     String            @unique // Telnyx Phone Number ID
-  country      String?           // ISO 3166-1 alpha-2
-  status       String            @default("ACTIVE")
-
+model MessagingProfile {
+  id             String        @id @default(cuid())
+  telnyxId       String        @unique // The ID returned by Telnyx
+  name           String
+  webhookUrl     String?
+  
   organizationId String
-  assignedUserId String? // Can be assigned to a specific user or left null for the entire org
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phoneNumbers   PhoneNumber[]
+
+  @@index([organizationId])
+}
+
+model PhoneNumber {
+  id                 String            @id @default(cuid())
+  number             String            @unique // E.164 format
+  friendlyName       String?
+  telnyxId           String            @unique // Telnyx Phone Number ID
+  country            String?           // ISO 3166-1 alpha-2
+  status             String            @default("ACTIVE")
+  
+  organizationId     String
+  assignedUserId     String? // Can be assigned to a specific user or left null for the entire org
+  messagingProfileId String? // The linked messaging profile
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  assignedUser User?        @relation("AssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  voiceAIAgent VoiceAIAgent?
-  callLogs     CallLog[]
-  smsMessages  SmsMessage[]
-  campaigns    Campaign[]
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignedUser     User?             @relation("AssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  messagingProfile MessagingProfile? @relation(fields: [messagingProfileId], references: [id], onDelete: SetNull)
+  voiceAIAgent     VoiceAIAgent?
+  callLogs         CallLog[]
+  smsMessages      SmsMessage[]
+  campaigns        Campaign[]
 
   @@index([organizationId])
   @@index([number])
+  @@index([messagingProfileId])
 }
 
 model Contact {

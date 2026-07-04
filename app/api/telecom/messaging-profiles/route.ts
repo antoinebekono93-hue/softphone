@@ -11,32 +11,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const org = await prisma.organization.findUnique({
-      where: { id: session.user.organizationId }
-    });
-    const apiKey = org?.telnyxApiKey || process.env.TELNYX_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json({ error: "No Telnyx API key configured" }, { status: 500 });
-    }
-
-    const res = await fetch(`${API_BASE}/messaging_profiles`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Accept': 'application/json'
-      }
+    // List profiles from OUR database for this specific organization
+    const profiles = await prisma.messagingProfile.findMany({
+      where: { organizationId: session.user.organizationId },
+      orderBy: { createdAt: 'desc' }
     });
 
-    const data = await res.json();
-    
-    if (!res.ok) {
-      return NextResponse.json({ error: data.errors?.[0]?.detail || "Failed to fetch messaging profiles" }, { status: res.status });
-    }
-
-    return NextResponse.json({ profiles: data.data });
-
+    return NextResponse.json({ profiles });
   } catch (error: any) {
-    console.error("[Telnyx Messaging Profiles GET Error]", error);
+    console.error("[Messaging Profiles GET Error]", error);
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
@@ -62,6 +45,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No Telnyx API key configured" }, { status: 500 });
     }
 
+    // Set Webhook URL to point to our Next.js app automatically
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://app.antigravite.com");
+    const webhookUrl = `${baseUrl}/api/webhooks/telnyx/sms`;
+
+    // 1. Create on Telnyx
     const res = await fetch(`${API_BASE}/messaging_profiles`, {
       method: 'POST',
       headers: {
@@ -71,19 +59,31 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         name: name,
+        webhook_url: webhookUrl,
+        webhook_api_version: "2"
       })
     });
 
     const data = await res.json();
     
     if (!res.ok) {
-      return NextResponse.json({ error: data.errors?.[0]?.detail || "Failed to create messaging profile" }, { status: res.status });
+      return NextResponse.json({ error: data.errors?.[0]?.detail || "Failed to create messaging profile on Telnyx" }, { status: res.status });
     }
 
-    return NextResponse.json({ profile: data.data });
+    // 2. Save in our Database (Linked to this specific Organization)
+    const profile = await prisma.messagingProfile.create({
+      data: {
+        telnyxId: data.data.id,
+        name: data.data.name,
+        webhookUrl: webhookUrl,
+        organizationId: session.user.organizationId
+      }
+    });
+
+    return NextResponse.json({ profile });
 
   } catch (error: any) {
-    console.error("[Telnyx Messaging Profiles POST Error]", error);
+    console.error("[Messaging Profiles POST Error]", error);
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
