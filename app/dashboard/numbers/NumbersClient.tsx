@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Phone, Bot, User, Plus, Search, Loader2, Edit2, X, ShoppingCart } from "lucide-react";
-import { updateNumber, searchNumbers, buyNumber } from "./actions";
+import { Phone, Bot, User, Plus, Loader2, Edit2, X } from "lucide-react";
+import { updateNumber } from "./actions";
 
 import Link from "next/link";
 
