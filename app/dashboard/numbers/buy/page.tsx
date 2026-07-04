@@ -213,7 +213,7 @@ export default function BuyNumberPage() {
                     <Phone className="w-6 h-6 text-[var(--text-primary)] group-hover:text-cyan-400 transition-colors" />
                   </div>
                   <div className="text-right">
-                    <span className="block text-lg font-bold text-emerald-400">${num.cost.toFixed(2)}</span>
+                    <span className="block text-lg font-bold text-emerald-400">${(num.cost || 0).toFixed(2)}</span>
                     <span className="text-xs font-medium text-[var(--text-secondary)]">/ mois</span>
                   </div>
                 </div>
@@ -223,7 +223,7 @@ export default function BuyNumberPage() {
                 </h2>
                 
                 <div className="flex flex-wrap gap-2 mb-8">
-                  {num.features.map(feat => (
+                  {(num.features || []).map((feat: string) => (
                     <span key={feat} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
                       {feat}
                     </span>
