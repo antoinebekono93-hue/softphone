@@ -194,8 +194,11 @@ export default function MessagingProfileDetailPage() {
             
             <div className="p-6">
               {unlinkedNumbers.length === 0 ? (
-                <div className="text-center py-6 text-[var(--text-secondary)]">
-                  <p>Vous n'avez pas d'autres numéros disponibles à lier.</p>
+                <div className="text-center py-8 text-[var(--text-secondary)]">
+                  <p className="mb-4">Vous n'avez pas d'autres numéros disponibles à lier.</p>
+                  <Link href="/dashboard/numbers/buy" className="btn-primary-gradient px-6 py-2.5 text-sm rounded-xl font-semibold inline-flex items-center gap-2 transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(0,212,255,0.2)] hover:shadow-[0_0_30px_rgba(0,212,255,0.4)]">
+                    Acheter un numéro
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
