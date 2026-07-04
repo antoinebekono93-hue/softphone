@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 
 const API_BASE = 'https://api.telnyx.com/v2';
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
     if (!session?.user?.organizationId) {
@@ -12,7 +12,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 
     const { messagingProfileId } = await request.json(); // This is the Prisma CUID of the profile
-    const numberId = params.id; // This is the Prisma CUID of the number
+    const { id: numberId } = await params; // This is the Prisma CUID of the number
 
     const org = await prisma.organization.findUnique({
       where: { id: session.user.organizationId }
