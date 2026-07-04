@@ -9,7 +9,7 @@ import { COUNTRIES } from "@/lib/countries";
 type AvailableNumber = {
   phone_number: string;
   country_code: string;
-  features: string[];
+  features: any[];
   cost: number;
 };
 
@@ -238,11 +238,13 @@ export default function BuyNumberPage() {
                 </h2>
                 
                 <div className="flex flex-wrap gap-2 mb-8">
-                  {(num.features || []).map((feat: string) => (
-                    <span key={feat} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                      {feat}
+                  {(num.features || []).map((feat: any) => {
+                    const featName = typeof feat === 'string' ? feat : feat.name;
+                    return (
+                    <span key={featName} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                      {featName}
                     </span>
-                  ))}
+                  )})}
                 </div>
                 
                 <button 
