@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 // @ts-ignore
 import { TelnyxRTC } from "@telnyx/webrtc";
+import { toast } from "sonner";
 
 type CallState = "idle" | "ringing" | "active" | "held" | "error";
 
@@ -130,8 +131,21 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const makeCall = (destination: string, callerId?: string) => {
-    if (!clientRef.current || !isRegistered) return;
+  const makeCall = async (destination: string, callerId?: string) => {
+    if (!clientRef.current || !isRegistered) {
+      toast.error("Le téléphone n'est pas encore connecté au réseau.");
+      return;
+    }
+    
+    // Check Microphone permissions explicitly before making the call
+    try {
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err: any) {
+      console.error("Microphone access denied:", err);
+      toast.error("Veuillez autoriser l'accès au microphone dans votre navigateur pour passer des appels.");
+      return;
+    }
+
     try {
       const call = clientRef.current.newCall({
         destinationNumber: destination,
@@ -141,8 +155,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       });
       currentCallRef.current = call;
       setCallState("ringing");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to make call", err);
+      setCallState("idle");
+      toast.error("Erreur lors de l'appel. Vérifiez le format du numéro.");
     }
   };
 

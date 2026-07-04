@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { TelnyxProvider } from "@/contexts/TelnyxContext";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -71,11 +72,11 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans`}>
         <ThemeProvider defaultTheme="dark">
           <AuthProvider>
-            {/* @ts-ignore */}
             <TelnyxProvider>
               {children}
             </TelnyxProvider>
           </AuthProvider>
+          <Toaster position="top-center" theme="dark" />
         </ThemeProvider>
         {/* PWA Service Worker Registration */}
         <script

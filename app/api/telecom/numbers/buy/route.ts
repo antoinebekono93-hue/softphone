@@ -63,6 +63,49 @@ export async function POST(request: Request) {
       telnyxPhoneNumberId = phoneNumbers[0]?.id || phoneNumber;
 
       console.log(`[Telnyx API] Successfully ordered number ${phoneNumber} - Order ID: ${telnyxOrderId}`);
+
+      // ===== AUTOMATIC PROVISIONING =====
+      try {
+        // 1. Get first Telephony Credential (SIP Connection)
+        const sipRes = await fetch(`${API_BASE}/telephony_credentials`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        const sipData = await sipRes.json();
+        const connectionId = sipData.data?.[0]?.connection_id || sipData.data?.[0]?.id;
+
+        // 2. Get first Messaging Profile
+        const msgRes = await fetch(`${API_BASE}/messaging_profiles`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        const msgData = await msgRes.json();
+        const messagingProfileId = msgData.data?.[0]?.id;
+
+        // 3. Attach number to SIP connection and Messaging Profile
+        if (connectionId || messagingProfileId) {
+          const updateBody: any = {};
+          if (connectionId) updateBody.connection_id = connectionId;
+          if (messagingProfileId) updateBody.messaging_profile_id = messagingProfileId;
+
+          const updateRes = await fetch(`${API_BASE}/phone_numbers/${telnyxPhoneNumberId}`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateBody),
+          });
+          
+          if (!updateRes.ok) {
+             console.error("[Telnyx Provisioning Error] Failed to attach number:", await updateRes.text());
+          } else {
+             console.log(`[Telnyx Provisioning] Successfully attached number ${phoneNumber} to SIP (${connectionId}) and MSG (${messagingProfileId})`);
+          }
+        }
+      } catch (provErr) {
+        console.error("[Telnyx Provisioning Exception]", provErr);
+        // We don't fail the purchase if provisioning fails, it can be done manually
+      }
+
     } else {
       // ===== MOCK PURCHASE for local development =====
       console.log(`[Telnyx API MOCK] Successfully bought number ${phoneNumber} for $${cost}`);
