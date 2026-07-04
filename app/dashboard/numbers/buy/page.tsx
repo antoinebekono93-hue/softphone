@@ -14,6 +14,14 @@ type AvailableNumber = {
 
 export default function BuyNumberPage() {
   const [country, setCountry] = useState("US");
+  const [locality, setLocality] = useState("");
+  const [state, setState] = useState("");
+  const [areaCode, setAreaCode] = useState("");
+  const [phoneNumberType, setPhoneNumberType] = useState("");
+  const [featureVoice, setFeatureVoice] = useState(false);
+  const [featureSms, setFeatureSms] = useState(false);
+  const [featureMms, setFeatureMms] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [numbers, setNumbers] = useState<AvailableNumber[]>([]);
   const [purchasing, setPurchasing] = useState<string | null>(null);
@@ -22,8 +30,20 @@ export default function BuyNumberPage() {
   const searchNumbers = async () => {
     setLoading(true);
     setNumbers([]);
+    
+    // Build query params
+    const params = new URLSearchParams();
+    params.set("country", country);
+    if (locality) params.set("locality", locality);
+    if (state) params.set("state", state);
+    if (areaCode) params.set("area_code", areaCode);
+    if (phoneNumberType) params.set("type", phoneNumberType);
+    if (featureVoice) params.append("features", "voice");
+    if (featureSms) params.append("features", "sms");
+    if (featureMms) params.append("features", "mms");
+
     try {
-      const res = await fetch(`/api/telecom/numbers/search?country=${country}`);
+      const res = await fetch(`/api/telecom/numbers/search?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setNumbers(data.numbers || []);
@@ -43,7 +63,7 @@ export default function BuyNumberPage() {
   const handlePurchase = async (phoneNumber: string, cost: number) => {
     setPurchasing(phoneNumber);
     try {
-      const res = await fetch('/api/telnyx/numbers/buy', {
+      const res = await fetch('/api/telecom/numbers/buy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber, cost })
@@ -76,30 +96,101 @@ export default function BuyNumberPage() {
         </div>
       </div>
 
-      {/* Search Filters */}
-      <div className="glass-panel p-6 mb-8 flex flex-wrap gap-4 items-end">
-        <div className="flex-1 min-w-[200px]">
-          <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">Pays (Code ISO)</label>
-          <div className="relative">
-            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-secondary)]" />
-            <select 
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl font-medium text-[var(--text-primary)] focus:outline-none focus:border-cyan-500 appearance-none"
-            >
-              <option value="US">🇺🇸 États-Unis (US)</option>
-              <option value="CA">🇨🇦 Canada (CA)</option>
-              <option value="FR">🇫🇷 France (FR)</option>
-              <option value="GB">🇬🇧 Royaume-Uni (GB)</option>
-              <option value="BE">🇧🇪 Belgique (BE)</option>
-              <option value="CH">🇨🇭 Suisse (CH)</option>
-            </select>
+      {/* Advanced Search Filters */}
+      <div className="glass-panel p-6 mb-8 flex flex-col gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Pays (Code ISO)</label>
+            <div className="relative">
+              <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
+              <select 
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] focus:outline-none focus:border-cyan-500 appearance-none"
+              >
+                <option value="US">🇺🇸 États-Unis (US)</option>
+                <option value="CA">🇨🇦 Canada (CA)</option>
+                <option value="FR">🇫🇷 France (FR)</option>
+                <option value="GB">🇬🇧 Royaume-Uni (GB)</option>
+                <option value="BE">🇧🇪 Belgique (BE)</option>
+                <option value="CH">🇨🇭 Suisse (CH)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold text-[var(--text-secondary)] mb-2">État / Région (ex: IL, TX)</label>
+            <input 
+              type="text" 
+              placeholder="État ou Province" 
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              className="w-full px-4 py-2.5 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Ville (Locality)</label>
+            <input 
+              type="text" 
+              placeholder="Ex: Chicago" 
+              value={locality}
+              onChange={(e) => setLocality(e.target.value)}
+              className="w-full px-4 py-2.5 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500"
+            />
+          </div>
+
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Area Code</label>
+            <input 
+              type="text" 
+              placeholder="Ex: 312" 
+              value={areaCode}
+              onChange={(e) => setAreaCode(e.target.value)}
+              className="w-full px-4 py-2.5 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500"
+            />
           </div>
         </div>
-        <button onClick={searchNumbers} disabled={loading} className="btn-primary-gradient px-8 py-3 h-[50px] flex items-center justify-center gap-2">
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-          Rechercher
-        </button>
+
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pt-4 border-t border-[var(--border-subtle)]">
+          <div className="flex flex-wrap gap-6">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-semibold text-[var(--text-secondary)]">Type:</label>
+              <select 
+                value={phoneNumberType}
+                onChange={(e) => setPhoneNumberType(e.target.value)}
+                className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded text-xs px-2 py-1 text-[var(--text-primary)] focus:outline-none focus:border-cyan-500"
+              >
+                <option value="">Tous</option>
+                <option value="local">Local</option>
+                <option value="toll_free">Numéro Vert (Toll-Free)</option>
+                <option value="mobile">Mobile</option>
+                <option value="national">National</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-semibold text-[var(--text-secondary)]">Fonctionnalités:</label>
+              <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer">
+                <input type="checkbox" checked={featureVoice} onChange={(e) => setFeatureVoice(e.target.checked)} className="rounded bg-[var(--bg-surface-solid)] border-[var(--border-subtle)] text-cyan-500 focus:ring-cyan-500" />
+                Voice
+              </label>
+              <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer">
+                <input type="checkbox" checked={featureSms} onChange={(e) => setFeatureSms(e.target.checked)} className="rounded bg-[var(--bg-surface-solid)] border-[var(--border-subtle)] text-cyan-500 focus:ring-cyan-500" />
+                SMS
+              </label>
+              <label className="flex items-center gap-2 text-sm text-[var(--text-primary)] cursor-pointer">
+                <input type="checkbox" checked={featureMms} onChange={(e) => setFeatureMms(e.target.checked)} className="rounded bg-[var(--bg-surface-solid)] border-[var(--border-subtle)] text-cyan-500 focus:ring-cyan-500" />
+                MMS
+              </label>
+            </div>
+          </div>
+          
+          <button onClick={searchNumbers} disabled={loading} className="btn-primary-gradient px-8 py-2.5 h-[42px] flex items-center justify-center gap-2 w-full lg:w-auto shrink-0">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            Rechercher
+          </button>
+        </div>
       </div>
 
       {/* Results Grid */}
