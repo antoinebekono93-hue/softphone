@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmbeddedSignupButton } from "@/components/whatsapp/EmbeddedSignupButton";
+import { TelnyxKeyForm } from "./TelnyxKeyForm";
 
 export const metadata = {
   title: "Settings | Antigravity",
@@ -64,7 +65,9 @@ export default async function SettingsPage() {
           
           <div className="border-t border-[var(--border-subtle)] pt-6">
             <h3 className="text-lg font-medium mb-4">API Keys & Webhooks</h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">Integrate Antigravity with your internal tools using our REST API.</p>
+            
+            <TelnyxKeyForm defaultValue={org?.telnyxApiKey || ""} />
+
             <div className="flex gap-4 items-center">
               <button className="px-5 py-2.5 glass-panel hover:bg-[var(--bg-surface-hover)] rounded-lg text-sm transition-colors">Generate API Key</button>
               <button className="px-5 py-2.5 glass-panel hover:bg-[var(--bg-surface-hover)] rounded-lg text-sm transition-colors">Configure Webhooks</button>
