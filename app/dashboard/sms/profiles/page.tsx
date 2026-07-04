@@ -21,16 +21,25 @@ export default function MessagingProfilesPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [newProfileName, setNewProfileName] = useState("");
   const [creatingSubmitting, setCreatingSubmitting] = useState(false);
+  const [unlinkedNumbers, setUnlinkedNumbers] = useState<any[]>([]);
+  const [selectedNumberIds, setSelectedNumberIds] = useState<string[]>([]);
 
-  const fetchProfiles = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/telecom/messaging-profiles");
-      if (res.ok) {
-        const data = await res.json();
+      // 1. Fetch profiles
+      const resProfiles = await fetch("/api/telecom/messaging-profiles");
+      if (resProfiles.ok) {
+        const data = await resProfiles.json();
         setProfiles(data.profiles || []);
-      } else {
-        toast.error("Erreur lors du chargement des profils");
+      }
+      
+      // 2. Fetch all numbers to find unlinked ones
+      const resNumbers = await fetch("/api/telecom/numbers");
+      if (resNumbers.ok) {
+        const data = await resNumbers.json();
+        const available = (data.numbers || []).filter((n: any) => !n.messagingProfileId);
+        setUnlinkedNumbers(available);
       }
     } catch (e) {
       toast.error("Erreur de connexion");
@@ -40,7 +49,7 @@ export default function MessagingProfilesPage() {
   };
 
   useEffect(() => {
-    fetchProfiles();
+    fetchData();
   }, []);
 
   const handleCreateProfile = async (e: React.FormEvent) => {
@@ -49,6 +58,7 @@ export default function MessagingProfilesPage() {
 
     setCreatingSubmitting(true);
     try {
+      // 1. Create Profile
       const res = await fetch("/api/telecom/messaging-profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -57,14 +67,32 @@ export default function MessagingProfilesPage() {
       
       const data = await res.json();
       
-      if (res.ok) {
-        toast.success("Profil créé avec succès !");
-        setProfiles((prev) => [data.profile, ...prev]);
-        setIsCreating(false);
-        setNewProfileName("");
-      } else {
+      if (!res.ok) {
         toast.error(data.error || "Erreur lors de la création");
+        setCreatingSubmitting(false);
+        return;
       }
+      
+      const newProfile = data.profile;
+      
+      // 2. Link selected numbers
+      if (selectedNumberIds.length > 0) {
+        for (const numId of selectedNumberIds) {
+          await fetch(`/api/telecom/numbers/${numId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messagingProfileId: newProfile.id })
+          });
+        }
+      }
+
+      toast.success("Profil créé et configuré avec succès !");
+      setProfiles((prev) => [newProfile, ...prev]);
+      setIsCreating(false);
+      setNewProfileName("");
+      setSelectedNumberIds([]);
+      // Refresh numbers
+      fetchData();
     } catch (e) {
       toast.error("Erreur de connexion");
     } finally {
@@ -97,8 +125,8 @@ export default function MessagingProfilesPage() {
       {isCreating && (
         <div className="glass-panel p-6 mb-8 border-cyan-500/30 shadow-[0_0_30px_rgba(0,212,255,0.1)]">
           <h2 className="text-xl font-bold mb-4">Nouveau Profil de Messagerie</h2>
-          <form onSubmit={handleCreateProfile} className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="flex-1 w-full">
+          <form onSubmit={handleCreateProfile} className="space-y-6">
+            <div className="w-full">
               <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">Nom du profil (visible par vous)</label>
               <input 
                 type="text" 
@@ -110,10 +138,47 @@ export default function MessagingProfilesPage() {
                 className="w-full px-4 py-3 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl font-medium text-[var(--text-primary)] focus:outline-none focus:border-cyan-500"
               />
             </div>
-            <div className="flex gap-4 w-full md:w-auto">
+
+            <div className="w-full">
+              <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-3">Lier des numéros (Optionnel)</label>
+              
+              {unlinkedNumbers.length === 0 ? (
+                <div className="text-[var(--text-secondary)] text-sm p-4 bg-[var(--bg-surface-solid)] rounded-xl border border-[var(--border-subtle)]">
+                  Vous n'avez aucun numéro disponible à lier. Vous pourrez en ajouter plus tard.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {unlinkedNumbers.map(num => (
+                    <label key={num.id} className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] cursor-pointer hover:border-cyan-500/50 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-[var(--border-subtle)] text-cyan-500 focus:ring-cyan-500"
+                        checked={selectedNumberIds.includes(num.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedNumberIds([...selectedNumberIds, num.id]);
+                          } else {
+                            setSelectedNumberIds(selectedNumberIds.filter(id => id !== num.id));
+                          }
+                        }}
+                      />
+                      <div>
+                        <div className="font-medium text-[var(--text-primary)]">{num.number}</div>
+                        {num.friendlyName && <div className="text-xs text-[var(--text-secondary)]">{num.friendlyName}</div>}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-4 w-full md:w-auto pt-4 border-t border-[var(--border-subtle)] justify-end">
               <button 
                 type="button" 
-                onClick={() => setIsCreating(false)}
+                onClick={() => {
+                  setIsCreating(false);
+                  setSelectedNumberIds([]);
+                }}
                 className="px-6 py-3 rounded-xl font-semibold border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors"
               >
                 Annuler
@@ -121,9 +186,9 @@ export default function MessagingProfilesPage() {
               <button 
                 type="submit" 
                 disabled={creatingSubmitting}
-                className="btn-primary-gradient px-8 py-3 flex items-center gap-2 flex-1 md:flex-auto justify-center"
+                className="btn-primary-gradient px-8 py-3 flex items-center gap-2"
               >
-                {creatingSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer"}
+                {creatingSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Créer le profil"}
               </button>
             </div>
           </form>
