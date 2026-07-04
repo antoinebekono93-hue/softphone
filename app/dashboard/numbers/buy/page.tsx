@@ -25,6 +25,7 @@ export default function BuyNumberPage() {
   
   const [loading, setLoading] = useState(false);
   const [numbers, setNumbers] = useState<AvailableNumber[]>([]);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const router = useRouter();
 
@@ -43,14 +44,18 @@ export default function BuyNumberPage() {
     if (featureSms) params.append("features", "sms");
     if (featureMms) params.append("features", "mms");
 
+    setErrorMsg(null);
     try {
       const res = await fetch(`/api/telecom/numbers/search?${params.toString()}`);
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setNumbers(data.numbers || []);
+      } else {
+        setErrorMsg(data.error || "Erreur lors de la recherche");
       }
     } catch (e) {
       console.error(e);
+      setErrorMsg("Impossible de joindre le serveur");
     } finally {
       setLoading(false);
     }
@@ -186,14 +191,24 @@ export default function BuyNumberPage() {
             </div>
           </div>
           
-          <button onClick={searchNumbers} disabled={loading} className="btn-primary-gradient px-8 py-2.5 h-[42px] flex items-center justify-center gap-2 w-full lg:w-auto shrink-0">
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            Rechercher
+          <button 
+            onClick={searchNumbers}
+            className="apple-btn btn-primary ml-auto flex items-center gap-2"
+          >
+            <Search className="w-4 h-4" /> Rechercher
           </button>
         </div>
       </div>
 
-      {/* Results Grid */}
+      {errorMsg && (
+        <div className="p-4 mb-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
+          {errorMsg === "No Telnyx API key configured" 
+            ? "Clé API Telnyx manquante. Veuillez la configurer dans vos paramètres pour rechercher des numéros." 
+            : errorMsg}
+        </div>
+      )}
+
+      {/* Results */}
       {loading ? (
         <div className="flex flex-col items-center justify-center p-20 text-[var(--text-secondary)]">
           <Loader2 className="w-10 h-10 animate-spin text-cyan-500 mb-4" />

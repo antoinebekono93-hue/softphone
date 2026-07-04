@@ -55,7 +55,9 @@ export async function GET(request: Request) {
     if (quickship) params.set('filter[quickship]', quickship);
     if (bestEffort) params.set('filter[best_effort]', bestEffort);
     if (reservable) params.set('filter[reservable]', reservable);
-    features.forEach(f => params.append('filter[features][]', f));
+    if (features.length > 0) {
+      params.set('filter[features]', features.join(','));
+    }
 
     const response = await fetch(`${API_BASE}/available_phone_numbers?${params.toString()}`, {
       headers: {
