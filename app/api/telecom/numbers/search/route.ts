@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { getSystemSettings } from "@/lib/settings";
 
 const API_BASE = 'https://api.telnyx.com/v2';
 
@@ -74,24 +75,35 @@ export async function GET(request: Request) {
 
     if (response.ok) {
       const data = await response.json();
-      const numbers = data.data.map((n: any) => ({
-        phone_number: n.phone_number,
-        country_code: n.country_code,
-        phone_number_type: n.phone_number_type,
-        features: n.features,
-        locality: n.locality,
-        administrative_area: n.administrative_area,
-        national_destination_code: n.national_destination_code,
-        reservable: n.reservable,
-        quickship: n.quickship,
-        // Use real cost from API instead of hardcoded $2.00
-        cost: n.cost_information?.upfront_cost
-          ? parseFloat(n.cost_information.upfront_cost)
-          : n.cost_information?.monthly_cost
-            ? parseFloat(n.cost_information.monthly_cost)
-            : 2.00,
-        cost_information: n.cost_information || null,
-      }));
+      const settings = await getSystemSettings();
+      const multiplier = settings?.phoneNumberMarkupMultiplier || 2.5;
+      const fixedMarkup = settings?.phoneNumberMarkupFixed || 0.0;
+
+      const numbers = data.data.map((n: any) => {
+        let baseCost = 2.00;
+        if (n.cost_information?.upfront_cost) {
+            baseCost = parseFloat(n.cost_information.upfront_cost);
+        } else if (n.cost_information?.monthly_cost) {
+            baseCost = parseFloat(n.cost_information.monthly_cost);
+        }
+        
+        // Calculate the marked up cost for the reseller
+        const markedUpCost = (baseCost * multiplier) + fixedMarkup;
+
+        return {
+          phone_number: n.phone_number,
+          country_code: n.country_code,
+          phone_number_type: n.phone_number_type,
+          features: n.features,
+          locality: n.locality,
+          administrative_area: n.administrative_area,
+          national_destination_code: n.national_destination_code,
+          reservable: n.reservable,
+          quickship: n.quickship,
+          cost: markedUpCost, // The new margin-adjusted cost
+          cost_information: n.cost_information || null, // Keep original for reference
+        }
+      });
       return NextResponse.json({ numbers, meta: data.meta });
     }
 

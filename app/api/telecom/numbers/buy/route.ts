@@ -30,7 +30,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Solde insuffisant dans le Wallet. Veuillez recharger votre compte." }, { status: 402 });
     }
 
-    const apiKey = org.telnyxApiKey || process.env.TELNYX_API_KEY;
+    const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
+    const apiKey = settings?.telnyxApiKey || process.env.TELNYX_API_KEY;
     const useMock = process.env.TELNYX_MOCK_PURCHASES === 'true';
 
     let telnyxOrderId: string;

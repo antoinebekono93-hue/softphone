@@ -17,6 +17,7 @@ export function GodModeSidebar() {
     { label: "Monetization", isHeader: true, mt: true },
     { label: "Dynamic Plans", href: "/god-mode/plans" },
     { label: "Billing & Wallet", href: "/god-mode/billing" },
+    { label: "Tarifs & Marges", href: "/god-mode/pricing" },
     
     { label: "Telecom Engine", isHeader: true, mt: true },
     { label: "Telnyx API Control", href: "/god-mode/telnyx" },
