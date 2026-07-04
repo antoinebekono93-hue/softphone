@@ -30,20 +30,54 @@ export async function GET(req: Request) {
     }
 
     const listData = await listRes.json();
-    const credentials = listData.data || [];
+    const credentials = listData.data;
+    
+    let credentialId;
 
-    if (credentials.length === 0) {
-       // MOCK RESPONSE to unblock the frontend UI if no credentials exist
-       return NextResponse.json({ 
-         token: "mock_jwt_token_for_ui", 
-         warning: "Real SIP credentials missing on Telnyx account. Please create one." 
-       });
+    if (!credentials || credentials.length === 0) {
+      // Create a default credential automatically
+      console.log("No Telephony Credential found. Creating a default one...");
+      // To create a telephony credential, we must attach it to a SIP Connection
+      const connRes = await fetch("https://api.telnyx.com/v2/credential_connections", {
+        headers: {
+          "Authorization": `Bearer ${TELNYX_API_KEY}`,
+          "Accept": "application/json"
+        }
+      });
+      const connData = await connRes.json();
+      const connections = connData.data || [];
+      
+      if (connections.length === 0) {
+        return NextResponse.json({ error: "No SIP Connection found on Telnyx. Please create one first." }, { status: 500 });
+      }
+
+      const sipConnectionId = connections[0].id;
+
+      const createRes = await fetch("https://api.telnyx.com/v2/telephony_credentials", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${TELNYX_API_KEY}`,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          connection_id: sipConnectionId
+        })
+      });
+
+      if (!createRes.ok) {
+        console.error("Failed to create Telephony Credential:", await createRes.text());
+        return NextResponse.json({ error: "Failed to create Telephony Credential" }, { status: 500 });
+      }
+
+      const createData = await createRes.json();
+      credentialId = createData.data.id;
+      console.log("Successfully created Telephony Credential:", credentialId);
+    } else {
+      credentialId = credentials[0].id;
     }
 
-    // Use the very first credential found
-    const credentialId = credentials[0].id;
-
-    // Generate the WebRTC token using this credential ID
+    // 2. Request the WebRTC Token using the Telephony Credential ID
     const tokenRes = await fetch(`https://api.telnyx.com/v2/telephony_credentials/${credentialId}/token`, {
       method: "POST",
       headers: {
@@ -53,8 +87,8 @@ export async function GET(req: Request) {
     });
 
     if (tokenRes.ok) {
-      const tokenData = await tokenRes.json();
-      return NextResponse.json({ token: tokenData.data });
+      const tokenString = await tokenRes.text();
+      return NextResponse.json({ token: tokenString });
     }
 
     // Fallback if token generation fails
