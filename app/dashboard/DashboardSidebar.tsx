@@ -84,6 +84,7 @@ export function DashboardSidebar({
         title: "Configuration",
         items: [
           { name: "Numéros de téléphone", href: "/dashboard/numbers", icon: Hash },
+          { name: "Profils de messagerie", href: "/dashboard/settings/messaging-profiles", icon: MessageSquare },
           { name: "SVI & Routage", href: "/dashboard/ivr", icon: GitMerge },
           { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
         ]
