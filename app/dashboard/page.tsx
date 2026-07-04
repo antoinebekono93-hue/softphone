@@ -16,12 +16,25 @@ export default async function DashboardPage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const [contactsCount, org, callsToday, smsToday] = await Promise.all([
-    prisma.contact.count({ where: { organizationId: orgId } }),
-    prisma.organization.findUnique({ where: { id: orgId }, select: { walletBalance: true } }),
-    prisma.callLog.count({ where: { organizationId: orgId, startedAt: { gte: today } } }),
-    prisma.smsMessage.count({ where: { organizationId: orgId, sentAt: { gte: today } } })
-  ]);
+  let contactsCount = 0;
+  let org = null;
+  let callsToday = 0;
+  let smsToday = 0;
+
+  try {
+    const results = await Promise.all([
+      prisma.contact.count({ where: { organizationId: orgId } }),
+      prisma.organization.findUnique({ where: { id: orgId }, select: { walletBalance: true } }),
+      prisma.callLog.count({ where: { organizationId: orgId, startedAt: { gte: today } } }),
+      prisma.smsMessage.count({ where: { organizationId: orgId, sentAt: { gte: today } } })
+    ]);
+    contactsCount = results[0];
+    org = results[1];
+    callsToday = results[2];
+    smsToday = results[3];
+  } catch (error) {
+    console.error("Dashboard DB Error:", error);
+  }
 
   // Fetch chart data (last 7 days)
   const chartData = [];
@@ -29,16 +42,24 @@ export default async function DashboardPage() {
   sevenDaysAgo.setDate(today.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
 
-  const [allCalls, allMessages] = await Promise.all([
-    prisma.callLog.findMany({
-      where: { organizationId: orgId, startedAt: { gte: sevenDaysAgo } },
-      select: { startedAt: true }
-    }),
-    prisma.smsMessage.findMany({
-      where: { organizationId: orgId, sentAt: { gte: sevenDaysAgo } },
-      select: { sentAt: true }
-    })
-  ]);
+  let allCalls: any[] = [];
+  let allMessages: any[] = [];
+  try {
+    const results = await Promise.all([
+      prisma.callLog.findMany({
+        where: { organizationId: orgId, startedAt: { gte: sevenDaysAgo } },
+        select: { startedAt: true }
+      }),
+      prisma.smsMessage.findMany({
+        where: { organizationId: orgId, sentAt: { gte: sevenDaysAgo } },
+        select: { sentAt: true }
+      })
+    ]);
+    allCalls = results[0];
+    allMessages = results[1];
+  } catch (error) {
+    console.error("Dashboard DB Error:", error);
+  }
 
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -58,19 +79,25 @@ export default async function DashboardPage() {
   }
 
   // Fetch recent activity
-  const recentCalls = await prisma.callLog.findMany({
-    where: { organizationId: orgId },
-    orderBy: { startedAt: 'desc' },
-    take: 5,
-    include: { contact: true }
-  });
-  
-  const recentMessages = await prisma.smsMessage.findMany({
-    where: { organizationId: orgId },
-    orderBy: { sentAt: 'desc' },
-    take: 5,
-    include: { contact: true }
-  });
+  let recentCalls: any[] = [];
+  let recentMessages: any[] = [];
+  try {
+    recentCalls = await prisma.callLog.findMany({
+      where: { organizationId: orgId },
+      orderBy: { startedAt: 'desc' },
+      take: 5,
+      include: { contact: true }
+    });
+    
+    recentMessages = await prisma.smsMessage.findMany({
+      where: { organizationId: orgId },
+      orderBy: { sentAt: 'desc' },
+      take: 5,
+      include: { contact: true }
+    });
+  } catch (error) {
+    console.error("Dashboard DB Error:", error);
+  }
 
   const activities = [...recentCalls, ...recentMessages]
     .sort((a: any, b: any) => {

@@ -6,31 +6,41 @@ import { telnyx } from "@/lib/telnyx";
 import { revalidatePath } from "next/cache";
 
 export async function getNumbers() {
-  const session = await auth();
-  if (!session?.user?.organizationId) return [];
+  try {
+    const session = await auth();
+    if (!session?.user?.organizationId) return [];
 
-  const numbers = await prisma.phoneNumber.findMany({
-    where: { organizationId: session.user.organizationId },
-    include: {
-      voiceAIAgent: true,
-      assignedUser: true
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+    const numbers = await prisma.phoneNumber.findMany({
+      where: { organizationId: session.user.organizationId },
+      include: {
+        voiceAIAgent: true,
+        assignedUser: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
-  return numbers;
+    return numbers;
+  } catch (error) {
+    console.error("Failed to get numbers:", error);
+    return [];
+  }
 }
 
 export async function getUsers() {
-  const session = await auth();
-  if (!session?.user?.organizationId) return [];
+  try {
+    const session = await auth();
+    if (!session?.user?.organizationId) return [];
 
-  const users = await prisma.user.findMany({
-    where: { organizationId: session.user.organizationId },
-    select: { id: true, name: true, email: true }
-  });
+    const users = await prisma.user.findMany({
+      where: { organizationId: session.user.organizationId },
+      select: { id: true, name: true, email: true }
+    });
 
-  return users;
+    return users;
+  } catch (error) {
+    console.error("Failed to get users:", error);
+    return [];
+  }
 }
 
 export async function updateNumber(id: string, friendlyName: string, assignedUserId: string | null) {

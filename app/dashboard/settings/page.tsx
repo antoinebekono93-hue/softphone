@@ -10,10 +10,16 @@ export default async function SettingsPage() {
   const session = await auth();
   
   let org = null;
-  if (session?.user?.organizationId) {
-    org = await prisma.organization.findUnique({ where: { id: session.user.organizationId } });
-  } else {
-    org = await prisma.organization.findFirst();
+  let dbError = false;
+  try {
+    if (session?.user?.organizationId) {
+      org = await prisma.organization.findUnique({ where: { id: session.user.organizationId } });
+    } else {
+      org = await prisma.organization.findFirst();
+    }
+  } catch (e) {
+    console.error("Failed to fetch organization for settings:", e);
+    dbError = true;
   }
 
   return (
@@ -22,6 +28,12 @@ export default async function SettingsPage() {
         <h1 className="text-3xl font-bold mb-2">Organization Settings</h1>
         <p className="text-[var(--text-secondary)]">Manage your account and organization preferences.</p>
       </div>
+
+      {dbError && (
+        <div className="p-4 mb-8 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400 text-sm font-medium">
+          Connexion à la base de données momentanément indisponible. Les modifications risquent de ne pas être sauvegardées.
+        </div>
+      )}
 
       <div className="space-y-8">
         {/* Profile Section */}
