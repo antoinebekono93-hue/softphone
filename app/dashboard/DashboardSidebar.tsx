@@ -94,8 +94,8 @@ export function DashboardSidebar({
         title: "Messagerie SMS",
         items: [
           { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
-          { name: "Boîte de réception", href: "/dashboard/sms-inbox", icon: Inbox },
-          { name: "Modèles SMS", href: "/dashboard/sms-templates", icon: BookUser },
+          { name: "Boîte de réception", href: "/dashboard/inbox", icon: Inbox },
+          { name: "Modèles (Bientôt)", href: "/dashboard/sms", icon: BookUser },
         ]
       }
     ],
@@ -104,8 +104,8 @@ export function DashboardSidebar({
         title: "WhatsApp Business",
         items: [
           { name: "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
-          { name: "Chat WhatsApp", href: "/dashboard/whatsapp-chat", icon: Inbox },
-          { name: "Modèles approuvés", href: "/dashboard/whatsapp-templates", icon: ShieldCheck },
+          { name: "Chat WhatsApp", href: "/dashboard/inbox", icon: Inbox },
+          { name: "Paramètres API", href: "/dashboard/whatsapp", icon: ShieldCheck },
         ]
       }
     ],
