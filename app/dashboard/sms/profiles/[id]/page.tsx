@@ -197,11 +197,6 @@ export default function MessagingProfileDetailPage() {
                 <div className="text-center py-6 text-[var(--text-secondary)]">
                   <p>Vous n'avez pas d'autres numéros disponibles à lier.</p>
                 </div>
-              ) : linkedNumbers.length >= 1 ? (
-                <div className="text-center py-6 text-[var(--text-secondary)] bg-[var(--bg-surface-solid)] rounded-xl border border-[var(--border-subtle)]">
-                  <p className="font-semibold text-yellow-500 mb-2">Limite atteinte</p>
-                  <p className="text-sm">Ce profil a déjà un numéro associé. (Maximum : 1 numéro par profil).</p>
-                </div>
               ) : (
                 <div className="space-y-3">
                   {unlinkedNumbers.map(num => (
