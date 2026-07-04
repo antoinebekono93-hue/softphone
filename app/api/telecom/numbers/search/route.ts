@@ -31,9 +31,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Get org API key
-  const org = await prisma.organization.findUnique({ where: { id: session.user.organizationId } });
-  const apiKey = org?.telnyxApiKey || process.env.TELNYX_API_KEY;
+  let apiKey = process.env.TELNYX_API_KEY;
+  try {
+    const org = await prisma.organization.findUnique({ where: { id: session.user.organizationId } });
+    if (org?.telnyxApiKey) {
+      apiKey = org.telnyxApiKey;
+    }
+  } catch (dbError) {
+    console.warn("Could not fetch org API key from DB, falling back to ENV.", dbError);
+  }
 
   if (!apiKey) {
     return NextResponse.json({ error: "No Telnyx API key configured" }, { status: 500 });
