@@ -60,7 +60,8 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         name: name,
         webhook_url: webhookUrl,
-        webhook_api_version: "2"
+        webhook_api_version: "2",
+        whitelisted_destinations: ["US", "CA", "FR", "GB", "CM", "BE", "CH", "CI", "SN"] // Default common destinations to prevent Telnyx error
       })
     });
 
