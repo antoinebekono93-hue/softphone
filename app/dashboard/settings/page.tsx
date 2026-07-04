@@ -1,7 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmbeddedSignupButton } from "@/components/whatsapp/EmbeddedSignupButton";
-import { EmbeddedSignupButton } from "@/components/whatsapp/EmbeddedSignupButton";
 
 export const metadata = {
   title: "Settings | Antigravity",
