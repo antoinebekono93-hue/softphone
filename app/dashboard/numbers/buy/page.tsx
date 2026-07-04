@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, Globe, ShoppingCart, Loader2, Phone, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { COUNTRIES } from "@/lib/countries";
 
 type AvailableNumber = {
   phone_number: string;
@@ -108,12 +109,11 @@ export default function BuyNumberPage() {
                 onChange={(e) => setCountry(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium text-[var(--text-primary)] focus:outline-none focus:border-cyan-500 appearance-none"
               >
-                <option value="US">🇺🇸 États-Unis (US)</option>
-                <option value="CA">🇨🇦 Canada (CA)</option>
-                <option value="FR">🇫🇷 France (FR)</option>
-                <option value="GB">🇬🇧 Royaume-Uni (GB)</option>
-                <option value="BE">🇧🇪 Belgique (BE)</option>
-                <option value="CH">🇨🇭 Suisse (CH)</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.name} ({c.code})
+                  </option>
+                ))}
               </select>
             </div>
           </div>
