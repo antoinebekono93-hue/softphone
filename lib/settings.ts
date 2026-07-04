@@ -14,7 +14,9 @@ export async function getSystemSettings() {
         smsRate: 0.05,
         callRatePerMinute: 0.02,
         aiAgentRatePerMinute: 0.15,
-        whatsappRate: 0.02
+        whatsappRate: 0.02,
+        phoneNumberRate: 1.00,
+        eSimRate: 5.00
       }
     });
   }

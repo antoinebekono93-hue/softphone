@@ -573,6 +573,7 @@ model SystemSettings {
   phoneNumberRate      Float    @default(1.00)
   phoneNumberMarkupMultiplier Float @default(2.5) // Default to 2.5x markup (e.g. $1 -> $2.50)
   phoneNumberMarkupFixed      Float @default(0.0) // Default to +$0.00 markup
+  eSimRate             Float    @default(5.00)
 
   telnyxApiKey         String?  // Global Telnyx API Key
   telnyxConnectionId   String?  // Global SIP Connection ID
