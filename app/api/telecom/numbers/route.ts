@@ -17,7 +17,6 @@ export async function GET(req: Request) {
         id: true,
         number: true,
         telnyxId: true,
-        capabilities: true,
       },
       orderBy: {
         createdAt: 'desc',
