@@ -55,6 +55,21 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const selectedNode = nodes.find(n => n.id === selectedNodeId);
+
+  const updateNodeData = (id: string, newData: any) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: { ...node.data, ...newData },
+          };
+        }
+        return node;
+      })
+    );
+  };
 
   const onConnect = useCallback(
     (params: Connection | Edge) => setEdges((eds) => addEdge(params, eds)),
@@ -160,23 +175,121 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
         </div>
 
         {/* Panneau de configuration du noeud sélectionné (Phase 3) */}
-        {selectedNodeId && (
+        {selectedNode && (
           <aside className="w-80 bg-[var(--bg-base)] border-l border-[var(--border-subtle)] flex flex-col h-full shrink-0 shadow-[-10px_0_20px_rgba(0,0,0,0.05)]">
             <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
               <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2"><Settings2 className="w-4 h-4 text-emerald-500"/> Configuration</h3>
             </div>
-            <div className="p-6">
-              <p className="text-sm text-[var(--text-secondary)] mb-6">Sélectionnez les propriétés de ce bloc.</p>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Données du Noeud</label>
-                  <p className="text-sm text-[var(--text-primary)] p-3 bg-[var(--bg-surface)] rounded-xl border border-[var(--border-subtle)] font-mono text-xs overflow-auto">
-                    ID: {selectedNodeId}<br/>
-                    (Propriétés modifiables à venir)
-                  </p>
+            <div className="p-6 flex-1 overflow-y-auto">
+              {selectedNode.type === 'trigger' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">Définissez l'événement qui démarre la séquence.</p>
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Événement</label>
+                    <select 
+                      value={selectedNode.data.event || 'new_contact'}
+                      onChange={(e) => {
+                        const event = e.target.value;
+                        const label = e.target.options[e.target.selectedIndex].text;
+                        updateNodeData(selectedNode.id, { event, label });
+                      }}
+                      className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-emerald-500"
+                    >
+                      <option value="new_contact">Nouveau Contact</option>
+                      <option value="tag_added">Tag ajouté</option>
+                      <option value="campaign_replied">A répondu à une campagne</option>
+                      <option value="opportunity_won">Opportunité Gagnée</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {selectedNode.type === 'message' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">Configurez le message à envoyer.</p>
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Type de Message</label>
+                    <select 
+                      value={selectedNode.data.messageType || 'free_text'}
+                      onChange={(e) => updateNodeData(selectedNode.id, { messageType: e.target.value })}
+                      className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-blue-500"
+                    >
+                      <option value="free_text">Texte libre</option>
+                      <option value="template">Modèle WhatsApp (Approuvé)</option>
+                    </select>
+                  </div>
+                  {selectedNode.data.messageType === 'template' ? (
+                     <div>
+                       <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Nom du Modèle</label>
+                       <input 
+                         type="text" 
+                         value={selectedNode.data.templateName || ''}
+                         onChange={(e) => updateNodeData(selectedNode.id, { templateName: e.target.value })}
+                         placeholder="ex: welcome_message"
+                         className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-blue-500"
+                       />
+                     </div>
+                  ) : (
+                     <div>
+                       <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Contenu du message</label>
+                       <textarea 
+                         rows={4}
+                         value={selectedNode.data.text || ''}
+                         onChange={(e) => updateNodeData(selectedNode.id, { text: e.target.value })}
+                         placeholder="Bonjour, merci de nous avoir contacté..."
+                         className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-blue-500 resize-none"
+                       />
+                     </div>
+                  )}
+                </div>
+              )}
+
+              {selectedNode.type === 'delay' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">Temps d'attente avant la prochaine action.</p>
+                  <div className="flex gap-3">
+                    <div className="w-1/3">
+                      <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Durée</label>
+                      <input 
+                        type="number" min="1"
+                        value={selectedNode.data.duration || '1'}
+                        onChange={(e) => updateNodeData(selectedNode.id, { duration: e.target.value })}
+                        className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-amber-500"
+                      />
+                    </div>
+                    <div className="w-2/3">
+                      <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Unité</label>
+                      <select 
+                        value={selectedNode.data.unit || 'minutes'}
+                        onChange={(e) => updateNodeData(selectedNode.id, { unit: e.target.value })}
+                        className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-amber-500"
+                      >
+                        <option value="minutes">Minutes</option>
+                        <option value="hours">Heures</option>
+                        <option value="days">Jours</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedNode.type === 'condition' && (
+                <div className="space-y-4">
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">Sépare la séquence selon le comportement du contact.</p>
+                  <div>
+                    <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Condition Logique</label>
+                    <select 
+                      value={selectedNode.data.conditionType || 'has_replied'}
+                      onChange={(e) => updateNodeData(selectedNode.id, { conditionType: e.target.value })}
+                      className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-purple-500"
+                    >
+                      <option value="has_replied">A répondu au message précédent</option>
+                      <option value="contains_yes">La réponse contient "Oui"</option>
+                      <option value="contains_no">La réponse contient "Non"</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           </aside>
         )}
