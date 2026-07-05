@@ -170,18 +170,12 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         cleanDestination = "+" + cleanDestination;
       }
       
-      const callOptions: any = {
+      const call = clientRef.current.newCall({
         destinationNumber: cleanDestination,
+        callerNumber: callerId, // Pass the selected Caller ID here
         audio: true,
         video: false,
-      };
-
-      if (callerId) {
-        callOptions.callerNumber = callerId;
-        callOptions.callerName = "Softphone"; // Good practice to include a name
-      }
-
-      const call = clientRef.current.newCall(callOptions);
+      });
       currentCallRef.current = call;
       setIncomingCallerId(cleanDestination);
       setCallDirection("outbound");
