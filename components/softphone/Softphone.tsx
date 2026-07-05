@@ -13,6 +13,7 @@ export function Softphone() {
     isRegistered,
     registrationError,
     callState,
+    callDirection,
     incomingCallerId,
     remoteStream,
     makeCall,
@@ -150,8 +151,8 @@ export function Softphone() {
         )}
       </div>
 
-      {/* Incoming Call Overlay */}
-      {callState === "ringing" && incomingCallerId && (
+      {/* Overlays */}
+      {callState === "ringing" && incomingCallerId && callDirection === "inbound" && (
         <IncomingCall
           callerNumber={incomingCallerId}
           onAccept={answerCall}

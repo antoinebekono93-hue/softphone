@@ -11,6 +11,7 @@ interface TelnyxContextValue {
   isRegistered: boolean;
   registrationError: string | null;
   callState: CallState;
+  callDirection: "inbound" | "outbound" | null;
   activeCallId: string | null;
   incomingCallerId: string | null;
   remoteStream: MediaStream | null;
@@ -39,6 +40,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [callState, setCallState] = useState<CallState>("idle");
+  const [callDirection, setCallDirection] = useState<"inbound" | "outbound" | null>(null);
   const [activeCallId, setActiveCallId] = useState<string | null>(null);
   const [incomingCallerId, setIncomingCallerId] = useState<string | null>(null);
 
@@ -93,6 +95,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
               if (call.state === "ringing") {
                 setCallState("ringing");
                 setIncomingCallerId(call.options.remoteCallerName || call.options.remoteCallerNumber);
+                // If we didn't initiate it, it's inbound
+                if (!currentCallRef.current || currentCallRef.current.id !== call.id) {
+                  setCallDirection("inbound");
+                }
                 currentCallRef.current = call;
               } else if (call.state === "active") {
                 setCallState("active");
@@ -103,6 +109,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 }
               } else if (call.state === "destroy") {
                 setCallState("idle");
+                setCallDirection(null);
                 setActiveCallId(null);
                 setIncomingCallerId(null);
                 setRemoteStream(null);
@@ -155,6 +162,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       });
       currentCallRef.current = call;
       setIncomingCallerId(destination);
+      setCallDirection("outbound");
       setCallState("ringing");
     } catch (err: any) {
       console.error("Failed to make call", err);
@@ -202,6 +210,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       isRegistered,
       registrationError,
       callState,
+      callDirection,
       activeCallId,
       incomingCallerId,
       remoteStream,
