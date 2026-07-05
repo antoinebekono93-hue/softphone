@@ -26,6 +26,7 @@ const KEYS = [
 
 export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   const [number, setNumber] = useState("");
+  const [countryCode, setCountryCode] = useState("+1");
 
   const handlePress = useCallback(
     (digit: string) => {
@@ -44,8 +45,17 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
 
   const handleCall = useCallback(() => {
     if (disabled || !number) return;
-    onCall(number);
-  }, [disabled, number, onCall]);
+    
+    // Auto-prefix with country code if user didn't type '+'
+    let finalNumber = number;
+    if (!finalNumber.startsWith("+")) {
+      // Clean leading zeros (common in international dialing)
+      if (finalNumber.startsWith("0")) finalNumber = finalNumber.substring(1);
+      finalNumber = countryCode + finalNumber;
+    }
+    
+    onCall(finalNumber);
+  }, [disabled, number, countryCode, onCall]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -68,8 +78,31 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
 
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
+      {/* Country Code Selector */}
+      <div className="w-full px-4 mb-2">
+        <select 
+          value={countryCode} 
+          onChange={(e) => setCountryCode(e.target.value)}
+          disabled={disabled || number.startsWith("+")}
+          className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-3 py-1.5 text-xs text-[var(--text-secondary)] focus:outline-none focus:border-cyan-500 disabled:opacity-50"
+        >
+          <option value="+1">🇺🇸/🇨🇦 USA & Canada (+1)</option>
+          <option value="+33">🇫🇷 France (+33)</option>
+          <option value="+237">🇨🇲 Cameroon (+237)</option>
+          <option value="+44">🇬🇧 United Kingdom (+44)</option>
+          <option value="+32">🇧🇪 Belgium (+32)</option>
+          <option value="+41">🇨🇭 Switzerland (+41)</option>
+          <option value="+225">🇨🇮 Ivory Coast (+225)</option>
+          <option value="+221">🇸🇳 Senegal (+221)</option>
+          <option value="+223">🇲🇱 Mali (+223)</option>
+        </select>
+      </div>
+
       {/* Display */}
-      <div className="w-full flex items-center justify-between mb-8 h-16 px-4">
+      <div className="w-full flex items-center justify-between mb-6 h-16 px-4 relative">
+        <div className="absolute left-6 text-[var(--text-secondary)] font-medium text-xl opacity-50 pointer-events-none">
+          {!number.startsWith("+") && countryCode}
+        </div>
         <input
           type="text"
           value={number}
@@ -81,6 +114,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
           placeholder="Numéro..."
           disabled={disabled}
           className="w-full bg-transparent text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
+          style={{ paddingLeft: !number.startsWith("+") ? "3rem" : "0" }}
         />
         {number && (
           <button
