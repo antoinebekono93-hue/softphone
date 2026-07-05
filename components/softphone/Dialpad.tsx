@@ -26,7 +26,7 @@ const KEYS = [
 
 export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   const [number, setNumber] = useState("");
-  const [countryCode, setCountryCode] = useState("+1");
+  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
 
   const handlePress = useCallback(
     (digit: string) => {
@@ -38,6 +38,39 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
     [disabled, onDigitPress]
   );
 
+  const handlePointerDown = useCallback((key: string) => {
+    if (disabled) return;
+    if (key === "0") {
+      const timer = setTimeout(() => {
+        if (navigator.vibrate) navigator.vibrate(50);
+        setNumber((prev) => prev + "+");
+        setPressTimer(null);
+      }, 500); // 500ms long press
+      setPressTimer(timer);
+    }
+  }, [disabled]);
+
+  const handlePointerUp = useCallback((key: string) => {
+    if (disabled) return;
+    if (key === "0") {
+      if (pressTimer) {
+        // If timer is still active, it wasn't a long press. Clear timer and add '0'.
+        clearTimeout(pressTimer);
+        setPressTimer(null);
+        handlePress("0");
+      }
+    } else {
+      handlePress(key);
+    }
+  }, [disabled, handlePress, pressTimer]);
+
+  const handlePointerLeave = useCallback(() => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
+    }
+  }, [pressTimer]);
+
   const handleBackspace = useCallback(() => {
     if (disabled) return;
     setNumber((prev) => prev.slice(0, -1));
@@ -45,17 +78,8 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
 
   const handleCall = useCallback(() => {
     if (disabled || !number) return;
-    
-    // Auto-prefix with country code if user didn't type '+'
-    let finalNumber = number;
-    if (!finalNumber.startsWith("+")) {
-      // Clean leading zeros (common in international dialing)
-      if (finalNumber.startsWith("0")) finalNumber = finalNumber.substring(1);
-      finalNumber = countryCode + finalNumber;
-    }
-    
-    onCall(finalNumber);
-  }, [disabled, number, countryCode, onCall]);
+    onCall(number);
+  }, [disabled, number, onCall]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -79,26 +103,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       {/* Display */}
-      <div className="w-full flex items-center justify-center mb-6 h-16 px-4 relative">
-        {!number.startsWith("+") && (
-          <select 
-            value={countryCode} 
-            onChange={(e) => setCountryCode(e.target.value)}
-            disabled={disabled || number.startsWith("+")}
-            className="absolute left-8 bg-transparent text-[var(--text-secondary)] text-2xl font-medium focus:outline-none appearance-none cursor-pointer hover:text-[var(--text-primary)] transition-colors z-10"
-            style={{ width: "auto" }}
-          >
-            <option value="+1">+1</option>
-            <option value="+33">+33</option>
-            <option value="+237">+237</option>
-            <option value="+44">+44</option>
-            <option value="+32">+32</option>
-            <option value="+41">+41</option>
-            <option value="+225">+225</option>
-            <option value="+221">+221</option>
-            <option value="+223">+223</option>
-          </select>
-        )}
+      <div className="w-full flex items-center justify-between mb-8 h-16 px-4">
         <input
           type="text"
           value={number}
@@ -109,8 +114,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
           }}
           placeholder=""
           disabled={disabled}
-          className="w-full bg-transparent text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none min-w-0"
-          style={{ paddingLeft: !number.startsWith("+") ? "2rem" : "0" }}
+          className="w-full bg-transparent text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
         />
         {number && (
           <button
@@ -132,9 +136,13 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
         {KEYS.map((key) => (
           <button
             key={key.digit}
-            onClick={() => handlePress(key.digit === "0" && number === "" ? "+" : key.digit)}
+            onPointerDown={() => handlePointerDown(key.digit)}
+            onPointerUp={() => handlePointerUp(key.digit)}
+            onPointerLeave={handlePointerLeave}
+            onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
             disabled={disabled}
-            className="bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] relative flex flex-col items-center justify-center w-20 h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-sm"
+            className="bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border-none text-[var(--text-primary)] relative flex flex-col items-center justify-center w-20 h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-[0_2px_10px_rgba(0,0,0,0.05)] active:scale-95"
+            style={{ WebkitUserSelect: 'none', touchAction: 'manipulation' }}
           >
             <span className="text-3xl font-medium">
               {key.digit}
