@@ -114,7 +114,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
           }}
           placeholder=""
           disabled={disabled}
-          className="w-full bg-transparent text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
+          className="w-full bg-transparent border-none shadow-none text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none focus:ring-0 min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
         />
         {number && (
           <button

@@ -8,11 +8,11 @@ let prismaUrl = process.env.DATABASE_URL || "";
 
 // Vercel / Neon Free Tier Postgres fixes
 if (prismaUrl) {
-  // Force a connection limit of 1 per serverless instance to avoid exhausting Neon's global pool (15 max)
-  // when multiple API routes are fetched concurrently on page load.
+  // Use connection limit 3 per serverless instance to allow some concurrency,
+  // but wait up to 30 seconds for a connection if the pool is full.
   const separator = prismaUrl.includes("?") ? "&" : "?";
   if (!prismaUrl.includes("connection_limit=")) {
-    prismaUrl += `${separator}connection_limit=1`;
+    prismaUrl += `${separator}connection_limit=3&pool_timeout=30`;
   }
 }
 

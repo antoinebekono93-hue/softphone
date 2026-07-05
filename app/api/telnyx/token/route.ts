@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 const TELNYX_API_KEY = process.env.TELNYX_API_KEY;
 
 export async function GET(req: Request) {
