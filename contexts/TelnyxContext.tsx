@@ -105,6 +105,18 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 // We know it's not our outbound call if currentCallRef doesn't match
                 if (!currentCallRef.current || (currentCallRef.current.id !== call.id && currentCallRef.current.callId !== call.callId)) {
                   setCallDirection("inbound");
+                  
+                  // Attach direct listener to inbound call
+                  call.on('destroy', () => {
+                    console.log("Direct call.on('destroy') fired for inbound!");
+                    setDebugLog(prev => prev ? `${prev} | inbound direct -> destroy` : `inbound direct -> destroy`);
+                    setCallState("idle");
+                    setCallDirection(null);
+                    setActiveCallId(null);
+                    setIncomingCallerId(null);
+                    setRemoteStream(null);
+                    currentCallRef.current = null;
+                  });
                 }
                 currentCallRef.current = call;
               } else if (call.state === "active") {
@@ -176,6 +188,19 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         audio: true,
         video: false,
       });
+
+      // Listen to the call directly for reliable hangup detection
+      call.on('destroy', () => {
+        console.log("Direct call.on('destroy') fired!");
+        setDebugLog(prev => prev ? `${prev} | direct -> destroy` : `direct -> destroy`);
+        setCallState("idle");
+        setCallDirection(null);
+        setActiveCallId(null);
+        setIncomingCallerId(null);
+        setRemoteStream(null);
+        currentCallRef.current = null;
+      });
+
       currentCallRef.current = call;
       setIncomingCallerId(cleanDestination);
       setCallDirection("outbound");
