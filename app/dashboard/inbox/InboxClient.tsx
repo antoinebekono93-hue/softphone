@@ -54,7 +54,7 @@ export default function InboxClient({ initialEvents }: { initialEvents: InboxEve
   };
 
   return (
-    <div className="flex w-full h-[calc(100vh-80px)] -m-8"> {/* Negative margin to offset dashboard padding and take full space */}
+    <div className="flex w-full h-full">
       {/* Left Pane: List */}
       <div className="w-full md:w-96 border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex flex-col h-full">
         <div className="p-4 border-b border-[var(--border-subtle)]">
