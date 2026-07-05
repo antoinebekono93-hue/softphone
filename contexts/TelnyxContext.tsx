@@ -97,7 +97,8 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 setCallState("ringing");
                 setIncomingCallerId(call.options.remoteCallerName || call.options.remoteCallerNumber);
                 // If we didn't initiate it, it's inbound
-                if (!currentCallRef.current || currentCallRef.current.id !== call.id) {
+                // We know it's not our outbound call if currentCallRef doesn't match
+                if (!currentCallRef.current || (currentCallRef.current.id !== call.id && currentCallRef.current.callId !== call.callId)) {
                   setCallDirection("inbound");
                 }
                 currentCallRef.current = call;
@@ -115,13 +116,17 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
           }
 
           // Handle termination states unconditionally
-          if (["destroy", "hangup", "down", "purge"].includes(call.state)) {
-             setCallState("idle");
-             setCallDirection(null);
-             setActiveCallId(null);
-             setIncomingCallerId(null);
-             setRemoteStream(null);
-             currentCallRef.current = null;
+          if (["destroy", "hangup", "purge"].includes(call.state)) {
+             // Only reset if we don't have an active call OR the event matches the active call
+             // We also accept it if the current state is "idle", meaning we don't care.
+             if (!currentCallRef.current || currentCallRef.current.id === call.id || currentCallRef.current.callId === call.callId) {
+                setCallState("idle");
+                setCallDirection(null);
+                setActiveCallId(null);
+                setIncomingCallerId(null);
+                setRemoteStream(null);
+                currentCallRef.current = null;
+             }
           }
         });
 
