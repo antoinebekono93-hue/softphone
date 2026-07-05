@@ -109,24 +109,17 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 if (call.remoteStream) {
                    setRemoteStream(call.remoteStream);
                 }
-              }
-              break;
-            default:
-              break;
-          }
-
-          // Handle termination states unconditionally
-          if (["destroy", "hangup", "purge"].includes(call.state)) {
-             // Only reset if we don't have an active call OR the event matches the active call
-             // We also accept it if the current state is "idle", meaning we don't care.
-             if (!currentCallRef.current || currentCallRef.current.id === call.id || currentCallRef.current.callId === call.callId) {
+              } else if (call.state === "destroy" || call.state === "hangup") {
                 setCallState("idle");
                 setCallDirection(null);
                 setActiveCallId(null);
                 setIncomingCallerId(null);
                 setRemoteStream(null);
                 currentCallRef.current = null;
-             }
+              }
+              break;
+            default:
+              break;
           }
         });
 
