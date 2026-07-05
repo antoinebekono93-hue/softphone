@@ -60,7 +60,7 @@ export function DashboardSidebar({
   // Grouped Navigation by Module
   const getActiveModule = () => {
     if (pathname.includes("/dashboard/sms")) return "sms";
-    if (pathname.includes("/dashboard/whatsapp")) return "whatsapp";
+    if (pathname.includes("/dashboard/whatsapp") || pathname.includes("/dashboard/pipeline")) return "whatsapp";
     if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice") || pathname.includes("/dashboard/tts")) return "ai";
     return "phone"; // Default
   };
@@ -101,6 +101,13 @@ export function DashboardSidebar({
       }
     ],
     whatsapp: [
+      {
+        title: "CRM & Ventes",
+        items: [
+          { name: "Pipeline de Ventes", href: "/dashboard/pipeline", icon: GitMerge },
+          { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
+        ]
+      },
       {
         title: "WhatsApp Business",
         items: [
