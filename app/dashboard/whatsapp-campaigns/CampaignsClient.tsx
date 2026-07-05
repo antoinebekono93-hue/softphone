@@ -4,22 +4,22 @@ import { useState } from "react";
 import { Megaphone, Users, MessageSquare, Play, CalendarClock, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function CampaignsClient({ contacts, templates, initialCampaigns }: any) {
+export default function CampaignsClient({ groups, templates, initialCampaigns }: any) {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
   const [templateId, setTemplateId] = useState("");
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  const toggleContact = (id: string) => {
-    setSelectedContacts(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+  const toggleGroup = (id: string) => {
+    setSelectedGroups(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
   };
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!templateId || selectedContacts.length === 0) return alert("Sélectionnez un modèle et au moins un contact.");
+    if (!templateId || selectedGroups.length === 0) return alert("Sélectionnez un modèle et au moins un groupe de contacts.");
 
     setIsSubmitting(true);
     try {
@@ -29,7 +29,7 @@ export default function CampaignsClient({ contacts, templates, initialCampaigns 
         body: JSON.stringify({
           name,
           templateId,
-          contactIds: selectedContacts
+          groupIds: selectedGroups
         })
       });
 
@@ -43,7 +43,7 @@ export default function CampaignsClient({ contacts, templates, initialCampaigns 
       setIsModalOpen(false);
       setName("");
       setTemplateId("");
-      setSelectedContacts([]);
+      setSelectedGroups([]);
       router.refresh();
       alert("Campagne lancée avec succès !");
     } catch (error: any) {
@@ -148,21 +148,26 @@ export default function CampaignsClient({ contacts, templates, initialCampaigns 
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-[var(--text-secondary)] mb-2">Sélectionnez les destinataires ({selectedContacts.length} sélectionnés)</label>
+                <label className="block text-sm font-bold text-[var(--text-secondary)] mb-2">Sélectionnez les groupes cibles ({selectedGroups.length} sélectionnés)</label>
                 <div className="border border-[var(--border-subtle)] rounded-xl overflow-y-auto max-h-64 bg-[var(--bg-surface-solid)]">
-                  {contacts.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-[var(--text-secondary)]">Aucun contact trouvé. Ajoutez des contacts d'abord.</div>
-                  ) : contacts.map((contact: any) => (
-                    <label key={contact.id} className="flex items-center gap-3 p-3 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedContacts.includes(contact.id)}
-                        onChange={() => toggleContact(contact.id)}
-                        className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
-                      />
-                      <div>
-                        <div className="font-bold text-sm text-[var(--text-primary)]">{contact.name || contact.phone}</div>
-                        {contact.name && <div className="text-xs text-[var(--text-secondary)]">{contact.phone}</div>}
+                  {groups?.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-[var(--text-secondary)]">Aucun groupe trouvé. Créez des groupes de contacts d'abord.</div>
+                  ) : groups?.map((group: any) => (
+                    <label key={group.id} className="flex items-center justify-between p-3 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedGroups.includes(group.id)}
+                          onChange={() => toggleGroup(group.id)}
+                          className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500"
+                        />
+                        <div>
+                          <div className="font-bold text-sm text-[var(--text-primary)]">{group.name}</div>
+                          {group.description && <div className="text-xs text-[var(--text-secondary)]">{group.description}</div>}
+                        </div>
+                      </div>
+                      <div className="text-xs font-bold px-2 py-1 bg-[var(--bg-surface-hover)] rounded-md text-[var(--text-secondary)]">
+                        {group._count?.contacts || 0} contacts
                       </div>
                     </label>
                   ))}

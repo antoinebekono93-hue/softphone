@@ -12,9 +12,14 @@ export default async function WhatsAppCampaignsPage() {
   if (!session?.user?.organizationId) redirect("/login");
   const orgId = session.user.organizationId;
 
-  // 1. Fetch contacts
-  const contacts = await prisma.contact.findMany({
+  // 1. Fetch contact groups
+  const groups = await prisma.contactGroup.findMany({
     where: { organizationId: orgId },
+    include: {
+      _count: {
+        select: { contacts: true }
+      }
+    },
     orderBy: { createdAt: 'desc' }
   });
 
@@ -42,7 +47,7 @@ export default async function WhatsAppCampaignsPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
       <CampaignsClient 
-        contacts={contacts} 
+        groups={groups} 
         templates={templates} 
         initialCampaigns={campaigns} 
       />

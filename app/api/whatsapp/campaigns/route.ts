@@ -10,11 +10,35 @@ export async function POST(req: Request) {
     }
     const organizationId = session.user.organizationId;
 
-    const body = await req.json();
-    const { name, templateId, contactIds } = body;
+    const { name, templateId, groupIds } = await req.json();
 
-    if (!name || !templateId || !contactIds || !Array.isArray(contactIds)) {
+    if (!name || !templateId || !groupIds || groupIds.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Fetch contacts from selected groups
+    const targetGroups = await prisma.contactGroup.findMany({
+      where: {
+        id: { in: groupIds },
+        organizationId
+      },
+      include: { contacts: true }
+    });
+
+    // Flatten and deduplicate contacts based on id
+    const uniqueContactsMap = new Map();
+    targetGroups.forEach(group => {
+      group.contacts.forEach(contact => {
+        if (!uniqueContactsMap.has(contact.id)) {
+          uniqueContactsMap.set(contact.id, contact);
+        }
+      });
+    });
+
+    const targetContacts = Array.from(uniqueContactsMap.values());
+
+    if (targetContacts.length === 0) {
+      return NextResponse.json({ error: 'No contacts found in selected groups' }, { status: 400 });
     }
 
     // Verify template
@@ -51,17 +75,12 @@ export async function POST(req: Request) {
       }
     });
 
-    // Fetch contacts
-    const contacts = await prisma.contact.findMany({
-      where: { id: { in: contactIds }, organizationId }
-    });
-
     let sentCount = 0;
     const apiKey = process.env.TELNYX_API_KEY;
 
     // Send messages (in a real prod app, this should be sent to a background worker like Redis/BullMQ)
     // For this prototype, we'll do it inline, but beware of Vercel 10s timeout if contacts array is huge.
-    for (const contact of contacts) {
+    for (const contact of targetContacts) {
       try {
         const telnyxRes = await fetch(`https://api.telnyx.com/v2/whatsapp_messages/${account.phoneNumberId}/messages`, {
           method: "POST",
