@@ -5,6 +5,7 @@ import { Softphone } from "./Softphone";
 import { Search, History, Users, Voicemail, PhoneMissed, PhoneForwarded, PhoneIncoming, MoreVertical, Play, Loader2, UserPlus, ChevronDown, ChevronUp, Bot, Phone } from "lucide-react";
 
 import Link from "next/link";
+import { useTelnyx } from "@/contexts/TelnyxContext";
 
 export function SoftphoneWorkspace() {
   const [activeTab, setActiveTab] = useState<'history' | 'contacts' | 'voicemail'>('history');
@@ -13,6 +14,7 @@ export function SoftphoneWorkspace() {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
+  const { makeCall } = useTelnyx();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -172,7 +174,7 @@ export function SoftphoneWorkspace() {
                             Agent IA
                           </button>
                           <button 
-                            onClick={(e) => { e.stopPropagation(); alert("Veuillez composer le numéro sur le clavier à droite."); }}
+                            onClick={(e) => { e.stopPropagation(); makeCall(contact.phone); }}
                             className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:opacity-90 rounded-xl text-sm font-semibold text-white transition-opacity shadow-sm"
                           >
                             <Phone className="w-4 h-4" />

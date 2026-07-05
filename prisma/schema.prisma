@@ -1,15 +1,11 @@
 generator client {
-  provider        = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-// ============================================
-// Auth.js required models
-// ============================================
 
 model Account {
   id                String  @id @default(cuid())
@@ -24,8 +20,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -35,8 +30,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -47,112 +41,74 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ============================================
-// Application models
-// ============================================
-
-// Removed Enums for SQLite compatibility. Use Strings in code.
-// UserRole: OWNER, ADMIN, MANAGER, AGENT
-// PlanStatus: ACTIVE, TRIALING, PAST_DUE, CANCELED, UNPAID
-// PhoneNumberStatus: ACTIVE, SUSPENDED, RELEASED
-// SimType: PHYSICAL, ESIM
-// SimStatus: ACTIVE, SUSPENDED
-// MessageStatus: DELIVERED, UNDELIVERED, IN_FLIGHT
-// MessageType: SMS, MMS
-// CallDirection: INBOUND, OUTBOUND
-// CallStatus: INITIATED, RINGING, IN_PROGRESS, COMPLETED, BUSY, NO_ANSWER, CANCELED, FAILED, VOICEMAIL
-
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
-
-  isSuperAdmin   Boolean  @default(false)
-  role           String   @default("AGENT")
+  id             String         @id @default(cuid())
+  name           String?
+  email          String         @unique
+  emailVerified  DateTime?
+  image          String?
+  passwordHash   String?
+  isSuperAdmin   Boolean        @default(false)
+  role           String         @default("AGENT")
   organizationId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  organization   Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   accounts       Account[]
-  sessions       Session[]
-  phoneNumbers   PhoneNumber[]  @relation("AssignedUser")
   callLogs       CallLog[]
-  smsMessages    SmsMessage[]
-  opportunities  Opportunity[]
   internalNotes  InternalNote[]
+  opportunities  Opportunity[]
+  phoneNumbers   PhoneNumber[]  @relation("AssignedUser")
+  sessions       Session[]
+  smsMessages    SmsMessage[]
+  organization   Organization?  @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
   @@index([email])
 }
 
 model Organization {
-  id   String @id @default(cuid())
-  name String
-  slug String @unique
-
-  // Telnyx Integration
-  telnyxApiKey          String? // Encrypted API Key for BYOK (Bring Your Own Key) mode
-  telnyxConnectionId    String? // SIP Connection ID for WebRTC
-
-  // Stripe
-  stripeCustomerId     String? @unique
-  stripeSubscriptionId String? @unique
-
-  // Flutterwave
-  flutterwaveCustomerId String? @unique
-
-  // Plan
-  pricingPlanId String?
-  planStatus    String @default("UNPAID")
-
-  // Usage tracking
-  minutesUsedThisMonth Int      @default(0)
-  usageResetDate       DateTime @default(now())
-
-  // Wallet & Prepaid
-  walletBalance Float @default(0.0) // Balance in USD for prepaid services
-
-  // God Mode Configuration (Quotas & Limits)
-  tenantSettings Json?
-
-  // KYC & Compliance
-  kycStatus      String  @default("UNVERIFIED") // UNVERIFIED, PENDING, APPROVED, REJECTED
-  kycDocumentUrl String?
-  businessName   String?
+  id                         String              @id @default(cuid())
+  name                       String
+  slug                       String              @unique
+  telnyxApiKey               String?
+  telnyxConnectionId         String?
+  stripeCustomerId           String?             @unique
+  stripeSubscriptionId       String?             @unique
+  flutterwaveCustomerId      String?             @unique
+  pricingPlanId              String?
+  planStatus                 String              @default("UNPAID")
+  minutesUsedThisMonth       Int                 @default(0)
+  usageResetDate             DateTime            @default(now())
+  walletBalance              Float               @default(0.0)
+  createdAt                  DateTime            @default(now())
+  updatedAt                  DateTime            @updatedAt
+  businessName               String?
   businessRegistrationNumber String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  users               User[]
-  phoneNumbers        PhoneNumber[]
-  messagingProfiles   MessagingProfile[]
-  simCards            SimCard[]
-  callLogs            CallLog[]
-  contacts            Contact[]
-  automationRules     AutomationRule[]
-  smsMessages         SmsMessage[]
-  pricingPlan         PricingPlan? @relation(fields: [pricingPlanId], references: [id])
-  aiAgents            VoiceAIAgent[]
-  walletTransactions  WalletTransaction[]
-  whatsappAccount     WhatsAppAccount?
-  campaigns           Campaign[]
-  whatsappTemplates   WhatsAppTemplate[]
-  opportunities       Opportunity[]
-  internalNotes       InternalNote[]
-  contactGroups       ContactGroup[]
-  sequences           Sequence[]
-  numberOrders        NumberOrder[]
-  verifyProfiles      VerifyProfile[]
-  verificationLogs    VerificationLog[]
-  rcsSettings         RcsSettings?
+  kycDocumentUrl             String?
+  kycStatus                  String              @default("UNVERIFIED")
+  tenantSettings             Json?
+  automationRules            AutomationRule[]
+  callLogs                   CallLog[]
+  campaigns                  Campaign[]
+  contacts                   Contact[]
+  contactGroups              ContactGroup[]
+  internalNotes              InternalNote[]
+  messagingProfiles          MessagingProfile[]
+  numberOrders               NumberOrder[]
+  opportunities              Opportunity[]
+  pricingPlan                PricingPlan?        @relation(fields: [pricingPlanId], references: [id])
+  phoneNumbers               PhoneNumber[]
+  rcsSettings                RcsSettings?
+  sequences                  Sequence[]
+  simCards                   SimCard[]
+  smsMessages                SmsMessage[]
+  users                      User[]
+  verificationLogs           VerificationLog[]
+  verifyProfiles             VerifyProfile[]
+  aiAgents                   VoiceAIAgent[]
+  walletTransactions         WalletTransaction[]
+  whatsappAccount            WhatsAppAccount?
+  whatsappTemplates          WhatsAppTemplate[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -161,14 +117,12 @@ model Organization {
 
 model MessagingProfile {
   id             String        @id @default(cuid())
-  telnyxId       String        @unique // The ID returned by Telnyx
+  telnyxId       String        @unique
   name           String
   webhookUrl     String?
-  
   organizationId String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-
   organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   phoneNumbers   PhoneNumber[]
 
@@ -177,27 +131,23 @@ model MessagingProfile {
 
 model PhoneNumber {
   id                 String            @id @default(cuid())
-  number             String            @unique // E.164 format
+  number             String            @unique
   friendlyName       String?
-  telnyxId           String            @unique // Telnyx Phone Number ID
-  country            String?           // ISO 3166-1 alpha-2
+  telnyxId           String            @unique
+  country            String?
   status             String            @default("ACTIVE")
-  
   organizationId     String
-  assignedUserId     String? // Can be assigned to a specific user or left null for the entire org
-  messagingProfileId String? // The linked messaging profile
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  assignedUser     User?             @relation("AssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  messagingProfile MessagingProfile? @relation(fields: [messagingProfileId], references: [id], onDelete: SetNull)
-  voiceAIAgent     VoiceAIAgent?
-  callLogs         CallLog[]
-  smsMessages      SmsMessage[]
-  campaigns        Campaign[]
+  assignedUserId     String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  messagingProfileId String?
+  callLogs           CallLog[]
+  campaigns          Campaign[]
+  assignedUser       User?             @relation("AssignedUser", fields: [assignedUserId], references: [id])
+  messagingProfile   MessagingProfile? @relation(fields: [messagingProfileId], references: [id])
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  smsMessages        SmsMessage[]
+  voiceAIAgent       VoiceAIAgent?
 
   @@index([organizationId])
   @@index([number])
@@ -205,86 +155,69 @@ model PhoneNumber {
 }
 
 model Contact {
-  id             String   @id @default(cuid())
-  name           String?
-  company        String?
-  email          String?
-  phone          String   // E.164
-  notes          String?
-  
-  // AI Intelligence
-  leadScore      Int?     // 0 to 100
-  sentiment      String?  // POSITIVE, NEUTRAL, NEGATIVE
-  
-  organizationId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  groups       ContactGroup[]
-  callLogs     CallLog[]
-  smsMessages  SmsMessage[]
-  campaignRecipients CampaignRecipient[]
-  opportunities      Opportunity[]
-  internalNotes      InternalNote[]
+  id                  String               @id @default(cuid())
+  name                String?
+  company             String?
+  email               String?
+  phone               String
+  notes               String?
+  organizationId      String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  leadScore           Int?
+  sentiment           String?
+  callLogs            CallLog[]
+  campaignRecipients  CampaignRecipient[]
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  internalNotes       InternalNote[]
+  opportunities       Opportunity[]
   sequenceEnrollments SequenceEnrollment[]
+  smsMessages         SmsMessage[]
+  groups              ContactGroup[]       @relation("ContactToContactGroup")
 
   @@unique([organizationId, phone])
   @@index([organizationId])
 }
 
 model ContactGroup {
-  id             String    @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
   description    String?
-  
   organizationId String
-
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  contacts       Contact[]
+  contacts       Contact[]    @relation("ContactToContactGroup")
 
   @@index([organizationId])
 }
 
 model CallLog {
-  id                   String        @id @default(cuid())
-  telnyxCallControlId  String        @unique // The unique Call Control ID from Telnyx
-  direction            String
-  status               String        @default("INITIATED")
-
-  fromNumber String
-  toNumber   String
-  duration   Int           @default(0) // in seconds
-  
-  // Quality and Diagnostics
-  hangupCause          String?
-  sipHangupCause       String?
-  mosScore             Float?
-
-  // AI Intelligence
-  recordingUrl         String?
-  transcriptionText    String?
-  aiSummary            String?
-  amdResult            String? // Answering Machine Detection result
-
-  organizationId String
-  userId         String?
-  phoneNumberId  String?
-  contactId      String?
-
-  startedAt  DateTime  @default(now())
-  answeredAt DateTime?
-  endedAt    DateTime?
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  phoneNumber  PhoneNumber? @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
-  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  id                  String       @id @default(cuid())
+  telnyxCallControlId String       @unique
+  direction           String
+  status              String       @default("INITIATED")
+  fromNumber          String
+  toNumber            String
+  duration            Int          @default(0)
+  recordingUrl        String?
+  transcriptionText   String?
+  aiSummary           String?
+  organizationId      String
+  userId              String?
+  phoneNumberId       String?
+  contactId           String?
+  startedAt           DateTime     @default(now())
+  answeredAt          DateTime?
+  endedAt             DateTime?
+  amdResult           String?
+  hangupCause         String?
+  mosScore            Float?
+  sipHangupCause      String?
+  contact             Contact?     @relation(fields: [contactId], references: [id])
+  organization        Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phoneNumber         PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+  user                User?        @relation(fields: [userId], references: [id])
 
   @@index([organizationId])
   @@index([userId])
@@ -294,188 +227,158 @@ model CallLog {
 }
 
 model SmsMessage {
-  id               String        @id @default(cuid())
-  telnyxMessageId  String        @unique
-  direction        String
-  body             String
-  status           String        @default("IN_FLIGHT")
-  type             String        @default("SMS")
-  cost             Float         @default(0.0)
-  country          String?
-  mediaUrls        String[]      @default([])
-  agentMessage     String?       // For RCS Rich Cards/Carousels
-  
-  fromNumber String
-  toNumber   String
-
-  organizationId String
-  userId         String?
-  phoneNumberId  String?
-  contactId      String?
-
-  sentAt     DateTime  @default(now())
-
-  // Relations
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  phoneNumber  PhoneNumber? @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
-  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  id              String       @id @default(cuid())
+  telnyxMessageId String       @unique
+  direction       String
+  body            String
+  status          String       @default("IN_FLIGHT")
+  type            String       @default("SMS")
+  cost            Float        @default(0.0)
+  country         String?
+  fromNumber      String
+  toNumber        String
+  organizationId  String
+  userId          String?
+  phoneNumberId   String?
+  contactId       String?
+  sentAt          DateTime     @default(now())
+  agentMessage    String?
+  mediaUrls       String[]     @default([])
+  contact         Contact?     @relation(fields: [contactId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phoneNumber     PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+  user            User?        @relation(fields: [userId], references: [id])
 
   @@index([organizationId])
   @@index([contactId])
 }
 
 model AutomationRule {
-  id             String  @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  triggerType    String  // "MISSED_CALL", "NEW_VOICEMAIL", "AFTER_HOURS_SMS"
-  actionType     String  // "SEND_SMS", "SEND_TO_SLACK"
-  actionPayload  String // JSON string containing the action details (e.g. { message: "Hi! We missed..." })
-  isActive       Boolean @default(true)
-
+  triggerType    String
+  actionType     String
+  actionPayload  String
+  isActive       Boolean      @default(true)
   organizationId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
 
 model PricingPlan {
-  id              String   @id @default(cuid())
-  name            String
-  stripePriceId   String?  @unique
-  flutterwavePlanId String? @unique
-  monthlyPrice    Float    @default(0)
-  
-  // Quotas
-  includedMinutes Int      @default(0)
-  includedSms     Int      @default(0)
-  
-  isActive        Boolean  @default(true)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organizations Organization[]
-  features      PlanFeature[]
+  id                String         @id @default(cuid())
+  name              String
+  stripePriceId     String?        @unique
+  flutterwavePlanId String?        @unique
+  monthlyPrice      Float          @default(0)
+  includedMinutes   Int            @default(0)
+  includedSms       Int            @default(0)
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  organizations     Organization[]
+  features          PlanFeature[]
 }
 
 model PlanFeature {
-  id            String   @id @default(cuid())
-  name          String   // e.g. "AI Transcriptions", "Visual IVR"
+  id            String      @id @default(cuid())
+  name          String
   pricingPlanId String
-
   pricingPlan   PricingPlan @relation(fields: [pricingPlanId], references: [id], onDelete: Cascade)
 
   @@index([pricingPlanId])
 }
 
 model VoiceAIAgent {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
   prompt         String
-  greeting       String?
-  voice          String   @default("alloy")
-  language       String   @default("fr-FR")
-  isActive       Boolean  @default(true)
-  telnyxId       String?  @unique
-  
+  voice          String       @default("alloy")
+  language       String       @default("fr-FR")
+  isActive       Boolean      @default(true)
   organizationId String
-  phoneNumberId  String?  @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  phoneNumber  PhoneNumber? @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
+  phoneNumberId  String?      @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  greeting       String?
+  telnyxId       String?      @unique
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phoneNumber    PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
 
   @@index([organizationId])
 }
 
 model SimCard {
-  id             String    @id @default(cuid())
-  iccid          String    @unique
-  telnyxSimId    String    @unique
-  type           String    @default("ESIM")
-  status         String    @default("ACTIVE")
-  name           String?
-  dataUsedMB     Float     @default(0.0)
-  dataLimitMB    Float?
-  alertEnabled   Boolean   @default(false)
-  publicIpEnabled Boolean  @default(false)
-  voiceEnabled   Boolean   @default(false)
-  voicePhoneNumber String?
+  id               String       @id @default(cuid())
+  iccid            String       @unique
+  telnyxSimId      String       @unique
+  type             String       @default("ESIM")
+  status           String       @default("ACTIVE")
+  name             String?
+  dataUsedMB       Float        @default(0.0)
+  dataLimitMB      Float?
+  alertEnabled     Boolean      @default(false)
+  lpaCode          String?
+  organizationId   String
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  publicIpEnabled  Boolean      @default(false)
+  voiceEnabled     Boolean      @default(false)
   voiceForwarding  String?
+  voicePhoneNumber String?
   voiceScreening   String?
-  lpaCode        String?
-  
-  organizationId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
 
 model WalletTransaction {
-  id             String          @id @default(cuid())
-  amount         Float           // Positive = credit, Negative = debit
+  id             String       @id @default(cuid())
+  amount         Float
   type           String
   description    String
   organizationId String
-  createdAt      DateTime        @default(now())
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([createdAt])
 }
 
 model WhatsAppAccount {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   wabaId         String
   phoneNumberId  String
   phoneNumber    String
   accessToken    String
-  status         String   @default("ACTIVE")
-
-  organizationId String   @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  status         String       @default("ACTIVE")
+  organizationId String       @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Campaign {
-  id             String   @id @default(cuid())
+  id             String              @id @default(cuid())
   name           String
-  status         String   @default("DRAFT") // DRAFT, SCHEDULED, SENDING, COMPLETED, CANCELLED
+  status         String              @default("DRAFT")
   scheduledAt    DateTime?
-  
-  // Analytics
-  sentCount      Int      @default(0)
-  deliveredCount Int      @default(0)
-  readCount      Int      @default(0)
-  repliedCount   Int      @default(0)
-
-  // Content
+  sentCount      Int                 @default(0)
+  deliveredCount Int                 @default(0)
+  readCount      Int                 @default(0)
+  repliedCount   Int                 @default(0)
   templateId     String?
-  body           String?  // text content if not using a template
-  phoneNumberId  String?  // The sender number
-
+  body           String?
   organizationId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  phoneNumberId  String?
   organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  phoneNumber    PhoneNumber?        @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
-  template       WhatsAppTemplate?   @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  phoneNumber    PhoneNumber?        @relation(fields: [phoneNumberId], references: [id])
+  template       WhatsAppTemplate?   @relation(fields: [templateId], references: [id])
   recipients     CampaignRecipient[]
 
   @@index([organizationId])
@@ -485,9 +388,8 @@ model CampaignRecipient {
   id         String   @id @default(cuid())
   campaignId String
   contactId  String
-  status     String   @default("PENDING") // PENDING, SENT, DELIVERED, READ, FAILED
-  messageId  String?  // Telnyx message ID when sent
-
+  status     String   @default("PENDING")
+  messageId  String?
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   contact    Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
@@ -497,130 +399,113 @@ model CampaignRecipient {
 }
 
 model WhatsAppTemplate {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   name           String
-  language       String   @default("fr")
-  category       String   @default("MARKETING") // MARKETING, UTILITY, AUTHENTICATION
-  status         String   @default("APPROVED")  // PENDING, APPROVED, REJECTED
+  language       String       @default("fr")
+  category       String       @default("MARKETING")
+  status         String       @default("APPROVED")
   content        String
-  
   organizationId String
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   campaigns      Campaign[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
 
 model Opportunity {
-  id             String   @id @default(cuid())
-  name           String
-  stage          String   @default("NEW") // NEW, QUALIFIED, PROPOSITION, WON, LOST
-  expectedRevenue Float   @default(0.0)
-  probability    Int      @default(10) // 0 to 100
-  priority       Int      @default(0) // 0 to 3 stars
-  
-  contactId      String?
-  organizationId String
-  assignedUserId String?
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  assignedUser   User?        @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
-  internalNotes  InternalNote[]
+  id              String         @id @default(cuid())
+  name            String
+  stage           String         @default("NEW")
+  expectedRevenue Float          @default(0.0)
+  probability     Int            @default(10)
+  priority        Int            @default(0)
+  contactId       String?
+  organizationId  String
+  assignedUserId  String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  internalNotes   InternalNote[]
+  assignedUser    User?          @relation(fields: [assignedUserId], references: [id])
+  contact         Contact?       @relation(fields: [contactId], references: [id])
+  organization    Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([contactId])
 }
 
 model InternalNote {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   content        String
-  
   opportunityId  String?
   contactId      String?
   organizationId String
   authorId       String
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
   author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  contact        Contact?     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  opportunity    Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([opportunityId])
   @@index([contactId])
 }
 
-// ============================================
-// Global System Settings (Singleton)
-// ============================================
 model SystemSettings {
-  id                   String   @id @default("default")
-  smsRate              Float    @default(0.05)
-  callRatePerMinute    Float    @default(0.02)
-  aiAgentRatePerMinute Float    @default(0.15)
-  whatsappRate         Float    @default(0.02)
-  phoneNumberRate      Float    @default(1.00)
-  phoneNumberMarkupMultiplier Float @default(2.5) // Default to 2.5x markup (e.g. $1 -> $2.50)
-  phoneNumberMarkupFixed      Float @default(0.0) // Default to +$0.00 markup
-  eSimRate             Float    @default(5.00)
-
-  telnyxApiKey         String?  // Global Telnyx API Key
-  telnyxConnectionId   String?  // Global SIP Connection ID
-
-  updatedAt            DateTime @updatedAt
+  id                          String   @id @default("default")
+  smsRate                     Float    @default(0.05)
+  callRatePerMinute           Float    @default(0.02)
+  aiAgentRatePerMinute        Float    @default(0.15)
+  whatsappRate                Float    @default(0.02)
+  phoneNumberRate             Float    @default(1.00)
+  eSimRate                    Float    @default(5.00)
+  telnyxApiKey                String?
+  telnyxConnectionId          String?
+  updatedAt                   DateTime @updatedAt
+  phoneNumberMarkupFixed      Float    @default(0.0)
+  phoneNumberMarkupMultiplier Float    @default(2.5)
 }
 
 model Sequence {
-  id             String         @id @default(cuid())
+  id             String               @id @default(cuid())
   name           String
   description    String?
-  isActive       Boolean        @default(false)
+  isActive       Boolean              @default(false)
   organizationId String
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-
-  steps          SequenceStep[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   enrollments    SequenceEnrollment[]
-  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  steps          SequenceStep[]
 
   @@index([organizationId])
 }
 
 model SequenceStep {
-  id             String         @id @default(cuid())
-  sequenceId     String
-  stepOrder      Int            // 1, 2, 3...
-  delayHours     Int            // Hours to wait after the previous step (or after enrollment if step 1)
-  actionType     String         // "SMS", "WHATSAPP", "AI_CALL"
-  content        String?        // SMS body or AI Prompt
-  templateId     String?        // for WhatsApp
-  
-  sequence       Sequence       @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  sequenceId String
+  stepOrder  Int
+  delayHours Int
+  actionType String
+  content    String?
+  templateId String?
+  sequence   Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
 
   @@index([sequenceId])
 }
 
 model SequenceEnrollment {
-  id             String         @id @default(cuid())
-  sequenceId     String
-  contactId      String
-  currentStep    Int            @default(1)
-  status         String         @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED, FAILED
-  nextRunAt      DateTime?      // When the next step should be executed
-  
-  sequence       Sequence       @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
-  contact        Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  sequenceId  String
+  contactId   String
+  currentStep Int       @default(1)
+  status      String    @default("ACTIVE")
+  nextRunAt   DateTime?
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  sequence    Sequence  @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
 
   @@unique([sequenceId, contactId])
   @@index([sequenceId])
@@ -628,51 +513,45 @@ model SequenceEnrollment {
 }
 
 model NumberOrder {
-  id               String   @id @default(cuid())
-  telnyxOrderId    String   @unique
-  type             String   // "STANDARD", "BULK", "ADVANCED"
-  status           String   @default("pending") // pending, processing, success, partial_success, failed, exception
-  phoneNumbers     String?  // JSON string of requested numbers or criteria
-  
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  telnyxOrderId  String       @unique
+  type           String
+  status         String       @default("pending")
+  phoneNumbers   String?
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([status])
 }
 
 model VerifyProfile {
-  id               String   @id // Using Telnyx ID
-  name             String
-  language         String   @default("en-US")
-  settings         String?  // JSON string containing sms, call, dtmf_confirm configurations
-  
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  logs         VerificationLog[]
+  id             String            @id
+  name           String
+  language       String            @default("en-US")
+  settings       String?
+  organizationId String
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  logs           VerificationLog[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
 
 model VerificationLog {
-  id               String   @id // Using Telnyx ID
-  phoneNumber      String
-  status           String   @default("pending") // pending, accepted, rejected, expired, max_attempts_exceeded, invalid, error
-  type             String   // sms, call, flashcall, dtmf_confirm
-  
-  verifyProfileId  String
-  organizationId   String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  verifyProfile    VerifyProfile @relation(fields: [verifyProfileId], references: [id], onDelete: Cascade)
-  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id              String        @id
+  phoneNumber     String
+  status          String        @default("pending")
+  type            String
+  verifyProfileId String
+  organizationId  String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  organization    Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  verifyProfile   VerifyProfile @relation(fields: [verifyProfileId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([verifyProfileId])
@@ -680,13 +559,12 @@ model VerificationLog {
 }
 
 model RcsSettings {
-  id                 String   @id @default(cuid())
-  organizationId     String   @unique
-  agentId            String?  // Telnyx RCS Agent ID
-  messagingProfileId String?  // Telnyx Messaging Profile ID assigned to RCS
-  aiAssistantId      String?  // Telnyx AI Assistant ID to automate replies
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                 String       @id @default(cuid())
+  organizationId     String       @unique
+  agentId            String?
+  messagingProfileId String?
+  aiAssistantId      String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
