@@ -6,13 +6,9 @@ const globalForPrisma = globalThis as unknown as {
 
 let prismaUrl = process.env.DATABASE_URL || "";
 
-// Vercel / Nhost Postgres fixes
+// Removed aggressive connection limit that was causing Prisma timeouts
 if (prismaUrl) {
-  // Force a low connection limit per serverless instance to avoid exhausting Nhost's 100 limit
-  const separator = prismaUrl.includes("?") ? "&" : "?";
-  if (!prismaUrl.includes("connection_limit=")) {
-    prismaUrl += `${separator}connection_limit=2`;
-  }
+  // We rely on Prisma's default connection pooling
 }
 
 export const prisma =
