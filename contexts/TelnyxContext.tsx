@@ -105,18 +105,6 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 // We know it's not our outbound call if currentCallRef doesn't match
                 if (!currentCallRef.current || (currentCallRef.current.id !== call.id && currentCallRef.current.callId !== call.callId)) {
                   setCallDirection("inbound");
-                  
-                  // Attach direct listener to inbound call
-                  call.on('destroy', () => {
-                    console.log("Direct call.on('destroy') fired for inbound!");
-                    setDebugLog(prev => prev ? `${prev} | inbound direct -> destroy` : `inbound direct -> destroy`);
-                    setCallState("idle");
-                    setCallDirection(null);
-                    setActiveCallId(null);
-                    setIncomingCallerId(null);
-                    setRemoteStream(null);
-                    currentCallRef.current = null;
-                  });
                 }
                 currentCallRef.current = call;
               } else if (call.state === "active") {
@@ -150,7 +138,25 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
 
     initTelnyx();
 
+    // Fallback poller to catch missed hangup/destroy states from Telnyx SDK
+    const poller = setInterval(() => {
+      if (currentCallRef.current) {
+        const state = currentCallRef.current.state;
+        if (state === "destroy" || state === "hangup") {
+          console.log("[Telnyx Poller] Caught missed termination state:", state);
+          setDebugLog(prev => prev ? `${prev} | poller -> ${state}` : `poller -> ${state}`);
+          setCallState("idle");
+          setCallDirection(null);
+          setActiveCallId(null);
+          setIncomingCallerId(null);
+          setRemoteStream(null);
+          currentCallRef.current = null;
+        }
+      }
+    }, 1000);
+
     return () => {
+      clearInterval(poller);
       if (clientRef.current) {
         clientRef.current.disconnect();
       }
@@ -184,22 +190,14 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       
       const call = clientRef.current.newCall({
         destinationNumber: cleanDestination,
-        callerNumber: callerId, // Pass the selected Caller ID here
+        callerNumber: callerId || undefined, // Pass the selected Caller ID here, or undefined if empty
         audio: true,
         video: false,
       });
 
-      // Listen to the call directly for reliable hangup detection
-      call.on('destroy', () => {
-        console.log("Direct call.on('destroy') fired!");
-        setDebugLog(prev => prev ? `${prev} | direct -> destroy` : `direct -> destroy`);
-        setCallState("idle");
-        setCallDirection(null);
-        setActiveCallId(null);
-        setIncomingCallerId(null);
-        setRemoteStream(null);
-        currentCallRef.current = null;
-      });
+      if (!call) {
+        throw new Error("L'intégration Telnyx n'a pas pu créer l'appel.");
+      }
 
       currentCallRef.current = call;
       setIncomingCallerId(cleanDestination);
@@ -208,7 +206,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (err: any) {
       console.error("Failed to make call", err);
       setCallState("idle");
-      toast.error("Erreur lors de l'appel. Vérifiez le format du numéro.");
+      toast.error(`Erreur: ${err?.message || err || "Vérifiez le format du numéro."}`);
     }
   };
 
