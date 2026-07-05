@@ -22,6 +22,7 @@ export function Softphone() {
     hangupCall,
     muteMicrophone,
     sendDTMF,
+    debugLog,
   } = useTelnyx();
 
   const [showKeypad, setShowKeypad] = useState(false);
@@ -159,6 +160,11 @@ export function Softphone() {
           onReject={rejectCall}
         />
       )}
+
+      {/* Temporary Debug Overlay */}
+      <div className="absolute bottom-2 left-2 right-2 bg-black/80 text-[10px] text-green-400 p-2 rounded max-h-32 overflow-y-auto break-all z-50">
+        Debug: {debugLog}
+      </div>
     </div>
   );
 }

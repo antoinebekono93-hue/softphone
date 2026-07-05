@@ -45,6 +45,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   const [incomingCallerId, setIncomingCallerId] = useState<string | null>(null);
 
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [debugLog, setDebugLog] = useState<string>("");
 
   useEffect(() => {
     const initTelnyx = async () => {
@@ -88,7 +89,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
 
         clientRef.current.on("telnyx.notification", (notification: any) => {
           const call = notification.call;
-          console.log("[Telnyx Notification]", notification.type, call?.state);
+          const logMsg = `${notification.type} -> ${call?.state}`;
+          console.log("[Telnyx Notification]", logMsg);
+          setDebugLog(prev => prev ? `${prev} | ${logMsg}` : logMsg);
+          
           if (!call) return;
 
           switch (notification.type) {
@@ -254,6 +258,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       hangupCall,
       muteMicrophone,
       sendDTMF,
+      debugLog, // Expose debug log
     }}>
       {/* Hidden audio element required for Telnyx to attach the remote stream */}
       <audio id="telnyx-remote-audio" autoPlay className="hidden" />
