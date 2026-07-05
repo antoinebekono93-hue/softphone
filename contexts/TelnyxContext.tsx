@@ -108,17 +108,20 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 if (call.remoteStream) {
                    setRemoteStream(call.remoteStream);
                 }
-              } else if (call.state === "destroy" || call.state === "hangup" || call.state === "down") {
-                setCallState("idle");
-                setCallDirection(null);
-                setActiveCallId(null);
-                setIncomingCallerId(null);
-                setRemoteStream(null);
-                currentCallRef.current = null;
               }
               break;
             default:
               break;
+          }
+
+          // Handle termination states unconditionally
+          if (["destroy", "hangup", "down", "purge"].includes(call.state)) {
+             setCallState("idle");
+             setCallDirection(null);
+             setActiveCallId(null);
+             setIncomingCallerId(null);
+             setRemoteStream(null);
+             currentCallRef.current = null;
           }
         });
 
