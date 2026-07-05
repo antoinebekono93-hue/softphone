@@ -11,5 +11,10 @@ export default async function GodModeNumbersPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  return <NumbersClient existingNumbers={numbers} />;
+  const organizations = await prisma.organization.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  return <NumbersClient existingNumbers={numbers} organizations={organizations} />;
 }

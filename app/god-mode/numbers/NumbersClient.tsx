@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 
+import { useRouter } from "next/navigation";
+
 type DbNumber = any;
 
-export function NumbersClient({ existingNumbers }: { existingNumbers: DbNumber[] }) {
+export function NumbersClient({ existingNumbers, organizations = [] }: { existingNumbers: DbNumber[], organizations?: any[] }) {
+  const router = useRouter();
   const [countryCode, setCountryCode] = useState("US");
   const [limit, setLimit] = useState("10");
   const [features, setFeatures] = useState({ voice: true, sms: true });
@@ -12,6 +15,7 @@ export function NumbersClient({ existingNumbers }: { existingNumbers: DbNumber[]
   const [numbers, setNumbers] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isBuying, setIsBuying] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -73,6 +77,37 @@ export function NumbersClient({ existingNumbers }: { existingNumbers: DbNumber[]
     }
   };
 
+  const syncNumbers = async () => {
+    setIsSyncing(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const res = await fetch("/api/admin/telnyx/numbers/sync", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to sync numbers");
+      setSuccess(`Synchronisation réussie ! ${data.count} numéros ajoutés/mis à jour. Actualisez la page pour les voir.`);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const assignOrganization = async (numberId: string, organizationId: string) => {
+    try {
+      const res = await fetch(`/api/admin/telnyx/numbers/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ numberId, organizationId: organizationId || null }),
+      });
+      if (!res.ok) throw new Error("Failed to assign organization");
+      setSuccess("Numéro réassigné avec succès.");
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   return (
     <div className="w-full">
       <div className="mb-8">
@@ -81,7 +116,41 @@ export function NumbersClient({ existingNumbers }: { existingNumbers: DbNumber[]
       </div>
 
       {/* Global Numbers List */}
-      <h2 className="text-xl font-bold mb-4">Provisioned Numbers</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold">Provisioned Numbers</h2>
+        <button
+          onClick={syncNumbers}
+          disabled={isSyncing}
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg hover:bg-emerald-500/10 hover:text-emerald-400 hover:border-emerald-500/30 transition-all text-sm font-medium disabled:opacity-50"
+        >
+          {isSyncing ? (
+            <>
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Syncing...
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
+              Synchroniser depuis Telnyx
+            </>
+          )}
+        </button>
+      </div>
+      
+      {error && (
+        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+      {success && (
+        <div className="mb-4 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-sm">
+          {success}
+        </div>
+      )}
+
       <div className="glass-panel border-none rounded-2xl overflow-hidden shadow-2xl mb-12">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--bg-surface-hover)] border-b border-[var(--border-subtle)] text-[var(--text-secondary)]">
@@ -99,11 +168,16 @@ export function NumbersClient({ existingNumbers }: { existingNumbers: DbNumber[]
                   <div className="text-[var(--text-secondary)] text-xs mt-1">Telnyx ID: {num.telnyxId || "N/A"}</div>
                 </td>
                 <td className="px-6 py-4">
-                  {num.organization ? (
-                    <div className="text-[var(--text-primary)] font-medium">{num.organization.name}</div>
-                  ) : (
-                    <div className="text-[var(--text-secondary)] italic">Unassigned</div>
-                  )}
+                  <select 
+                    value={num.organizationId || ""}
+                    onChange={(e) => assignOrganization(num.id, e.target.value)}
+                    className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-500 text-[var(--text-primary)] min-w-[150px]"
+                  >
+                    <option value="">-- Unassigned --</option>
+                    {organizations.map(org => (
+                      <option key={org.id} value={org.id}>{org.name}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="px-6 py-4 text-right">
                    <div className="flex items-center justify-end gap-2">
