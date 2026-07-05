@@ -25,7 +25,7 @@ const nodeTypes = {
 const initialNodes = [
   { id: '1', position: { x: 250, y: 50 }, data: { label: 'Déclencheur : Nouveau Contact' }, type: 'input' },
 ];
-const initialEdges = [];
+const initialEdges: Edge[] = [];
 
 export default function FlowBuilderClient({ initialFlows }: { initialFlows: any[] }) {
   const [flows, setFlows] = useState(initialFlows);
