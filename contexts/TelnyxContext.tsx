@@ -88,6 +88,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
 
         clientRef.current.on("telnyx.notification", (notification: any) => {
           const call = notification.call;
+          console.log("[Telnyx Notification]", notification.type, call?.state);
           if (!call) return;
 
           switch (notification.type) {
@@ -107,7 +108,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 if (call.remoteStream) {
                    setRemoteStream(call.remoteStream);
                 }
-              } else if (call.state === "destroy") {
+              } else if (call.state === "destroy" || call.state === "hangup" || call.state === "down") {
                 setCallState("idle");
                 setCallDirection(null);
                 setActiveCallId(null);
@@ -163,12 +164,18 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         cleanDestination = "+" + cleanDestination;
       }
       
-      const call = clientRef.current.newCall({
+      const callOptions: any = {
         destinationNumber: cleanDestination,
-        callerNumber: callerId, // Pass the selected Caller ID here
         audio: true,
         video: false,
-      });
+      };
+
+      if (callerId) {
+        callOptions.callerNumber = callerId;
+        callOptions.callerName = "Softphone"; // Good practice to include a name
+      }
+
+      const call = clientRef.current.newCall(callOptions);
       currentCallRef.current = call;
       setIncomingCallerId(cleanDestination);
       setCallDirection("outbound");
