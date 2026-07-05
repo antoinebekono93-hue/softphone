@@ -154,14 +154,16 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
+      const cleanDestination = destination.replace(/[^0-9+]/g, "");
+      
       const call = clientRef.current.newCall({
-        destinationNumber: destination,
+        destinationNumber: cleanDestination,
         callerNumber: callerId, // Pass the selected Caller ID here
         audio: true,
         video: false,
       });
       currentCallRef.current = call;
-      setIncomingCallerId(destination);
+      setIncomingCallerId(cleanDestination);
       setCallDirection("outbound");
       setCallState("ringing");
     } catch (err: any) {
