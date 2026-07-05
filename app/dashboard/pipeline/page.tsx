@@ -14,7 +14,7 @@ export default async function PipelinePage() {
   const orgId = session.user.organizationId;
 
   // Fetch opportunities and related contacts
-  const opportunities = await prisma.opportunity.findMany({
+  const opps = await prisma.opportunity.findMany({
     where: { organizationId: orgId },
     include: {
       contact: true,
@@ -22,12 +22,14 @@ export default async function PipelinePage() {
     },
     orderBy: { createdAt: "desc" }
   });
+  const opportunities = JSON.parse(JSON.stringify(opps));
 
   // Fetch contacts for the "New Opportunity" modal
-  const contacts = await prisma.contact.findMany({
+  const dbContacts = await prisma.contact.findMany({
     where: { organizationId: orgId },
     orderBy: { name: "asc" }
   });
+  const contacts = JSON.parse(JSON.stringify(dbContacts));
 
   return (
     <div className="p-8 max-w-full mx-auto w-full h-[calc(100vh-80px)] flex flex-col">

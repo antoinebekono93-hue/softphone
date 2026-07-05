@@ -18,9 +18,12 @@ export default async function WhatsAppConnectPage() {
   });
 
   // Fetch existing WhatsApp account for this org
-  const whatsappAccount = await prisma.whatsAppAccount.findUnique({
+  const account = await prisma.whatsAppAccount.findUnique({
     where: { organizationId: session.user.organizationId }
   });
+
+  // Serialize to avoid Next.js Date object passing error
+  const whatsappAccount = account ? JSON.parse(JSON.stringify(account)) : null;
 
   return (
     <div className="h-full w-full bg-[var(--bg-base)] overflow-y-auto">
