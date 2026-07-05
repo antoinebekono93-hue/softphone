@@ -109,6 +109,7 @@ model Organization {
   walletTransactions         WalletTransaction[]
   whatsappAccount            WhatsAppAccount?
   whatsappTemplates          WhatsAppTemplate[]
+  whatsappFlows              WhatsAppFlow[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -567,4 +568,18 @@ model RcsSettings {
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppFlow {
+  id             String       @id @default(cuid())
+  name           String
+  nodes          Json         @default("[]")
+  edges          Json         @default("[]")
+  isActive       Boolean      @default(false)
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }

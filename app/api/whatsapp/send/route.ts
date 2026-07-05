@@ -27,6 +27,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No active WhatsApp phone number found for this organization. Please complete Meta registration.' }, { status: 400 });
     }
 
+    const organization = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId }
+    });
+
+    if (!organization || organization.walletBalance <= 0) {
+      return NextResponse.json({ error: 'Fonds insuffisants. Veuillez recharger votre portefeuille pour envoyer des messages WhatsApp.' }, { status: 402 });
+    }
+
     const apiKey = process.env.TELNYX_API_KEY;
     
     let whatsapp_message: any = {};
@@ -75,6 +83,38 @@ export async function POST(req: Request) {
     }
 
     const data = await response.json();
+    const telnyxMessageId = data.data?.id || `wa_${Date.now()}`;
+
+    // Try to find if this 'to' number exists as a contact
+    const contact = await prisma.contact.findFirst({
+      where: {
+        organizationId: session.user.organizationId,
+        phone: to
+      }
+    });
+
+    // Log the outbound message in the DB
+    await prisma.smsMessage.create({
+      data: {
+        telnyxMessageId,
+        direction: 'OUTBOUND',
+        body: text || `[Template] ${templateName}`,
+        status: 'SENT',
+        type: 'WHATSAPP',
+        fromNumber: account.phoneNumber,
+        toNumber: to,
+        organizationId: session.user.organizationId,
+        userId: session.user.id,
+        contactId: contact?.id
+      }
+    });
+
+    // Deduct cost (mock logic)
+    await prisma.organization.update({
+      where: { id: session.user.organizationId },
+      data: { walletBalance: { decrement: 0.05 } }
+    });
+
     return NextResponse.json({ success: true, data: data.data }, { status: 201 });
   } catch (error: any) {
     console.error('[Send WhatsApp Exception]', error);

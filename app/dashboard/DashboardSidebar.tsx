@@ -104,9 +104,11 @@ export function DashboardSidebar({
       {
         title: "WhatsApp Business",
         items: [
+          { name: "Séquences (Flows)", href: "/dashboard/whatsapp/flows", icon: Workflow },
           { name: "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
           { name: "Chat WhatsApp", href: "/dashboard/whatsapp-inbox", icon: Inbox },
-          { name: "Paramètres API", href: "/dashboard/whatsapp", icon: ShieldCheck },
+          { name: "Modèles (Templates)", href: "/dashboard/whatsapp/templates", icon: BookUser },
+          { name: "Paramètres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
         ]
       }
     ],
