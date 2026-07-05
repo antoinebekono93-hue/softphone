@@ -52,6 +52,101 @@ export async function fetchTelnyxBalance(apiKey: string) {
   }
 }
 
+// -----------------------------------------------------
+// OUTBOUND VOICE PROFILES MANAGEMENT
+// -----------------------------------------------------
+
+export async function fetchOutboundProfiles(apiKey: string) {
+  if (!apiKey) return { error: "No API Key configured" };
+  try {
+    const res = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
+      headers: { "Authorization": `Bearer ${apiKey}`, "Accept": "application/json" }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return { data: data.data || [] };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function createOutboundProfile(apiKey: string, profileData: any) {
+  if (!apiKey) return { error: "No API Key configured" };
+  try {
+    const res = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(profileData)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return { data: data.data };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function updateOutboundProfile(apiKey: string, profileId: string, profileData: any) {
+  if (!apiKey) return { error: "No API Key configured" };
+  try {
+    const res = await fetch(`https://api.telnyx.com/v2/outbound_voice_profiles/${profileId}`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(profileData)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return { data: data.data };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function fetchCredentialConnections(apiKey: string) {
+  if (!apiKey) return { error: "No API Key configured" };
+  try {
+    const res = await fetch("https://api.telnyx.com/v2/credential_connections", {
+      headers: { "Authorization": `Bearer ${apiKey}`, "Accept": "application/json" }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return { data: data.data || [] };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function assignOutboundProfileToConnection(apiKey: string, connectionId: string, profileId: string | null) {
+  if (!apiKey) return { error: "No API Key configured" };
+  try {
+    const res = await fetch(`https://api.telnyx.com/v2/credential_connections/${connectionId}`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({
+        outbound: {
+          outbound_voice_profile_id: profileId
+        }
+      })
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    return { data: data.data };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
 // 4. Fetch Messaging Profiles
 export async function fetchMessagingProfiles(apiKey: string) {
   if (!apiKey) return { error: "No API Key" };

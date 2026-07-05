@@ -9,7 +9,12 @@ import {
   searchGlobalNumbers,
   purchaseAndAssignNumber,
   getOrganizationsList,
-  fetchRecentMessages
+  fetchRecentMessages,
+  fetchOutboundProfiles,
+  createOutboundProfile,
+  updateOutboundProfile,
+  fetchCredentialConnections,
+  assignOutboundProfileToConnection
 } from "./actions";
 
 export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
@@ -21,7 +26,12 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
   const [balanceData, setBalanceData] = useState<any>(null);
   const [messagingProfiles, setMessagingProfiles] = useState<any[]>([]);
   const [callApps, setCallApps] = useState<any[]>([]);
+  const [outboundProfiles, setOutboundProfiles] = useState<any[]>([]);
+  const [credentialConnections, setCredentialConnections] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [isCreatingProfile, setIsCreatingProfile] = useState(false);
+  const [newProfileName, setNewProfileName] = useState("");
+  const [newProfileLimit, setNewProfileLimit] = useState("10");
   const [error, setError] = useState<string | null>(null);
 
   // Numbers State
@@ -48,11 +58,13 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     setLoadingData(true);
     setError(null);
     try {
-      const [balRes, msgRes, callRes, logsRes] = await Promise.all([
+      const [balRes, msgRes, callRes, logsRes, outProfRes, credConnRes] = await Promise.all([
         fetchTelnyxBalance(key),
         fetchMessagingProfiles(key),
         fetchCallControlApps(key),
-        fetchRecentMessages(key)
+        fetchRecentMessages(key),
+        fetchOutboundProfiles(key),
+        fetchCredentialConnections(key)
       ]);
 
       if (balRes.error) throw new Error(balRes.error);
@@ -61,6 +73,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
       if (msgRes.data) setMessagingProfiles(msgRes.data);
       if (callRes.data) setCallApps(callRes.data);
       if (logsRes.data) setRecentMessages(logsRes.data);
+      if (outProfRes.data) setOutboundProfiles(outProfRes.data);
+      if (credConnRes.data) setCredentialConnections(credConnRes.data);
 
     } catch (e: any) {
       setError(e.message);
@@ -121,6 +135,26 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     }
   }, [initialSettings]);
 
+  const handleCreateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProfileName) return;
+    
+    startTransition(async () => {
+      const res = await createOutboundProfile(apiKey, {
+        name: newProfileName,
+        concurrent_call_limit: parseInt(newProfileLimit) || 10,
+        billing_group_id: null
+      });
+      if (res.error) {
+        alert(res.error);
+        return;
+      }
+      setIsCreatingProfile(false);
+      setNewProfileName("");
+      await loadTelnyxData(apiKey);
+    });
+  };
+
   return (
     <div className="w-full">
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -147,10 +181,16 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
           API Configuration
         </button>
         <button 
+          onClick={() => setActiveTab('outbound')}
+          className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors whitespace-nowrap ${activeTab === 'outbound' ? 'bg-[var(--bg-surface-hover)] text-white' : 'text-[var(--text-secondary)] hover:text-white'}`}
+        >
+          Outbound Profiles
+        </button>
+        <button 
           onClick={() => setActiveTab('routing')}
           className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors whitespace-nowrap ${activeTab === 'routing' ? 'bg-[var(--bg-surface-hover)] text-white' : 'text-[var(--text-secondary)] hover:text-white'}`}
         >
-          Routing Profiles (Bloc 1)
+          Call Control & Messaging
         </button>
         <button 
           onClick={() => setActiveTab('numbers')}
@@ -162,7 +202,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
           onClick={() => setActiveTab('diagnostics')}
           className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === 'diagnostics' ? 'bg-[var(--bg-surface-hover)] text-white' : 'text-[var(--text-secondary)] hover:text-white'}`}
         >
-          Diagnostics (Bloc 3)
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h4l2-9 5 18 3-9h6"/></svg>
+          API Logs & Debug
           {recentMessages.some(m => m.errors?.length > 0) && (
             <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
           )}
@@ -246,6 +287,142 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                  Enter your API key to fetch account status.
                </div>
              )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'outbound' && (
+        <div className="space-y-6">
+          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-bold">Outbound Voice Profiles</h2>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">Manage calling limits and billing settings.</p>
+              </div>
+              <button 
+                onClick={() => setIsCreatingProfile(!isCreatingProfile)}
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg transition-colors"
+              >
+                {isCreatingProfile ? "Cancel" : "+ Create Profile"}
+              </button>
+            </div>
+            
+            {isCreatingProfile && (
+              <form onSubmit={handleCreateProfile} className="mb-6 p-4 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm text-[var(--text-secondary)] mb-1">Profile Name (Required)</label>
+                    <input 
+                      type="text" 
+                      value={newProfileName}
+                      onChange={e => setNewProfileName(e.target.value)}
+                      className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"
+                      required
+                      placeholder="e.g. Production Outbound"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[var(--text-secondary)] mb-1">Concurrent Channel Limit</label>
+                    <input 
+                      type="number" 
+                      value={newProfileLimit}
+                      onChange={e => setNewProfileLimit(e.target.value)}
+                      className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"
+                      min="1"
+                    />
+                  </div>
+                </div>
+                <button type="submit" disabled={isPending} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded text-sm font-bold disabled:opacity-50 flex items-center gap-2">
+                  {isPending && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+                  Create
+                </button>
+              </form>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-[var(--bg-surface-hover)] border-y border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium">Channels</th>
+                    <th className="px-4 py-3 font-medium">Daily Spend Limit</th>
+                    <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {outboundProfiles.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-[var(--text-secondary)]">
+                        No Outbound Voice Profiles found.
+                      </td>
+                    </tr>
+                  ) : (
+                    outboundProfiles.map((prof) => (
+                      <tr key={prof.id} className="hover:bg-[var(--bg-surface-hover)] transition-colors">
+                        <td className="px-4 py-3 font-bold text-[var(--text-primary)]">{prof.name}</td>
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">{prof.concurrent_call_limit || "Unlimited"}</td>
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">{prof.daily_spend_limit_enabled ? `$${prof.daily_spend_limit}` : "Disabled"}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button className="text-cyan-500 hover:text-cyan-400 font-medium text-xs">Edit</button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold">Connections & Applications (Assign Profile)</h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-1">Assign an Outbound Profile to your SIP Connections or Voice APIs to authorize outbound calling.</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-[var(--bg-surface-hover)] border-y border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Connection Name</th>
+                    <th className="px-4 py-3 font-medium">Type</th>
+                    <th className="px-4 py-3 font-medium text-right">Assigned Outbound Profile</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {credentialConnections.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-4 py-8 text-center text-[var(--text-secondary)]">
+                        No connections found.
+                      </td>
+                    </tr>
+                  ) : (
+                    credentialConnections.map((conn) => (
+                      <tr key={conn.id} className="hover:bg-[var(--bg-surface-hover)] transition-colors">
+                        <td className="px-4 py-3 font-bold text-[var(--text-primary)]">{conn.user_name}</td>
+                        <td className="px-4 py-3 text-[var(--text-secondary)]">Telephony Credential</td>
+                        <td className="px-4 py-3 text-right">
+                          <select 
+                            className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-1 text-sm focus:outline-none focus:border-cyan-500 ml-auto block"
+                            value={conn.outbound?.outbound_voice_profile_id || ""}
+                            onChange={(e) => {
+                              const newProfileId = e.target.value || null;
+                              startTransition(async () => {
+                                await assignOutboundProfileToConnection(apiKey, conn.id, newProfileId);
+                                await loadTelnyxData(apiKey);
+                              });
+                            }}
+                          >
+                            <option value="">-- None --</option>
+                            {outboundProfiles.map(p => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
