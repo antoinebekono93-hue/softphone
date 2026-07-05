@@ -29,10 +29,12 @@ export function Softphone() {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
+  const [isLoadingNumbers, setIsLoadingNumbers] = useState(true);
   const [selectedCallerId, setSelectedCallerId] = useState<string>("");
 
   // Fetch available numbers for caller ID
   useEffect(() => {
+    setIsLoadingNumbers(true);
     fetch('/api/telecom/numbers')
       .then(res => res.json())
       .then(data => {
@@ -43,7 +45,8 @@ export function Softphone() {
           }
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setIsLoadingNumbers(false));
   }, []);
 
   // Timer for call duration
@@ -93,18 +96,24 @@ export function Softphone() {
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full px-6">
         {callState === "idle" || callState === "ringing" && !incomingCallerId ? (
           <div className="w-full flex flex-col items-center gap-4">
-            {availableNumbers.length > 0 && (
+            {(availableNumbers.length > 0 || isLoadingNumbers) && (
               <div className="w-full max-w-[280px]">
                 <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider mb-1 block">Appeler depuis (Caller ID)</label>
-                <select 
-                  value={selectedCallerId}
-                  onChange={(e) => setSelectedCallerId(e.target.value)}
-                  className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 text-[var(--text-primary)]"
-                >
-                  {availableNumbers.map(n => (
-                    <option key={n.id} value={n.number}>{formatPhoneNumber(n.number)}</option>
-                  ))}
-                </select>
+                {isLoadingNumbers ? (
+                  <div className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] animate-pulse">
+                    Chargement...
+                  </div>
+                ) : (
+                  <select 
+                    value={selectedCallerId}
+                    onChange={(e) => setSelectedCallerId(e.target.value)}
+                    className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 text-[var(--text-primary)]"
+                  >
+                    {availableNumbers.map(n => (
+                      <option key={n.id} value={n.number}>{formatPhoneNumber(n.number)}</option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
             <Dialpad
@@ -161,10 +170,6 @@ export function Softphone() {
         />
       )}
 
-      {/* Temporary Debug Overlay */}
-      <div className="absolute bottom-2 left-2 right-2 bg-black/80 text-[10px] text-green-400 p-2 rounded max-h-32 overflow-y-auto break-all z-50">
-        Debug: {debugLog}
-      </div>
     </div>
   );
 }
