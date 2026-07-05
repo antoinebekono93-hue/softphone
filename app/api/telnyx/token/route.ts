@@ -9,11 +9,8 @@ export async function GET(req: Request) {
       throw new Error("Missing TELNYX_API_KEY environment variable");
     }
 
-    // [MOCK AUTH]: Fetch the first organization for the MVP
-    const org = await prisma.organization.findFirst();
-    if (!org) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
-    }
+    // Database check removed to prevent Prisma connection pool exhaustion on Neon Free Tier
+    // This route only needs to interact with Telnyx APIs.
 
     // Since finding the Telephony Credential ID in the Telnyx Portal can be confusing,
     // we will automatically fetch the first credential from your Telnyx account using your API key.
