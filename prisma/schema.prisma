@@ -60,6 +60,7 @@ model User {
   phoneNumbers   PhoneNumber[]  @relation("AssignedUser")
   sessions       Session[]
   smsMessages    SmsMessage[]
+  contacts       Contact[]      @relation("AssignedContactUser")
   organization   Organization?  @relation(fields: [organizationId], references: [id])
 
   @@index([organizationId])
@@ -175,9 +176,12 @@ model Contact {
   sequenceEnrollments SequenceEnrollment[]
   smsMessages         SmsMessage[]
   groups              ContactGroup[]       @relation("ContactToContactGroup")
+  assignedUserId      String?
+  assignedUser        User?                @relation("AssignedContactUser", fields: [assignedUserId], references: [id])
 
   @@unique([organizationId, phone])
   @@index([organizationId])
+  @@index([assignedUserId])
 }
 
 model ContactGroup {
