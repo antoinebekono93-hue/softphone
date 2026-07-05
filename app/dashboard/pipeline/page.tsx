@@ -23,6 +23,12 @@ export default async function PipelinePage() {
     orderBy: { createdAt: "desc" }
   });
 
+  // Fetch contacts for the "New Opportunity" modal
+  const contacts = await prisma.contact.findMany({
+    where: { organizationId: orgId },
+    orderBy: { name: "asc" }
+  });
+
   return (
     <div className="p-8 max-w-full mx-auto w-full h-[calc(100vh-80px)] flex flex-col">
       <div className="mb-6 flex justify-between items-center">
@@ -33,7 +39,7 @@ export default async function PipelinePage() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <PipelineClient initialOpportunities={opportunities} />
+        <PipelineClient initialOpportunities={opportunities} contacts={contacts} />
       </div>
     </div>
   );
