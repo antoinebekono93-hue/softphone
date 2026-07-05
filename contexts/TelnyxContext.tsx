@@ -154,7 +154,14 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      const cleanDestination = destination.replace(/[^0-9+]/g, "");
+      let cleanDestination = destination.replace(/[^0-9+]/g, "");
+      
+      // Force E.164 formatting
+      if (cleanDestination.length === 10 && !cleanDestination.startsWith("+")) {
+        cleanDestination = "+1" + cleanDestination;
+      } else if (cleanDestination.length > 10 && !cleanDestination.startsWith("+")) {
+        cleanDestination = "+" + cleanDestination;
+      }
       
       const call = clientRef.current.newCall({
         destinationNumber: cleanDestination,
