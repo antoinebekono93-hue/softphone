@@ -63,6 +63,87 @@ export async function POST(req: Request) {
         });
         
         console.log(`[WhatsApp] Message enregistré pour l'organisation ${waAccount.organizationId}`);
+
+        // 4. INTELLIGENCE CRM : Mettre à jour le Pipeline de Ventes
+        // Si le client répond, nous le faisons avancer dans le pipeline
+        
+        // Chercher s'il y a déjà une opportunité en cours (ni gagnée ni perdue)
+        const existingOpp = await prisma.opportunity.findFirst({
+          where: {
+            contactId: contact.id,
+            organizationId: waAccount.organizationId,
+            stage: { notIn: ["WON", "LOST"] }
+          },
+          orderBy: { updatedAt: 'desc' }
+        });
+
+        if (existingOpp) {
+          // Si l'opportunité est "Nouveau" ou "Qualifié", on la passe en "Négociation" car le client a répondu
+          if (existingOpp.stage === "NEW" || existingOpp.stage === "QUALIFIED" || existingOpp.stage === "PROPOSAL") {
+            await prisma.opportunity.update({
+              where: { id: existingOpp.id },
+              data: { stage: "NEGOTIATION" }
+            });
+            console.log(`[CRM] Opportunité ${existingOpp.id} passée en Négociation.`);
+          }
+        } else {
+          // S'il n'y a pas d'opportunité, on en crée une automatiquement (Lead entrant)
+          await prisma.opportunity.create({
+            data: {
+              name: `Lead WhatsApp: ${contact.name || contact.phone}`,
+              stage: "QUALIFIED", // Client qualifié puisqu'il a interagi
+              expectedRevenue: 0,
+              contactId: contact.id,
+              organizationId: waAccount.organizationId,
+            }
+          });
+          console.log(`[CRM] Nouvelle opportunité créée pour ${contact.phone}`);
+        }
+      }
+    // Traitement des mises à jour de statuts (Delivered, Read)
+    } else if (eventType === "message.status.updated") {
+      const payloadInfo = eventData.payload;
+      const telnyxMessageId = payloadInfo.id;
+      const status = payloadInfo.status; // 'delivered', 'read', 'failed'
+
+      // Chercher le message sortant pour mettre à jour son statut
+      const message = await prisma.smsMessage.findUnique({
+        where: { telnyxMessageId }
+      });
+
+      if (message) {
+        // Mettre à jour le message
+        await prisma.smsMessage.update({
+          where: { id: message.id },
+          data: { status: status.toUpperCase() }
+        });
+
+        // Mettre à jour le destinataire de la campagne si le message y est lié
+        const campaignRecipient = await prisma.campaignRecipient.findFirst({
+          where: { messageId: message.id }
+        });
+
+        if (campaignRecipient) {
+          const newStatus = status.toUpperCase(); // DELIVERED, READ
+          await prisma.campaignRecipient.update({
+            where: { id: campaignRecipient.id },
+            data: { status: newStatus }
+          });
+
+          // Incrémenter les compteurs de la campagne
+          if (newStatus === 'DELIVERED') {
+            await prisma.campaign.update({
+              where: { id: campaignRecipient.campaignId },
+              data: { deliveredCount: { increment: 1 } }
+            });
+          } else if (newStatus === 'READ') {
+            await prisma.campaign.update({
+              where: { id: campaignRecipient.campaignId },
+              data: { readCount: { increment: 1 } }
+            });
+          }
+          console.log(`[Campagne] Statut ${newStatus} mis à jour pour le message ${message.id}`);
+        }
       }
     }
 
