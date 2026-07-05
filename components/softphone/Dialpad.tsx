@@ -70,9 +70,18 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       {/* Display */}
       <div className="w-full flex items-center justify-between mb-8 h-16 px-4">
-        <div className="text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] overflow-hidden text-ellipsis whitespace-nowrap">
-          {formatPhoneNumber(number) || "\u00A0"}
-        </div>
+        <input
+          type="text"
+          value={number}
+          onChange={(e) => {
+            if (disabled) return;
+            const val = e.target.value.replace(/[^0-9*#+]/g, '');
+            setNumber(val);
+          }}
+          placeholder="Numéro..."
+          disabled={disabled}
+          className="w-full bg-transparent text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
+        />
         {number && (
           <button
             onClick={handleBackspace}
