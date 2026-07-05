@@ -1,7 +1,25 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { formatPhoneNumber } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
+
+const COUNTRIES = [
+  { code: "+1", label: "USA / Canada", flag: "🇺🇸" },
+  { code: "+33", label: "France", flag: "🇫🇷" },
+  { code: "+237", label: "Cameroun", flag: "🇨🇲" },
+  { code: "+44", label: "UK", flag: "🇬🇧" },
+  { code: "+32", label: "Belgique", flag: "🇧🇪" },
+  { code: "+41", label: "Suisse", flag: "🇨🇭" },
+  { code: "+225", label: "Côte d'Ivoire", flag: "🇨🇮" },
+  { code: "+221", label: "Sénégal", flag: "🇸🇳" },
+  { code: "+223", label: "Mali", flag: "🇲🇱" },
+  { code: "+212", label: "Maroc", flag: "🇲🇦" },
+  { code: "+216", label: "Tunisie", flag: "🇹🇳" },
+  { code: "+49", label: "Allemagne", flag: "🇩🇪" },
+  { code: "+34", label: "Espagne", flag: "🇪🇸" },
+  { code: "+39", label: "Italie", flag: "🇮🇹" },
+];
 
 interface DialpadProps {
   onDigitPress?: (digit: string) => void;
@@ -27,6 +45,19 @@ const KEYS = [
 export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   const [number, setNumber] = useState("");
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [countryCode, setCountryCode] = useState("+1");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handlePress = useCallback(
     (digit: string) => {
@@ -78,8 +109,17 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
 
   const handleCall = useCallback(() => {
     if (disabled || !number) return;
-    onCall(number);
-  }, [disabled, number, onCall]);
+    
+    // Auto-prefix with country code if user didn't type '+'
+    let finalNumber = number;
+    if (!finalNumber.startsWith("+")) {
+      // Clean leading zeros (common in international dialing)
+      if (finalNumber.startsWith("0")) finalNumber = finalNumber.substring(1);
+      finalNumber = countryCode + finalNumber;
+    }
+    
+    onCall(finalNumber);
+  }, [disabled, number, countryCode, onCall]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -103,7 +143,42 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       {/* Display */}
-      <div className="w-full flex items-center justify-between mb-8 h-16 px-4">
+      <div className="w-full flex items-center justify-between mb-8 h-16 px-4 relative">
+        
+        {/* Custom Country Selector */}
+        {!number.startsWith("+") && (
+          <div className="absolute left-6 z-20" ref={dropdownRef}>
+            <button
+              onClick={() => !disabled && setIsDropdownOpen(!isDropdownOpen)}
+              disabled={disabled || number.startsWith("+")}
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg transition-colors ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--bg-surface-hover)] cursor-pointer'}`}
+            >
+              <span className="text-xl">{COUNTRIES.find(c => c.code === countryCode)?.flag || "🌐"}</span>
+              <span className="text-sm font-medium text-[var(--text-primary)]">{countryCode}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[var(--text-secondary)] opacity-70" />
+            </button>
+
+            {isDropdownOpen && !disabled && (
+              <div className="absolute top-full left-0 mt-2 w-48 max-h-64 overflow-y-auto bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100">
+                {COUNTRIES.map((country) => (
+                  <button
+                    key={country.code}
+                    onClick={() => {
+                      setCountryCode(country.code);
+                      setIsDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-4 py-2 hover:bg-[var(--bg-surface-hover)] transition-colors w-full text-left"
+                  >
+                    <span className="text-lg">{country.flag}</span>
+                    <span className="text-sm font-medium text-[var(--text-primary)] flex-1">{country.label}</span>
+                    <span className="text-xs text-[var(--text-secondary)]">{country.code}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         <input
           type="text"
           value={number}
@@ -115,6 +190,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
           placeholder=""
           disabled={disabled}
           className="w-full bg-transparent border-none shadow-none text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none focus:ring-0 min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
+          style={{ paddingLeft: !number.startsWith("+") ? "5rem" : "0", transition: "padding 0.2s" }}
         />
         {number && (
           <button
