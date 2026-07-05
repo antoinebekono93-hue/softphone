@@ -194,8 +194,19 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
 
   const hangupCall = () => {
     if (currentCallRef.current) {
-      currentCallRef.current.hangup();
+      try {
+        currentCallRef.current.hangup();
+      } catch (e) {
+        console.error("Error hanging up call:", e);
+      }
     }
+    // Force UI reset immediately
+    setCallState("idle");
+    setCallDirection(null);
+    setActiveCallId(null);
+    setIncomingCallerId(null);
+    setRemoteStream(null);
+    currentCallRef.current = null;
   };
 
   const muteMicrophone = (muted: boolean) => {
