@@ -154,6 +154,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         video: false,
       });
       currentCallRef.current = call;
+      setIncomingCallerId(destination);
       setCallState("ringing");
     } catch (err: any) {
       console.error("Failed to make call", err);
