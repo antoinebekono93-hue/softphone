@@ -231,18 +231,13 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     
-    // Safety fallback: if Telnyx fails to fire the destroy event within 3 seconds, force reset
-    setTimeout(() => {
-      if (currentCallRef.current) {
-        console.warn("Telnyx didn't fire destroy event. Forcing UI reset to prevent stuck call.");
-        setCallState("idle");
-        setCallDirection(null);
-        setActiveCallId(null);
-        setIncomingCallerId(null);
-        setRemoteStream(null);
-        currentCallRef.current = null;
-      }
-    }, 3000);
+    // Immediately reset UI to prevent user panic
+    setCallState("idle");
+    setCallDirection(null);
+    setActiveCallId(null);
+    setIncomingCallerId(null);
+    setRemoteStream(null);
+    currentCallRef.current = null;
   };
 
   const muteMicrophone = (muted: boolean) => {
