@@ -37,22 +37,33 @@ export async function GET(req: Request) {
     if (!credentials || credentials.length === 0) {
       // Create a default credential automatically
       console.log("No Telephony Credential found. Creating a default one...");
-      // To create a telephony credential, we must attach it to a SIP Connection
-      const connRes = await fetch("https://api.telnyx.com/v2/credential_connections", {
-        headers: {
-          "Authorization": `Bearer ${TELNYX_API_KEY}`,
-          "Accept": "application/json"
-        }
-      });
-      const connData = await connRes.json();
-      const connections = connData.data || [];
-      
-      if (connections.length === 0) {
-        return NextResponse.json({ error: "No SIP Connection found on Telnyx. Please create one first." }, { status: 500 });
+    } else {
+      credentialId = credentials[0].id;
+    }
+
+    // --- AUTOMATIC TELNYX CONFIGURATION ---
+    // The user needs an Outbound Voice Profile attached to their SIP Connection to make outbound calls.
+    // We will automatically configure this to provide a plug-and-play experience.
+    
+    // 1. Fetch SIP Connections
+    const connRes = await fetch("https://api.telnyx.com/v2/credential_connections", {
+      headers: {
+        "Authorization": `Bearer ${TELNYX_API_KEY}`,
+        "Accept": "application/json"
       }
+    });
+    const connData = await connRes.json();
+    const connections = connData.data || [];
+    
+    if (connections.length === 0) {
+      return NextResponse.json({ error: "No SIP Connection found on Telnyx. Please create one first." }, { status: 500 });
+    }
+    
+    const sipConnection = connections[0];
+    const sipConnectionId = sipConnection.id;
 
-      const sipConnectionId = connections[0].id;
-
+    // 2. If we need to create a credential, do it now that we have the SIP Connection ID
+    if (!credentialId) {
       const createRes = await fetch("https://api.telnyx.com/v2/telephony_credentials", {
         method: "POST",
         headers: {
@@ -73,11 +84,78 @@ export async function GET(req: Request) {
       const createData = await createRes.json();
       credentialId = createData.data.id;
       console.log("Successfully created Telephony Credential:", credentialId);
-    } else {
-      credentialId = credentials[0].id;
     }
 
-    // 2. Request the WebRTC Token using the Telephony Credential ID
+    // 3. Check if the SIP Connection has an Outbound Voice Profile
+    if (!sipConnection.outbound?.outbound_voice_profile_id) {
+      console.log("SIP Connection has no Outbound Voice Profile. Configuring automatically...");
+      
+      // Fetch existing profiles
+      const profRes = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
+        headers: {
+          "Authorization": `Bearer ${TELNYX_API_KEY}`,
+          "Accept": "application/json"
+        }
+      });
+      const profData = await profRes.json();
+      let profileId;
+      
+      if (profData.data && profData.data.length > 0) {
+        profileId = profData.data[0].id;
+        console.log("Found existing Outbound Voice Profile:", profileId);
+      } else {
+        // Create one
+        console.log("Creating new Outbound Voice Profile...");
+        const createProfRes = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${TELNYX_API_KEY}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            name: "Antigravity Auto Profile",
+            max_destination_rate: "0.1",
+            daily_spend_limit: "50",
+            daily_spend_limit_enabled: true
+          })
+        });
+        
+        if (createProfRes.ok) {
+          const newProfData = await createProfRes.json();
+          profileId = newProfData.data.id;
+          console.log("Created new Outbound Voice Profile:", profileId);
+        } else {
+          console.error("Failed to create Outbound Voice Profile:", await createProfRes.text());
+        }
+      }
+      
+      // Attach profile to SIP Connection
+      if (profileId) {
+        console.log("Attaching Outbound Voice Profile to SIP Connection...");
+        const patchRes = await fetch(`https://api.telnyx.com/v2/credential_connections/${sipConnectionId}`, {
+          method: "PATCH",
+          headers: {
+            "Authorization": `Bearer ${TELNYX_API_KEY}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            outbound: {
+              outbound_voice_profile_id: profileId
+            }
+          })
+        });
+        
+        if (!patchRes.ok) {
+          console.error("Failed to attach profile to SIP Connection:", await patchRes.text());
+        } else {
+          console.log("Successfully attached Outbound Voice Profile to SIP Connection!");
+        }
+      }
+    }
+
+    // 4. Request the WebRTC Token using the Telephony Credential ID
     const tokenRes = await fetch(`https://api.telnyx.com/v2/telephony_credentials/${credentialId}/token`, {
       method: "POST",
       headers: {
