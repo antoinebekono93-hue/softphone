@@ -50,45 +50,27 @@ export default function ConnectClient({ phoneNumbers, existingAccount }: { phone
       setError("Veuillez sélectionner un numéro de téléphone d'abord.");
       return;
     }
-    if (!isSdkLoaded || !(window as any).FB) {
-      setError('Facebook SDK is not loaded yet. Please wait or check your adblocker.');
-      return;
-    }
 
     setIsLoading(true);
     setError(null);
+
+    // Bypass Meta SDK for testing if using mock App ID
+    if (appId === '123456789012345') {
+      simulateConnection();
+      return;
+    }
+
+    if (!isSdkLoaded || !(window as any).FB) {
+      setError('Facebook SDK is not loaded yet. Please wait or check your adblocker.');
+      setIsLoading(false);
+      return;
+    }
 
     (window as any).FB.login(
       async (response: any) => {
         if (response.authResponse) {
           const code = response.authResponse.code;
-          
-          try {
-            // Meta Graph API / Telnyx Tech Provider flow
-            const waba_id = "MOCK_WABA_" + Math.floor(Math.random() * 1000000);
-            
-            const res = await fetch('/api/whatsapp/tech-provider', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                waba_id,
-                phoneNumberId: selectedPhoneId,
-                accessToken: code || "mock_token"
-              })
-            });
-
-            if (!res.ok) {
-              const data = await res.json();
-              throw new Error(data.error || 'Échec de la connexion WhatsApp');
-            }
-
-            alert('Numéro WhatsApp Business connecté avec succès !');
-            router.refresh(); // Refresh to show connected state
-          } catch (err: any) {
-            setError(err.message);
-          } finally {
-            setIsLoading(false);
-          }
+          await executeConnection(code);
         } else {
           setError('Authentification Meta annulée par l\'utilisateur.');
           setIsLoading(false);
@@ -101,6 +83,41 @@ export default function ConnectClient({ phoneNumbers, existingAccount }: { phone
         extras: { setup: {}, featureV2: '', sessionInfoVersion: '3' }
       }
     );
+  };
+
+  const simulateConnection = async () => {
+    setTimeout(async () => {
+      await executeConnection("mock_token_" + Date.now());
+    }, 1500); // simulate network delay
+  };
+
+  const executeConnection = async (code: string) => {
+    try {
+      // Meta Graph API / Telnyx Tech Provider flow
+      const waba_id = "MOCK_WABA_" + Math.floor(Math.random() * 1000000);
+      
+      const res = await fetch('/api/whatsapp/tech-provider', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          waba_id,
+          phoneNumberId: selectedPhoneId,
+          accessToken: code || "mock_token"
+        })
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Échec de la connexion WhatsApp');
+      }
+
+      alert('Numéro WhatsApp Business connecté avec succès !');
+      router.refresh(); // Refresh to show connected state
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDisconnect = async () => {
