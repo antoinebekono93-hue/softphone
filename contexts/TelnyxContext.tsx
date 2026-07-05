@@ -21,6 +21,7 @@ interface TelnyxContextValue {
   hangupCall: () => void;
   muteMicrophone: (muted: boolean) => void;
   sendDTMF: (digit: string) => void;
+  debugLog: string;
 }
 
 const TelnyxContext = createContext<TelnyxContextValue | undefined>(undefined);
