@@ -176,6 +176,7 @@ model Contact {
   purchaseCount       Int                  @default(0)
   lastPurchaseAt      DateTime?
   isVip               Boolean              @default(false)
+  aiSummary           String?              // Phase 4: Résumé IA des intéractions WhatsApp
   callLogs            CallLog[]
   campaignRecipients  CampaignRecipient[]
   organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)

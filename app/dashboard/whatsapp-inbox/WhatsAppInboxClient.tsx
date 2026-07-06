@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle } from "lucide-react";
+import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export type WhatsAppEvent = {
@@ -37,6 +37,11 @@ export default function WhatsAppInboxClient({
   // Create a local map of contact assignments
   const [contactAssignments, setContactAssignments] = useState<Record<string, string | null>>(
     contacts.reduce((acc, c) => ({ ...acc, [c.id]: c.assignedUserId }), {})
+  );
+
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [contactSummaries, setContactSummaries] = useState<Record<string, string | null>>(
+    contacts.reduce((acc, c) => ({ ...acc, [c.id]: c.aiSummary }), {})
   );
 
   const router = useRouter();
@@ -90,6 +95,26 @@ export default function WhatsAppInboxClient({
       alert(error.message);
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!currentContactId) return;
+    setIsGeneratingSummary(true);
+    try {
+      const res = await fetch('/api/whatsapp/messages/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contactId: currentContactId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur de résumé");
+      
+      setContactSummaries(prev => ({ ...prev, [currentContactId]: data.summary }));
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setIsGeneratingSummary(false);
     }
   };
 
@@ -217,31 +242,48 @@ export default function WhatsAppInboxClient({
               </div>
               
               {currentContactId && (
-                <div className="flex gap-2">
-                  {!currentAssignedUserId ? (
-                    <button 
-                      onClick={() => handleAssign(currentUserId || null)}
+                <div className="flex gap-2 items-center">
+                  <button
+                    onClick={handleGenerateSummary}
+                    disabled={isGeneratingSummary}
+                    className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-400 text-sm font-bold rounded-lg flex items-center gap-2 transition-colors border border-indigo-200 dark:border-indigo-800"
+                    title="Générer un résumé avec l'IA"
+                  >
+                    <Sparkles className={`w-4 h-4 ${isGeneratingSummary ? 'animate-spin' : ''}`} />
+                    <span className="hidden lg:inline">Résumé IA</span>
+                  </button>
+                  <div className="relative flex items-center">
+                    <UserPlus className="w-4 h-4 text-gray-500 absolute left-3" />
+                    <select
+                      value={currentAssignedUserId || ""}
+                      onChange={(e) => handleAssign(e.target.value || null)}
                       disabled={isAssigning}
-                      className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg flex items-center gap-2 transition-colors"
+                      className="pl-9 pr-3 py-2 bg-white dark:bg-[#2a3942] border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-sm font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer hover:bg-gray-50 dark:hover:bg-[#324550] transition-colors shadow-sm"
                     >
-                      <UserPlus className="w-4 h-4" /> Prendre le relais
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => handleAssign(null)}
-                      disabled={isAssigning}
-                      className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-200 text-sm font-bold rounded-lg flex items-center gap-2 transition-colors"
-                    >
-                      <XCircle className="w-4 h-4" /> Rendre au Bot
-                    </button>
-                  )}
+                      <option value="">Géré par le Bot</option>
+                      {teamMembers.map(tm => (
+                         <option key={tm.id} value={tm.id}>{tm.name || tm.email}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Chat Content */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative z-0" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundRepeat: 'repeat', opacity: 0.9 }}>
-               <div className="max-w-4xl mx-auto space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative z-0 flex flex-col" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundRepeat: 'repeat', opacity: 0.9 }}>
+               <div className="max-w-4xl mx-auto space-y-4 w-full flex-1">
+                  {currentContactId && contactSummaries[currentContactId] && (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 shadow-sm mb-6 dark:bg-indigo-900/20 dark:border-indigo-800">
+                      <h4 className="flex items-center gap-2 text-sm font-bold text-indigo-700 dark:text-indigo-400 mb-2">
+                        <Sparkles className="w-4 h-4" />
+                        Résumé IA
+                      </h4>
+                      <p className="text-sm text-indigo-900 dark:text-indigo-200 leading-relaxed whitespace-pre-wrap">
+                        {contactSummaries[currentContactId]}
+                      </p>
+                    </div>
+                  )}
                   {conversationEvents.map(event => {
                     const isOutbound = event.direction === 'OUTBOUND';
                     return (
