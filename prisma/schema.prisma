@@ -172,6 +172,10 @@ model Contact {
   optedOut            Boolean              @default(false)
   optInSource         String?
   optInTimestamp      DateTime?
+  totalSpent          Float                @default(0.0)
+  purchaseCount       Int                  @default(0)
+  lastPurchaseAt      DateTime?
+  isVip               Boolean              @default(false)
   callLogs            CallLog[]
   campaignRecipients  CampaignRecipient[]
   organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)

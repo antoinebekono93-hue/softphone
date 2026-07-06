@@ -31,7 +31,10 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
     company: "",
     email: "",
     phone: "",
-    notes: ""
+    notes: "",
+    totalSpent: 0,
+    purchaseCount: 0,
+    isVip: false
   });
 
   const filteredContacts = useMemo(() => {
@@ -59,7 +62,10 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
         company: contact.company || "",
         email: contact.email || "",
         phone: contact.phone || "",
-        notes: contact.notes || ""
+        notes: contact.notes || "",
+        totalSpent: contact.totalSpent || 0,
+        purchaseCount: contact.purchaseCount || 0,
+        isVip: contact.isVip || false
       });
     } else {
       setFormData({
@@ -67,7 +73,10 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
         company: "",
         email: "",
         phone: "",
-        notes: ""
+        notes: "",
+        totalSpent: 0,
+        purchaseCount: 0,
+        isVip: false
       });
     }
     setIsModalOpen(true);
@@ -305,14 +314,15 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Téléphone</th>
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] hidden lg:table-cell">Email</th>
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Score IA</th>
-                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Sentiment</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">VIP</th>
+                  <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)]">Dépenses</th>
                   <th className="p-4 text-xs font-semibold uppercase text-[var(--text-secondary)] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredContacts.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-12 text-center text-[var(--text-secondary)]">
+                    <td colSpan={8} className="p-12 text-center text-[var(--text-secondary)]">
                       Aucun contact trouvé dans cette vue.
                     </td>
                   </tr>
@@ -355,6 +365,20 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                           <span className={`px-2 py-1 text-xs font-bold rounded-full ${contact.sentiment === 'POSITIVE' ? 'bg-emerald-500/10 text-emerald-500' : contact.sentiment === 'NEGATIVE' ? 'bg-red-500/10 text-red-500' : 'bg-gray-500/10 text-gray-400'}`}>
                             {contact.sentiment === 'POSITIVE' ? 'Positif 😊' : contact.sentiment === 'NEGATIVE' ? 'Négatif 😠' : 'Neutre 😐'}
                           </span>
+                        ) : "-"}
+                      </td>
+                      <td className="p-4">
+                        {(contact.isVip || (contact.totalSpent && contact.totalSpent >= 1000)) ? (
+                          <span className="px-2 py-1 text-xs font-bold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                            👑 VIP
+                          </span>
+                        ) : (
+                          <span className="text-[var(--text-secondary)] text-xs">-</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-sm font-medium text-[var(--text-primary)]">
+                        {contact.totalSpent ? (
+                          <span className="text-[var(--accent-cyan)]">{contact.totalSpent.toLocaleString('fr-FR')} €</span>
                         ) : "-"}
                       </td>
                       <td className="p-4 text-right">
@@ -444,6 +468,41 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                       className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors min-h-[100px] resize-none"
                       placeholder="Notes internes concernant ce contact..."
                     />
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Total Dépensé (€)</label>
+                      <input 
+                        type="number"
+                        step="0.01" 
+                        value={formData.totalSpent}
+                        onChange={(e) => setFormData({...formData, totalSpent: parseFloat(e.target.value) || 0})}
+                        className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
+                        placeholder="Ex: 1500"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Nombre d'Achats</label>
+                      <input 
+                        type="number" 
+                        value={formData.purchaseCount}
+                        onChange={(e) => setFormData({...formData, purchaseCount: parseInt(e.target.value) || 0})}
+                        className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
+                        placeholder="Ex: 3"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <input 
+                      type="checkbox" 
+                      id="isVip"
+                      checked={formData.isVip}
+                      onChange={(e) => setFormData({...formData, isVip: e.target.checked})}
+                      className="w-4 h-4 rounded border-[var(--border-subtle)] bg-[var(--bg-base)] text-[var(--accent-cyan)] focus:ring-[var(--accent-cyan)]"
+                    />
+                    <label htmlFor="isVip" className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2 cursor-pointer">
+                      <span className="px-2 py-1 text-xs font-bold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]">👑</span> Forcer le statut VIP
+                    </label>
                   </div>
                 </form>
               </div>

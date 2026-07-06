@@ -67,7 +67,7 @@ export async function deleteContactGroup(id: string) {
   }
 }
 
-export async function createContact(data: { name?: string, company?: string, email?: string, phone: string, notes?: string }, groupId?: string) {
+export async function createContact(data: { name?: string, company?: string, email?: string, phone: string, notes?: string, totalSpent?: number, purchaseCount?: number, isVip?: boolean }, groupId?: string) {
   const session = await auth();
   if (!session?.user?.organizationId) return { error: "Unauthorized" };
 
@@ -81,6 +81,23 @@ export async function createContact(data: { name?: string, company?: string, ema
     
     if (groupId) {
       createData.groups = { connect: [{ id: groupId }] };
+    }
+
+    // Phase 3: Auto-assignation VIP
+    if (data.isVip || (data.totalSpent && data.totalSpent >= 1000)) {
+      // Find or create VIP group
+      let vipGroup = await prisma.contactGroup.findFirst({
+        where: { name: "VIP", organizationId: session.user.organizationId }
+      });
+      if (!vipGroup) {
+        vipGroup = await prisma.contactGroup.create({
+          data: { name: "VIP", organizationId: session.user.organizationId }
+        });
+      }
+      if (!createData.groups) {
+        createData.groups = { connect: [] };
+      }
+      createData.groups.connect.push({ id: vipGroup.id });
     }
 
     const contact = await prisma.contact.create({
@@ -99,7 +116,7 @@ export async function createContact(data: { name?: string, company?: string, ema
   }
 }
 
-export async function updateContact(id: string, data: { name?: string, company?: string, email?: string, phone: string, notes?: string }, groupId?: string) {
+export async function updateContact(id: string, data: { name?: string, company?: string, email?: string, phone: string, notes?: string, totalSpent?: number, purchaseCount?: number, isVip?: boolean }, groupId?: string) {
   const session = await auth();
   if (!session?.user?.organizationId) return { error: "Unauthorized" };
 
@@ -107,6 +124,22 @@ export async function updateContact(id: string, data: { name?: string, company?:
     const updateData: any = { ...data };
     if (groupId) {
       updateData.groups = { connect: [{ id: groupId }] };
+    }
+
+    // Phase 3: Auto-assignation VIP
+    if (data.isVip || (data.totalSpent && data.totalSpent >= 1000)) {
+      let vipGroup = await prisma.contactGroup.findFirst({
+        where: { name: "VIP", organizationId: session.user.organizationId }
+      });
+      if (!vipGroup) {
+        vipGroup = await prisma.contactGroup.create({
+          data: { name: "VIP", organizationId: session.user.organizationId }
+        });
+      }
+      if (!updateData.groups) {
+        updateData.groups = { connect: [] };
+      }
+      updateData.groups.connect.push({ id: vipGroup.id });
     }
 
     const contact = await prisma.contact.update({
