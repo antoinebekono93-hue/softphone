@@ -1,15 +1,22 @@
-self.addEventListener("install", (event) => {
-  console.log("[Service Worker] Install Event processing");
-  event.waitUntil(self.skipWaiting());
+const CACHE_NAME = 'antigravity-v1';
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll([
+        '/',
+        '/dashboard',
+        '/manifest.json'
+      ]);
+    })
+  );
 });
 
-self.addEventListener("activate", (event) => {
-  console.log("[Service Worker] Activate Event processing");
-  event.waitUntil(self.clients.claim());
-});
-
-self.addEventListener("fetch", (event) => {
-  // Service Worker simple passe-plat (pour permettre l'installation PWA)
-  // Une logique de cache avancée (offline) n'est pas recommandée pour un softphone temps réel.
-  return;
+self.addEventListener('fetch', (event) => {
+  // Simple network-first strategy for dynamic content
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request);
+    })
+  );
 });
