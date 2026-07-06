@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { parsePhoneNumberWithError, ParseError } from 'libphonenumber-js';
 
 export async function GET(req: Request) {
   try {
@@ -53,10 +54,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Phone is required" }, { status: 400 });
     }
 
-    // 1. Ensure phone starts with + (simplified E.164 format enforcement)
-    let formattedPhone = phone.trim().replace(/\s+/g, '');
-    if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
+    // 1. Validation stricte E.164 (Phase 2)
+    let formattedPhone = "";
+    try {
+      const phoneNumber = parsePhoneNumberWithError(phone);
+      if (!phoneNumber.isValid()) {
+        return NextResponse.json({ error: "Le format du numéro de téléphone est invalide." }, { status: 400 });
+      }
+      formattedPhone = phoneNumber.format('E.164');
+    } catch (error) {
+      if (error instanceof ParseError) {
+        return NextResponse.json({ error: `Validation du téléphone échouée: ${error.message}` }, { status: 400 });
+      } else {
+        return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
+      }
     }
 
     // 2. Create the Contact

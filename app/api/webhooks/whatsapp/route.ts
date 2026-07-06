@@ -64,6 +64,21 @@ export async function POST(req: Request) {
         
         console.log(`[WhatsApp] Message enregistré pour l'organisation ${waAccount.organizationId}`);
 
+        // --- NOUVEAU: GESTION DES OPT-OUTS (PHASE 2) ---
+        const messageBodyUpper = body.trim().toUpperCase();
+        if (messageBodyUpper === "STOP" || messageBodyUpper === "ANNULER" || messageBodyUpper === "UNSUBSCRIBE") {
+            await prisma.contact.update({
+                where: { id: contact.id },
+                data: { optedOut: true }
+            });
+            console.log(`[Opt-out] Le contact ${contact.phone} s'est désinscrit.`);
+            
+            // On peut optionnellement envoyer un dernier message de confirmation ici.
+            
+            return NextResponse.json({ success: true }); // On arrête le flux ici pour un STOP
+        }
+        // ----------------------------------------------
+
         // 4. INTELLIGENCE CRM : Mettre à jour le Pipeline de Ventes
         // Si le client répond, nous le faisons avancer dans le pipeline
         

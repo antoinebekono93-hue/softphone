@@ -25,11 +25,12 @@ export async function POST(req: Request) {
       include: { contacts: true }
     });
 
-    // Flatten and deduplicate contacts based on id
+    // Flatten and deduplicate contacts based on id (Phase 2: Respecter les Opt-outs)
     const uniqueContactsMap = new Map();
     targetGroups.forEach(group => {
       group.contacts.forEach(contact => {
-        if (!uniqueContactsMap.has(contact.id)) {
+        // IMPORTANT: Ne pas inclure les contacts désinscrits
+        if (!contact.optedOut && !uniqueContactsMap.has(contact.id)) {
           uniqueContactsMap.set(contact.id, contact);
         }
       });

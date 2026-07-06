@@ -8,6 +8,9 @@ export async function GET(req: Request) {
     const enrollments = await prisma.whatsAppFlowEnrollment.findMany({
       where: {
         status: "ACTIVE",
+        contact: {
+          optedOut: false // Phase 2: Ne pas exécuter pour les opt-outs
+        },
         OR: [
           { nextRunAt: null },
           { nextRunAt: { lte: new Date() } }

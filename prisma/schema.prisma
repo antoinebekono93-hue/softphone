@@ -169,6 +169,9 @@ model Contact {
   updatedAt           DateTime             @updatedAt
   leadScore           Int?
   sentiment           String?
+  optedOut            Boolean              @default(false)
+  optInSource         String?
+  optInTimestamp      DateTime?
   callLogs            CallLog[]
   campaignRecipients  CampaignRecipient[]
   organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
