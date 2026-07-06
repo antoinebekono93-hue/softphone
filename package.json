@@ -19,8 +19,10 @@
     "@telnyx/video": "^1.0.2",
     "@telnyx/webrtc": "^2.27.1",
     "@types/ws": "^8.18.1",
+    "@upstash/redis": "^1.38.0",
     "@xyflow/react": "^12.11.1",
     "bcryptjs": "^3.0.3",
+    "crypto-js": "^4.2.0",
     "libphonenumber-js": "^1.13.8",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",
@@ -41,6 +43,7 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^20",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19",
