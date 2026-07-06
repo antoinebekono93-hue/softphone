@@ -107,6 +107,9 @@ model Organization {
   verificationLogs           VerificationLog[]
   verifyProfiles             VerifyProfile[]
   aiAgents                   VoiceAIAgent[]
+  aiAssistants               AIAssistant[]
+  ecommerceStores            EcommerceStore[]
+  carts                      Cart[]
   walletTransactions         WalletTransaction[]
   whatsappAccount            WhatsAppAccount?
   whatsappTemplates          WhatsAppTemplate[]
@@ -176,6 +179,8 @@ model Contact {
   purchaseCount       Int                  @default(0)
   lastPurchaseAt      DateTime?
   isVip               Boolean              @default(false)
+  botMode             Boolean              @default(false)      // Phase 5: Géré par l'IA Autonome RAG
+  openaiThreadId      String?              // Phase 5: ID du Thread conversationnel OpenAI
   aiSummary           String?              // Phase 4: Résumé IA des intéractions WhatsApp
   callLogs            CallLog[]
   campaignRecipients  CampaignRecipient[]
@@ -620,4 +625,71 @@ model WhatsAppFlowEnrollment {
   @@index([contactId])
   @@index([organizationId])
   @@index([nextRunAt])
+}
+
+// ==========================================
+// Phase 5 : E-Commerce & RAG
+// ==========================================
+
+model AIAssistant {
+  id             String       @id @default(cuid())
+  name           String
+  openaiId       String       // L'ID de l'assistant sur OpenAI (ex: asst_abc123)
+  instructions   String?      // Le prompt système pour le bot
+  isActive       Boolean      @default(true)
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model EcommerceStore {
+  id             String       @id @default(cuid())
+  platform       String       @default("SHOPIFY") // SHOPIFY, WOOCOMMERCE, CUSTOM
+  storeUrl       String
+  accessToken    String?
+  webhookSecret  String?
+  isActive       Boolean      @default(true)
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model Cart {
+  id              String       @id @default(cuid())
+  externalCartId  String       // ID du panier sur Shopify/WooCommerce
+  contactId       String?
+  totalPrice      Float        @default(0.0)
+  currency        String       @default("EUR")
+  status          String       @default("ABANDONED") // ABANDONED, RECOVERED, COMPLETED
+  checkoutUrl     String?
+  organizationId  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items           CartItem[]
+
+  @@unique([organizationId, externalCartId])
+  @@index([organizationId])
+  @@index([contactId])
+}
+
+model CartItem {
+  id          String   @id @default(cuid())
+  cartId      String
+  productId   String
+  productName String
+  quantity    Int      @default(1)
+  price       Float
+  imageUrl    String?
+  
+  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  @@index([cartId])
 }

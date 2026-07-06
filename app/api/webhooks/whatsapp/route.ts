@@ -112,7 +112,103 @@ export async function POST(req: Request) {
               organizationId: waAccount.organizationId,
             }
           });
+          });
           console.log(`[CRM] Nouvelle opportunité créée pour ${contact.phone}`);
+        }
+
+        // --- PHASE 5: IA AUTONOME (RAG) ---
+        if (contact.botMode && !contact.assignedUserId) {
+          console.log(`[RAG] Contact ${contact.phone} est en mode Bot. Traitement via OpenAI...`);
+          
+          try {
+            const OpenAI = (await import('openai')).default;
+            const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            
+            // 1. Récupérer l'Assistant de l'Organisation
+            const assistant = await prisma.aIAssistant.findFirst({
+              where: { organizationId: waAccount.organizationId, isActive: true }
+            });
+
+            if (assistant && assistant.openaiId) {
+              let threadId = contact.openaiThreadId;
+              
+              // 2. Créer un Thread si inexistant
+              if (!threadId) {
+                const thread = await openai.beta.threads.create();
+                threadId = thread.id;
+                await prisma.contact.update({
+                  where: { id: contact.id },
+                  data: { openaiThreadId: threadId }
+                });
+              }
+
+              // 3. Ajouter le message de l'utilisateur au Thread
+              await openai.beta.threads.messages.create(threadId, {
+                role: "user",
+                content: body
+              });
+
+              // 4. Lancer le run et attendre la fin
+              const run = await openai.beta.threads.runs.createAndPoll(threadId, {
+                assistant_id: assistant.openaiId,
+                // On peut surcharger les instructions ici si besoin, par exemple en injectant le nom du contact
+                additional_instructions: `Le client s'appelle ${contact.name || 'Client'}.`
+              });
+
+              if (run.status === 'completed') {
+                const messages = await openai.beta.threads.messages.list(run.thread_id);
+                // Le dernier message de l'assistant est le premier de la liste retournée (tri décroissant)
+                const lastMessageForRun = messages.data.find(m => m.role === 'assistant' && m.run_id === run.id);
+                
+                if (lastMessageForRun && lastMessageForRun.content[0].type === 'text') {
+                  const responseText = lastMessageForRun.content[0].text.value;
+                  
+                  // 5. Envoyer la réponse via Telnyx (comme si l'agent avait répondu)
+                  const telnyxRes = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      from: waAccount.phoneNumber,
+                      to: fromNumber,
+                      whatsapp_message: {
+                        type: 'text',
+                        text: { body: responseText, preview_url: false }
+                      }
+                    })
+                  });
+
+                  if (telnyxRes.ok) {
+                    const tData = await telnyxRes.json();
+                    await prisma.smsMessage.create({
+                      data: {
+                        telnyxMessageId: tData.data?.id || `wa_ai_${Date.now()}`,
+                        direction: 'OUTBOUND',
+                        body: responseText,
+                        status: 'SENT',
+                        type: 'WHATSAPP',
+                        fromNumber: waAccount.phoneNumber,
+                        toNumber: fromNumber,
+                        organizationId: waAccount.organizationId,
+                        contactId: contact.id,
+                        agentMessage: "AI_GENERATED"
+                      }
+                    });
+                  } else {
+                    console.error("[RAG] Erreur envoi Telnyx:", await telnyxRes.text());
+                  }
+                }
+              } else {
+                 console.log("[RAG] Run Failed/Requires Action:", run.status);
+              }
+            } else {
+               console.log("[RAG] Aucun assistant OpenAI configuré pour cette organisation.");
+            }
+          } catch (e) {
+            console.error("[RAG] OpenAI Error:", e);
+          }
         }
       }
     // Traitement des mises à jour de statuts (Delivered, Read)
