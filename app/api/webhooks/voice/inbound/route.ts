@@ -49,6 +49,11 @@ export async function POST(req: Request) {
       if (contact) {
         await prisma.callLog.create({
           data: {
+            telnyxCallControlId: callControlId,
+            direction: "INBOUND",
+            fromNumber: fromNumber,
+            toNumber: toNumber,
+            organizationId: account.organizationId,
             duration: 0,
             status: "IN_PROGRESS",
             contactId: contact.id
@@ -77,7 +82,7 @@ export async function POST(req: Request) {
           },
           body: JSON.stringify({
             payload: `Bonjour, je suis ${aiAgent.name}, l'assistant vocal de la société. Comment puis-je vous aider aujourd'hui ?`,
-            voice: aiAgent.voiceId || "Polly.Mathieu-Neural",
+            voice: aiAgent.voice || "Polly.Mathieu-Neural",
             language: "fr-FR"
           })
         });

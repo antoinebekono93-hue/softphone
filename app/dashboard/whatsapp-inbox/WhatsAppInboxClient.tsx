@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, Instagram, Mail, PhoneMessage } from "lucide-react";
+import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, MessageCircle, Mail, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export type OmnichannelEvent = {
@@ -204,8 +204,8 @@ export default function UnifiedInboxClient({
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-1">
                       <div className="flex items-center gap-2 overflow-hidden">
-                        {latestMessage.type === "WHATSAPP" && <PhoneMessage className="w-4 h-4 text-emerald-500 shrink-0" />}
-                        {latestMessage.type === "INSTAGRAM" && <Instagram className="w-4 h-4 text-pink-500 shrink-0" />}
+                        {latestMessage.type === "WHATSAPP" && <Phone className="w-4 h-4 text-emerald-500 shrink-0" />}
+                        {latestMessage.type === "INSTAGRAM" && <MessageCircle className="w-4 h-4 text-pink-500 shrink-0" />}
                         {latestMessage.type === "EMAIL" && <Mail className="w-4 h-4 text-blue-500 shrink-0" />}
                         <span className="font-bold text-[var(--text-primary)] truncate">
                           {number}

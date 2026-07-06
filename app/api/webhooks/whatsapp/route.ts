@@ -112,7 +112,6 @@ export async function POST(req: Request) {
               organizationId: waAccount.organizationId,
             }
           });
-          });
           console.log(`[CRM] Nouvelle opportunité créée pour ${contact.phone}`);
         }
 

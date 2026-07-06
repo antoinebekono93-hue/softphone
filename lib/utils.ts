@@ -3,6 +3,16 @@
  */
 
 /**
+ * Formats a currency amount.
+ */
+export function formatCurrency(amount: number, currency: string = "EUR"): string {
+  return new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: currency,
+  }).format(amount);
+}
+
+/**
  * Formats a phone number string into a human-readable format.
  * Handles E.164 format (+1XXXXXXXXXX) and plain digits.
  */
