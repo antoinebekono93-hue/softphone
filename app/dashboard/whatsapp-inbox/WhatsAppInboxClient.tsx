@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles } from "lucide-react";
+import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, Instagram, Mail, PhoneMessage } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export type WhatsAppEvent = {
+export type OmnichannelEvent = {
   id: string;
-  type: 'WHATSAPP';
+  type: string; // 'WHATSAPP' | 'INSTAGRAM' | 'EMAIL' | 'SMS'
   direction: string;
   status: string;
   from: string;
@@ -17,18 +17,18 @@ export type WhatsAppEvent = {
   contactId?: string | null;
 };
 
-export default function WhatsAppInboxClient({ 
+export default function UnifiedInboxClient({ 
   initialEvents,
   contacts = [],
   teamMembers = [],
   currentUserId
 }: { 
-  initialEvents: WhatsAppEvent[],
+  initialEvents: OmnichannelEvent[],
   contacts?: any[],
   teamMembers?: any[],
   currentUserId?: string
 }) {
-  const [events, setEvents] = useState<WhatsAppEvent[]>(initialEvents);
+  const [events, setEvents] = useState<OmnichannelEvent[]>(initialEvents);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(initialEvents.length > 0 ? initialEvents[0].id : null);
   const [replyText, setReplyText] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -59,7 +59,7 @@ export default function WhatsAppInboxClient({
     }
     acc[counterparty].push(event);
     return acc;
-  }, {} as Record<string, WhatsAppEvent[]>);
+  }, {} as Record<string, OmnichannelEvent[]>);
 
   const sortedConversations = Object.entries(conversations).sort((a, b) => {
     const lastA = a[1][0].timestamp; 
@@ -121,14 +121,17 @@ export default function WhatsAppInboxClient({
   const handleSendReply = async () => {
     if (!contactNumber || !replyText.trim()) return;
 
+    // Detect channel from the last message of this conversation
+    const channel = conversationEvents.length > 0 ? conversationEvents[conversationEvents.length - 1].type : 'WHATSAPP';
+
     setIsSending(true);
     try {
-      const res = await fetch('/api/whatsapp/send', {
+      const res = await fetch('/api/omnichannel/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: contactNumber,
-          type: 'text',
+          channel: channel,
           text: replyText
         })
       });
@@ -137,9 +140,9 @@ export default function WhatsAppInboxClient({
 
       const data = await res.json();
       
-      const newMessage: WhatsAppEvent = {
+      const newMessage: OmnichannelEvent = {
         id: data.messageId || Date.now().toString(),
-        type: 'WHATSAPP',
+        type: channel,
         direction: 'OUTBOUND',
         status: 'SENT',
         from: 'Me',
@@ -167,7 +170,7 @@ export default function WhatsAppInboxClient({
         <div className="p-4 border-b border-[var(--border-subtle)] bg-emerald-500/10">
           <h2 className="text-xl font-bold text-emerald-600 flex items-center gap-2">
              <MessageSquare className="w-5 h-5" />
-             WhatsApp Inbox
+             Inbox Unifiée
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">{sortedConversations.length} conversations</p>
         </div>
@@ -200,9 +203,14 @@ export default function WhatsAppInboxClient({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="font-bold text-[var(--text-primary)] truncate">
-                        {number}
-                      </span>
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        {latestMessage.type === "WHATSAPP" && <PhoneMessage className="w-4 h-4 text-emerald-500 shrink-0" />}
+                        {latestMessage.type === "INSTAGRAM" && <Instagram className="w-4 h-4 text-pink-500 shrink-0" />}
+                        {latestMessage.type === "EMAIL" && <Mail className="w-4 h-4 text-blue-500 shrink-0" />}
+                        <span className="font-bold text-[var(--text-primary)] truncate">
+                          {number}
+                        </span>
+                      </div>
                       <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap ml-2">
                         {formatTime(latestMessage.timestamp)}
                       </span>

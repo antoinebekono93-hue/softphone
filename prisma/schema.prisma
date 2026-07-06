@@ -164,7 +164,8 @@ model Contact {
   id                  String               @id @default(cuid())
   name                String?
   company             String?
-  email               String?
+  email               String?              // Phase 7: Email address
+  instagramId         String?              // Phase 7: Instagram user ID
   phone               String
   notes               String?
   organizationId      String

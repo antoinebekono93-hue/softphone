@@ -13,19 +13,19 @@ export default async function WhatsAppInboxPage() {
   const orgId = session.user.organizationId;
 
   try {
-    // Fetch only WhatsApp Messages
+    // Fetch Omnichannel Messages
     const sms = await prisma.smsMessage.findMany({
       where: { 
         organizationId: orgId,
-        type: 'WHATSAPP' 
+        type: { in: ['WHATSAPP', 'INSTAGRAM', 'EMAIL'] } 
       },
       orderBy: { sentAt: 'desc' },
-      take: 100,
+      take: 200,
     });
 
     const unifiedEvents = sms.map(s => ({
         id: s.id,
-        type: 'WHATSAPP' as const,
+        type: s.type,
         direction: s.direction,
         status: s.status,
         from: s.fromNumber,
