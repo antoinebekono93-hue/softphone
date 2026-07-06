@@ -181,6 +181,8 @@ model Contact {
   isVip               Boolean              @default(false)
   botMode             Boolean              @default(false)      // Phase 5: Géré par l'IA Autonome RAG
   openaiThreadId      String?              // Phase 5: ID du Thread conversationnel OpenAI
+  churnRiskScore      Int                  @default(0)          // Phase 6: Score de risque de churn (0-100)
+  lifetimeValue       Float                @default(0.0)        // Phase 6: Valeur à vie du client
   aiSummary           String?              // Phase 4: Résumé IA des intéractions WhatsApp
   callLogs            CallLog[]
   campaignRecipients  CampaignRecipient[]

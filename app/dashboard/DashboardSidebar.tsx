@@ -77,7 +77,7 @@ export function DashboardSidebar({
           { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
           { name: "Séquences d'appels", href: "/dashboard/sequences", icon: Workflow },
           { name: "Boîte de réception", href: "/dashboard/inbox", icon: Inbox },
-          { name: "Analyse & Rapports", href: "/dashboard/analytics", icon: BarChart2 },
+          { name: "Revenus & Churn", href: "/dashboard/analytics/revenue", icon: BarChart2 },
         ]
       },
       {
