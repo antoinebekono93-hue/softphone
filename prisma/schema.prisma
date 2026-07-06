@@ -111,6 +111,7 @@ model Organization {
   whatsappAccount            WhatsAppAccount?
   whatsappTemplates          WhatsAppTemplate[]
   whatsappFlows              WhatsAppFlow[]
+  whatsappFlowEnrollments    WhatsAppFlowEnrollment[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -174,6 +175,7 @@ model Contact {
   internalNotes       InternalNote[]
   opportunities       Opportunity[]
   sequenceEnrollments SequenceEnrollment[]
+  whatsappFlowEnrollments WhatsAppFlowEnrollment[]
   smsMessages         SmsMessage[]
   groups              ContactGroup[]       @relation("ContactToContactGroup")
   assignedUserId      String?
@@ -584,6 +586,30 @@ model WhatsAppFlow {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  enrollments    WhatsAppFlowEnrollment[]
 
   @@index([organizationId])
+}
+
+model WhatsAppFlowEnrollment {
+  id             String       @id @default(cuid())
+  flowId         String
+  contactId      String
+  currentNodeId  String?      // The ID of the current node executing or waiting
+  status         String       @default("ACTIVE") // ACTIVE, COMPLETED, FAILED, PAUSED
+  nextRunAt      DateTime?    // If waiting on a Delay node
+  variables      Json         @default("{}") // State variables for the flow run
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  flow           WhatsAppFlow @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([flowId, contactId])
+  @@index([flowId])
+  @@index([contactId])
+  @@index([organizationId])
+  @@index([nextRunAt])
 }
