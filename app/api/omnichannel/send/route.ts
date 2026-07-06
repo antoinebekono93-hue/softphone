@@ -10,7 +10,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { to, text, channel } = body;
+    const { to, text, channel, messageType, buttons, catalogId, productRetailerId } = body;
 
     if (!to || !channel) {
       return NextResponse.json({ error: 'Destination (to) and channel are required' }, { status: 400 });
@@ -21,6 +21,36 @@ export async function POST(req: Request) {
     });
 
     if (channel === 'WHATSAPP') {
+        let whatsapp_message: any = { type: 'text', text: { body: text, preview_url: false } };
+
+        if (messageType === 'button' && buttons && buttons.length > 0) {
+          whatsapp_message = {
+            type: 'interactive',
+            interactive: {
+              type: 'button',
+              body: { text },
+              action: {
+                buttons: buttons.map((b: any, idx: number) => ({
+                  type: 'reply',
+                  reply: { id: b.id || `btn_${idx}`, title: b.title }
+                }))
+              }
+            }
+          };
+        } else if (messageType === 'product' && catalogId && productRetailerId) {
+          whatsapp_message = {
+            type: 'interactive',
+            interactive: {
+              type: 'product',
+              body: { text: text || "Découvrez notre produit :" },
+              action: {
+                catalog_id: catalogId,
+                product_retailer_id: productRetailerId
+              }
+            }
+          };
+        }
+
         // Forward to Telnyx
         const apiKey = process.env.TELNYX_API_KEY;
         const response = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
@@ -33,7 +63,7 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             from: account?.phoneNumber,
             to,
-            whatsapp_message: { type: 'text', text: { body: text, preview_url: false } }
+            whatsapp_message
           })
         });
         

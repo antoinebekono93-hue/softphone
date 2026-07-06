@@ -19,7 +19,15 @@ export async function POST(req: Request) {
       const telnyxMessageId = payloadInfo.id;
       const fromNumber = payloadInfo.from?.phone_number;
       const toNumber = payloadInfo.to?.[0]?.phone_number;
-      const body = payloadInfo.text?.body || "Message sans texte";
+      let body = payloadInfo.text?.body || "";
+      if (!body && payloadInfo.type === "interactive") {
+        if (payloadInfo.interactive?.type === "button_reply") {
+          body = payloadInfo.interactive.button_reply.title;
+        } else if (payloadInfo.interactive?.type === "list_reply") {
+          body = payloadInfo.interactive.list_reply.title;
+        }
+      }
+      if (!body) body = "Message média ou non supporté";
       
       if (!fromNumber || !toNumber) {
         return NextResponse.json({ success: true });
@@ -227,6 +235,18 @@ export async function POST(req: Request) {
           where: { id: message.id },
           data: { status: status.toUpperCase() }
         });
+
+        // Tenter d'envoyer l'événement Pusher si configuré
+        try {
+          const { pusherServer } = await import('@/lib/pusher');
+          await pusherServer.trigger(
+            `org-${message.organizationId}`, 
+            'message-status', 
+            { messageId: message.id, status: status.toUpperCase(), contactId: message.contactId }
+          );
+        } catch (e) {
+          console.log("[Pusher] Non configuré ou erreur:", e);
+        }
 
         // Mettre à jour le destinataire de la campagne si le message y est lié
         const campaignRecipient = await prisma.campaignRecipient.findFirst({

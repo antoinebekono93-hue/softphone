@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, MessageCircle, Mail, Phone } from "lucide-react";
+import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, MessageCircle, Mail, Phone, Plus, Package, Hand } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export type OmnichannelEvent = {
@@ -21,18 +21,27 @@ export default function UnifiedInboxClient({
   initialEvents,
   contacts = [],
   teamMembers = [],
-  currentUserId
+  currentUserId,
+  orgId
 }: { 
   initialEvents: OmnichannelEvent[],
   contacts?: any[],
   teamMembers?: any[],
-  currentUserId?: string
+  currentUserId?: string,
+  orgId?: string
 }) {
   const [events, setEvents] = useState<OmnichannelEvent[]>(initialEvents);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(initialEvents.length > 0 ? initialEvents[0].id : null);
   const [replyText, setReplyText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
+  
+  // Interactive Message State
+  const [showInteractiveMenu, setShowInteractiveMenu] = useState(false);
+  const [interactiveType, setInteractiveType] = useState<"none"|"buttons"|"product">("none");
+  const [buttonTitles, setButtonTitles] = useState<string[]>([""]);
+  const [catalogId, setCatalogId] = useState("");
+  const [productRetailerId, setProductRetailerId] = useState("");
   
   // Create a local map of contact assignments
   const [contactAssignments, setContactAssignments] = useState<Record<string, string | null>>(
@@ -46,6 +55,29 @@ export default function UnifiedInboxClient({
 
   const router = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_PUSHER_KEY || !orgId) return;
+    
+    let pusherClient: any;
+    let channel: any;
+
+    import('@/lib/pusher').then(({ getPusherClient }) => {
+      pusherClient = getPusherClient();
+      channel = pusherClient.subscribe(`org-${orgId}`);
+      
+      channel.bind('message-status', (data: { messageId: string, status: string, contactId: string }) => {
+        setEvents(prev => prev.map(ev => 
+          ev.id === data.messageId ? { ...ev, status: data.status } : ev
+        ));
+      });
+    });
+
+    return () => {
+      if (channel) channel.unbind_all();
+      if (pusherClient) pusherClient.unsubscribe(`org-${orgId}`);
+    };
+  }, [orgId]);
 
   const formatTime = (isoString: string) => {
     const d = new Date(isoString);
@@ -131,29 +163,39 @@ export default function UnifiedInboxClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: contactNumber,
-          channel: channel,
-          text: replyText
+          text: replyText,
+          channel: 'WHATSAPP',
+          messageType: interactiveType === 'none' ? 'text' : (interactiveType === 'buttons' ? 'button' : 'product'),
+          buttons: interactiveType === 'buttons' ? buttonTitles.filter(t => t.trim()).map(t => ({ title: t })) : undefined,
+          catalogId: interactiveType === 'product' ? catalogId : undefined,
+          productRetailerId: interactiveType === 'product' ? productRetailerId : undefined,
         })
       });
 
       if (!res.ok) throw new Error("Failed to send message");
 
-      const data = await res.json();
-      
+      const { messageId } = await res.json();
+
       const newMessage: OmnichannelEvent = {
-        id: data.messageId || Date.now().toString(),
-        type: channel,
+        id: messageId,
+        type: 'WHATSAPP',
         direction: 'OUTBOUND',
         status: 'SENT',
-        from: 'Me',
+        from: 'system',
         to: contactNumber,
         timestamp: new Date().toISOString(),
-        body: replyText,
+        body: interactiveType === 'buttons' 
+          ? `${replyText}\n[Boutons: ${buttonTitles.filter(t=>t.trim()).join(', ')}]`
+          : interactiveType === 'product' 
+            ? `${replyText}\n[Produit SKU: ${productRetailerId}]`
+            : replyText,
         contactId: currentContactId
       };
 
       setEvents([newMessage, ...events]);
       setReplyText("");
+      setInteractiveType("none");
+      setShowInteractiveMenu(false);
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -312,13 +354,102 @@ export default function UnifiedInboxClient({
                </div>
             </div>
 
+            {/* Interactive Options Panel */}
+            {showInteractiveMenu && (
+              <div className="p-4 bg-white dark:bg-[#202c33] border-t border-gray-300 dark:border-gray-800 shrink-0">
+                <div className="max-w-4xl mx-auto">
+                  <div className="flex gap-4 mb-4">
+                    <button 
+                      onClick={() => setInteractiveType("buttons")}
+                      className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 ${interactiveType === 'buttons' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'}`}
+                    >
+                      <Hand className="w-4 h-4" /> Boutons Rapides
+                    </button>
+                    <button 
+                      onClick={() => setInteractiveType("product")}
+                      className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 ${interactiveType === 'product' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'}`}
+                    >
+                      <Package className="w-4 h-4" /> Produit Catalogue
+                    </button>
+                    <button 
+                      onClick={() => { setInteractiveType("none"); setShowInteractiveMenu(false); }}
+                      className="ml-auto p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                      <XCircle className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {interactiveType === 'buttons' && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-gray-500">Ajoutez jusqu'à 3 boutons cliquables avec votre message texte.</p>
+                      {buttonTitles.map((title, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <input 
+                            type="text" 
+                            placeholder={`Texte du bouton ${index + 1}`}
+                            value={title}
+                            onChange={(e) => {
+                              const newTitles = [...buttonTitles];
+                              newTitles[index] = e.target.value;
+                              setButtonTitles(newTitles);
+                            }}
+                            className="flex-1 bg-gray-50 dark:bg-[#2a3942] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
+                          />
+                          {index === buttonTitles.length - 1 && buttonTitles.length < 3 && (
+                            <button 
+                              onClick={() => setButtonTitles([...buttonTitles, ""])}
+                              className="p-2 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-200"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {interactiveType === 'product' && (
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="text-xs font-bold text-gray-500 mb-1 block">ID Catalogue Meta</label>
+                        <input 
+                          type="text" 
+                          placeholder="ex: 123456789"
+                          value={catalogId}
+                          onChange={(e) => setCatalogId(e.target.value)}
+                          className="w-full bg-gray-50 dark:bg-[#2a3942] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs font-bold text-gray-500 mb-1 block">Product Retailer ID (SKU)</label>
+                        <input 
+                          type="text" 
+                          placeholder="ex: SKU_123"
+                          value={productRetailerId}
+                          onChange={(e) => setProductRetailerId(e.target.value)}
+                          className="w-full bg-gray-50 dark:bg-[#2a3942] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Message Input Box */}
-            <div className="p-4 bg-[#f0f2f5] dark:bg-[#202c33] shrink-0">
+            <div className="p-4 bg-[#f0f2f5] dark:bg-[#202c33] shrink-0 border-t border-gray-300 dark:border-gray-800">
                <div className="max-w-4xl mx-auto flex items-end gap-2">
+                 <button 
+                   onClick={() => setShowInteractiveMenu(!showInteractiveMenu)}
+                   className={`p-3 rounded-full flex items-center justify-center transition-colors ${showInteractiveMenu ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:bg-gray-300 dark:hover:bg-gray-600'}`}
+                   title="Ajouter du contenu interactif"
+                 >
+                   <Plus className="w-5 h-5" />
+                 </button>
                  <textarea
                    className="flex-1 rounded-xl border-none outline-none p-3 resize-none bg-white dark:bg-[#2a3942] text-gray-900 dark:text-white"
                    rows={1}
-                   placeholder="Écrivez un message..."
+                   placeholder={interactiveType !== 'none' ? "Texte principal accompagnant les options..." : "Écrivez un message..."}
                    value={replyText}
                    onChange={(e) => setReplyText(e.target.value)}
                    onKeyDown={(e) => {

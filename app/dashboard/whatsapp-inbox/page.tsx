@@ -55,6 +55,7 @@ export default async function WhatsAppInboxPage() {
           contacts={contacts}
           teamMembers={teamMembers}
           currentUserId={session.user.id}
+          orgId={orgId}
         />
       </div>
     );
