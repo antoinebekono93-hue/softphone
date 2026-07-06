@@ -187,7 +187,7 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
                   <div>
                     <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Événement</label>
                     <select 
-                      value={selectedNode.data.event || 'new_contact'}
+                      value={(selectedNode.data.event as string) || 'new_contact'}
                       onChange={(e) => {
                         const event = e.target.value;
                         const label = e.target.options[e.target.selectedIndex].text;
@@ -210,7 +210,7 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
                   <div>
                     <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Type de Message</label>
                     <select 
-                      value={selectedNode.data.messageType || 'free_text'}
+                      value={(selectedNode.data.messageType as string) || 'free_text'}
                       onChange={(e) => updateNodeData(selectedNode.id, { messageType: e.target.value })}
                       className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-blue-500"
                     >
@@ -223,7 +223,7 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
                        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Nom du Modèle</label>
                        <input 
                          type="text" 
-                         value={selectedNode.data.templateName || ''}
+                         value={(selectedNode.data.templateName as string) || ''}
                          onChange={(e) => updateNodeData(selectedNode.id, { templateName: e.target.value })}
                          placeholder="ex: welcome_message"
                          className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-blue-500"
@@ -234,7 +234,7 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
                        <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Contenu du message</label>
                        <textarea 
                          rows={4}
-                         value={selectedNode.data.text || ''}
+                         value={(selectedNode.data.text as string) || ''}
                          onChange={(e) => updateNodeData(selectedNode.id, { text: e.target.value })}
                          placeholder="Bonjour, merci de nous avoir contacté..."
                          className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-blue-500 resize-none"
@@ -252,7 +252,7 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
                       <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Durée</label>
                       <input 
                         type="number" min="1"
-                        value={selectedNode.data.duration || '1'}
+                        value={(selectedNode.data.duration as string) || '1'}
                         onChange={(e) => updateNodeData(selectedNode.id, { duration: e.target.value })}
                         className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-amber-500"
                       />
@@ -260,7 +260,7 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
                     <div className="w-2/3">
                       <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Unité</label>
                       <select 
-                        value={selectedNode.data.unit || 'minutes'}
+                        value={(selectedNode.data.unit as string) || 'minutes'}
                         onChange={(e) => updateNodeData(selectedNode.id, { unit: e.target.value })}
                         className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-amber-500"
                       >
@@ -279,7 +279,7 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
                   <div>
                     <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">Condition Logique</label>
                     <select 
-                      value={selectedNode.data.conditionType || 'has_replied'}
+                      value={(selectedNode.data.conditionType as string) || 'has_replied'}
                       onChange={(e) => updateNodeData(selectedNode.id, { conditionType: e.target.value })}
                       className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] outline-none focus:border-purple-500"
                     >
