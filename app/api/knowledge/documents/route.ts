@@ -54,7 +54,7 @@ export async function DELETE(req: Request) {
     if (doc.openaiFileId) {
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       try {
-        await openai.files.del(doc.openaiFileId);
+        await openai.files.delete(doc.openaiFileId);
       } catch (e) {
         console.warn('File may already be deleted from OpenAI', e);
       }

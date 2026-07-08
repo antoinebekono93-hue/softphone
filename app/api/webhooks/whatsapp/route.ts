@@ -277,7 +277,7 @@ export async function POST(req: Request) {
                     );
 
                     // 3. Informer le client et annuler le run OpenAI
-                    await openai.beta.threads.runs.cancel(threadId, currentRun.id);
+                    await (openai.beta.threads.runs as any).cancel(threadId, currentRun.id);
                     
                     const telnyxRes = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
                       method: 'POST',

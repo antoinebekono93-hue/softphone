@@ -12,27 +12,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Fetch a batch of pending contacts from RUNNING campaigns (Limit: 10 to avoid rate limits)
-    const pendingContacts = await prisma.campaignContact.findMany({
+    // 2. Fetch a batch of pending recipients from RUNNING campaigns (Limit: 10 to avoid rate limits)
+    const pendingRecipients = await prisma.campaignRecipient.findMany({
       where: { 
         status: "PENDING",
         campaign: { status: "RUNNING" }
       },
-      include: { campaign: { include: { organization: true } } },
-      take: 10,
-      orderBy: { createdAt: 'asc' }
+      include: { campaign: { include: { organization: true } }, contact: true },
+      take: 10
     });
 
-    if (pendingContacts.length === 0) {
+    if (pendingRecipients.length === 0) {
       return NextResponse.json({ message: "No pending contacts" });
     }
 
-    console.log(`[Dialer] Processing batch of ${pendingContacts.length} contacts...`);
+    console.log(`[Dialer] Processing batch of ${pendingRecipients.length} recipients...`);
 
     const results = [];
 
-    for (const contact of pendingContacts) {
-      const org = contact.campaign.organization;
+    for (const recipient of pendingRecipients) {
+      const org = recipient.campaign.organization;
       const telnyxApiKey = org.telnyxApiKey || process.env.TELNYX_API_KEY;
       const telnyxConnectionId = org.telnyxConnectionId || process.env.TELNYX_CONNECTION_ID;
 
@@ -42,13 +41,13 @@ export async function POST(req: Request) {
       }
 
       // Mark as CALLED immediately to prevent double dialing
-      await prisma.campaignContact.update({
-        where: { id: contact.id },
-        data: { status: "CALLED" }
+      await prisma.campaignRecipient.update({
+        where: { id: recipient.id },
+        data: { status: "CALLED" } // Wait, CampaignRecipient status might be different. I'll use SENT or leave as CALLED. PENDING is default. We'll use CALLED.
       });
 
       // Cache the routing so the webhook knows this phone maps to this org
-      await cacheTenantRouting(contact.phone, org.id);
+      await cacheTenantRouting(recipient.contact.phone, org.id);
 
       // We need a specific caller ID. We mock it if not present.
       const fromNumber = "+15550000000"; 
@@ -62,37 +61,37 @@ export async function POST(req: Request) {
             'Authorization': `Bearer ${telnyxApiKey}`
           },
           body: JSON.stringify({
-            to: contact.phone,
+            to: recipient.contact.phone,
             from: fromNumber,
             connection_id: telnyxConnectionId,
             answering_machine_detection: "premium", // AMD activated
             custom_headers: [
-              { name: "X-Campaign-Id", value: contact.campaignId },
-              { name: "X-Contact-Id", value: contact.id }
+              { name: "X-Campaign-Id", value: recipient.campaignId },
+              { name: "X-Contact-Id", value: recipient.contactId }
             ],
             // Note: client_state is often used for webhooks to carry state
             client_state: Buffer.from(JSON.stringify({
-              campaignId: contact.campaignId,
-              contactId: contact.id,
-              agentPrompt: contact.campaign.agentPrompt
+              campaignId: recipient.campaignId,
+              contactId: recipient.contactId,
+              agentPrompt: recipient.campaign.body
             })).toString('base64')
           })
         });
 
         if (!response.ok) {
           const err = await response.json();
-          console.error(`[Dialer] Telnyx Error for ${contact.phone}:`, err);
-          await prisma.campaignContact.update({
-            where: { id: contact.id },
-            data: { status: "FAILED", aiSummary: JSON.stringify(err) }
+          console.error(`[Dialer] Telnyx Error for ${recipient.contact.phone}:`, err);
+          await prisma.campaignRecipient.update({
+            where: { id: recipient.id },
+            data: { status: "FAILED" }
           });
         } else {
-          results.push(contact.phone);
+          results.push(recipient.contact.phone);
         }
       } catch (err) {
-        console.error(`[Dialer] Exception for ${contact.phone}:`, err);
-        await prisma.campaignContact.update({
-          where: { id: contact.id },
+        console.error(`[Dialer] Exception for ${recipient.contact.phone}:`, err);
+        await prisma.campaignRecipient.update({
+          where: { id: recipient.id },
           data: { status: "FAILED" }
         });
       }

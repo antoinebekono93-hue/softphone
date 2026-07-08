@@ -44,11 +44,11 @@ export async function POST(request: Request) {
     // 1. Find the Phone Number in our DB to see who it belongs to
     const phoneNumber = await prisma.phoneNumber.findFirst({
       where: { number: to },
-      include: { voiceAIAgent: true }
+      include: { aiEmployee: true }
     });
 
-    if (phoneNumber && phoneNumber.voiceAIAgent && phoneNumber.voiceAIAgent.isActive) {
-      const agent = phoneNumber.voiceAIAgent;
+    if (phoneNumber && phoneNumber.aiEmployee && phoneNumber.aiEmployee.isActive) {
+      const agent = phoneNumber.aiEmployee;
       console.log(`[Webhook] Call matched AI Agent: ${agent.name}`);
 
       // Generate TeXML to connect the call to a WebSocket (OpenAI Realtime / Custom AI Server)

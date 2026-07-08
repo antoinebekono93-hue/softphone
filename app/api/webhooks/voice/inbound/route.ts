@@ -80,7 +80,7 @@ export async function POST(req: Request) {
             clientState = JSON.parse(Buffer.from(eventData.payload.client_state, 'base64').toString('utf-8'));
          }
          if (clientState.contactId) {
-            await prisma.campaignContact.update({
+            await prisma.campaignRecipient.update({
                where: { id: clientState.contactId },
                data: { status: "VOICEMAIL" }
             });
@@ -101,17 +101,17 @@ export async function POST(req: Request) {
       // Si Outbound Campaign
       if (clientState.campaignId) {
          agentPrompt = clientState.agentPrompt || agentPrompt;
-         await prisma.campaignContact.update({
+         await prisma.campaignRecipient.update({
             where: { id: clientState.contactId },
             data: { status: "ANSWERED" }
          });
       } else {
          // Inbound: Fetch AI Agent profile
-         const aiAgent = await prisma.voiceAIAgent.findFirst({
+         const aiAgent = await prisma.aIEmployee.findFirst({
            where: { organizationId: account?.organizationId }
          });
          if (aiAgent) {
-           agentPrompt = aiAgent.prompt;
+           agentPrompt = aiAgent.systemPrompt || agentPrompt;
            agentVoice = "alloy"; // Map to OpenAI voice if needed
          }
       }

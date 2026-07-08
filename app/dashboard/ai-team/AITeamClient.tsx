@@ -147,8 +147,8 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
               <div className="flex items-center justify-between text-sm">
                 <span className="text-[var(--text-secondary)]">Canaux assignés :</span>
                 <div className="flex gap-2 text-[var(--text-primary)]">
-                  {emp.handlesWhatsApp && <MessageSquare className="w-4 h-4 text-green-500" title="WhatsApp" />}
-                  {emp.handlesVoice && <Phone className="w-4 h-4 text-blue-500" title="Appels Vocaux" />}
+                  {emp.handlesWhatsApp && <MessageSquare className="w-4 h-4 text-green-500" />}
+                  {emp.handlesVoice && <Phone className="w-4 h-4 text-blue-500" />}
                   {!emp.handlesWhatsApp && !emp.handlesVoice && <span className="text-xs text-[var(--text-secondary)]">Aucun</span>}
                 </div>
               </div>

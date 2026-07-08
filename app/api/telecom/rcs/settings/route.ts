@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { agentId, messagingProfileId, aiAssistantId } = body;
+    const { agentId, messagingProfileId, aiEmployeeId } = body;
 
     // Optional: If linking profile to RCS Agent at Telnyx level
     if (agentId && messagingProfileId) {

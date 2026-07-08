@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     // 3. Ensure Vector Store exists
     let vectorStoreId = knowledgeBase.openaiVectorStoreId;
     if (!vectorStoreId) {
-      const vectorStore = await openai.beta.vectorStores.create({
+      const vectorStore = await (openai.beta as any).vectorStores.create({
         name: `KB_${organizationId}`
       });
       vectorStoreId = vectorStore.id;
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     });
 
     // 5. Attach File to Vector Store
-    await openai.beta.vectorStores.files.create(vectorStoreId, {
+    await (openai.beta as any).vectorStores.files.create(vectorStoreId, {
       file_id: openaiFile.id
     });
 
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
         tools: [{ type: "file_search" }],
         tool_resources: {
           file_search: {
-            vector_store_ids: [vectorStoreId]
+            vector_store_ids: [vectorStoreId as string]
           }
         }
       });

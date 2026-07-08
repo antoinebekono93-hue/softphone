@@ -14,8 +14,8 @@ export default async function CampaignsPage() {
   const campaigns = await prisma.campaign.findMany({
     where: { organizationId: session.user.organizationId },
     include: {
-      _count: { select: { contacts: true } },
-      contacts: {
+      _count: { select: { recipients: true } },
+      recipients: {
         select: { status: true }
       }
     },
@@ -55,9 +55,9 @@ export default async function CampaignsPage() {
         )}
         
         {campaigns.map(c => {
-          const total = c._count.contacts;
-          const answered = c.contacts.filter(contact => contact.status === 'ANSWERED').length;
-          const progress = total > 0 ? Math.round((c.contacts.filter(contact => contact.status !== 'PENDING').length / total) * 100) : 0;
+          const total = c._count.recipients;
+          const answered = c.recipients.filter((contact: any) => contact.status === 'ANSWERED').length;
+          const progress = total > 0 ? Math.round((c.recipients.filter((contact: any) => contact.status !== 'PENDING').length / total) * 100) : 0;
           
           return (
             <Card key={c.id}>

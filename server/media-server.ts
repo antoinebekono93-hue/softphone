@@ -26,6 +26,7 @@ wss.on('connection', (telnyxWs, req) => {
 
   let streamId: string | null = null;
   let callControlId: string | null = null;
+  let organizationId: string | null = null;
   let transcriptSegments: { role: string, text: string }[] = [];
   let isProcessingTranscript = false;
   
@@ -101,10 +102,10 @@ wss.on('connection', (telnyxWs, req) => {
             result = JSON.stringify({ success: true, message: "Escalade demandée avec succès." });
             // Here we could trigger a DB update or Pusher event just like in the WhatsApp webhook
           } else if (msg.name === 'verifier_stock') {
-            const { verifier_stock } = await import('./lib/tools/transactions.js');
+            const { verifier_stock } = await import('../lib/tools/transactions.js');
             result = await verifier_stock(args.sku_id);
           } else if (msg.name === 'create_payment_link') {
-            const { create_payment_link } = await import('./lib/tools/transactions.js');
+            const { create_payment_link } = await import('../lib/tools/transactions.js');
             result = await create_payment_link(args.sku_id, args.customer_email);
           } else if (msg.name === 'check_availability') {
             const { check_availability } = await import('../lib/tools/scheduling.js');
@@ -117,19 +118,19 @@ wss.on('connection', (telnyxWs, req) => {
             result = JSON.stringify(res);
           } else if (msg.name === 'generate_quote') {
             const { generate_quote } = await import('../lib/tools/sales.js');
-            const res = await generate_quote(organizationId, args);
+            const res = await generate_quote(organizationId as string, args);
             result = JSON.stringify(res);
           } else if (msg.name === 'generate_invoice') {
             const { generate_invoice } = await import('../lib/tools/sales.js');
-            const res = await generate_invoice(organizationId, args);
+            const res = await generate_invoice(organizationId as string, args);
             result = JSON.stringify(res);
           } else if (msg.name === 'create_support_ticket') {
             const { create_support_ticket } = await import('../lib/tools/support.js');
-            const res = await create_support_ticket(organizationId, args);
+            const res = await create_support_ticket(organizationId as string, args);
             result = JSON.stringify(res);
           } else if (msg.name === 'check_stock_and_price') {
             const { check_stock_and_price } = await import('../lib/tools/inventory.js');
-            const res = await check_stock_and_price(organizationId, args);
+            const res = await check_stock_and_price(organizationId as string, args);
             result = JSON.stringify(res);
           } else {
             result = JSON.stringify({ error: "Unknown function" });
@@ -205,7 +206,6 @@ wss.on('connection', (telnyxWs, req) => {
       // Decode client_state
       let agentPrompt = "You are a helpful virtual assistant.";
       let agentVoice = "alloy";
-      let organizationId: string | null = null;
       
       try {
         const customParamsBase64 = msg.start?.custom_parameters;
@@ -459,7 +459,7 @@ wss.on('connection', (telnyxWs, req) => {
         console.log(`[Transcript] Successfully saved transcript & summary for ${callControlId}`);
         
         // Trigger QA Evaluation (Async, without waiting)
-        const { evaluateCallQA } = await import('./lib/ai/qa-evaluator.js');
+        const { evaluateCallQA } = await import('../lib/ai/qa-evaluator.js');
         evaluateCallQA(updatedCall.id).catch(console.error);
 
       } catch (e) {

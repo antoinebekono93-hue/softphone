@@ -13,7 +13,7 @@ export async function getNumbers() {
     const numbers = await prisma.phoneNumber.findMany({
       where: { organizationId: session.user.organizationId },
       include: {
-        voiceAIAgent: true,
+        aiEmployee: true,
         assignedUser: true
       },
       orderBy: { createdAt: 'desc' }
