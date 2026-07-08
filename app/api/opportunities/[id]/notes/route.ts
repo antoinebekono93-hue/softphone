@@ -37,7 +37,9 @@ export async function POST(
       data: {
         content,
         opportunityId: opportunity.id,
-        contactId: opportunity.contactId
+        contactId: opportunity.contactId,
+        organizationId: session.user.organizationId,
+        authorId: session.user.id
       }
     });
 
