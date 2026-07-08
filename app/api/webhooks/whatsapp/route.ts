@@ -96,6 +96,65 @@ export async function POST(req: Request) {
         }
         // ----------------------------------------------
 
+        // --- NOUVEAU: GESTION CSAT (SPRINT 1) ---
+        if (contact.waitingForCsatTicketId) {
+            const csatValue = parseInt(body.trim());
+            if (!isNaN(csatValue) && csatValue >= 1 && csatValue <= 5) {
+                // Mettre à jour le ticket
+                await prisma.ticket.update({
+                    where: { id: contact.waitingForCsatTicketId },
+                    data: { csatScore: csatValue }
+                });
+                
+                // Enlever l'attente
+                await prisma.contact.update({
+                    where: { id: contact.id },
+                    data: { waitingForCsatTicketId: null }
+                });
+
+                // Enregistrer le message sortant pour la trace
+                await prisma.smsMessage.create({
+                  data: {
+                    telnyxMessageId: "csat-reply-" + Date.now(),
+                    direction: "OUTBOUND",
+                    body: "Merci beaucoup pour votre retour ! À bientôt.",
+                    status: "DELIVERED",
+                    type: "WHATSAPP",
+                    fromNumber: waAccount.phoneNumber,
+                    toNumber: fromNumber,
+                    organizationId: waAccount.organizationId,
+                    contactId: contact.id,
+                  }
+                });
+
+                // Envoyer un message de remerciement via Telnyx
+                await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      from: waAccount.phoneNumber,
+                      to: fromNumber,
+                      whatsapp_message: {
+                        type: 'text',
+                        text: { body: "Merci beaucoup pour votre retour ! À bientôt.", preview_url: false }
+                      }
+                    })
+                });
+                
+                return NextResponse.json({ success: true, csat: true });
+            } else {
+                // Si ce n'est pas un chiffre, on annule l'attente et on traite comme un message normal
+                await prisma.contact.update({
+                    where: { id: contact.id },
+                    data: { waitingForCsatTicketId: null }
+                });
+            }
+        }
+        // ----------------------------------------------
+
         // 4. INTELLIGENCE CRM : Mettre à jour le Pipeline de Ventes
         // Si le client répond, nous le faisons avancer dans le pipeline
         

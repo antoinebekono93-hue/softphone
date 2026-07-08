@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LifeBuoy, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import TicketActions from './TicketActions';
 
 export default async function SupportTicketsPage() {
   const session = await auth();
@@ -92,9 +93,11 @@ export default async function SupportTicketsPage() {
                   </div>
                   
                   <div className="mt-4 md:mt-0 flex-shrink-0">
-                    <button className="px-4 py-2 bg-black text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors">
-                      Prendre en charge
-                    </button>
+                    <TicketActions 
+                      ticketId={ticket.id} 
+                      status={ticket.status} 
+                      csatScore={ticket.csatScore} 
+                    />
                   </div>
                 </div>
               ))}

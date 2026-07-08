@@ -190,6 +190,7 @@ model Contact {
   openaiThreadId      String?              // Phase 5: ID du Thread conversationnel OpenAI
   escalationStatus    String               @default("NONE")     // NONE, REQUESTED, RESOLVED
   escalationReason    String?
+  waitingForCsatTicketId String?
   churnRiskScore      Int                  @default(0)          // Phase 6: Score de risque de churn (0-100)
   lifetimeValue       Float                @default(0.0)        // Phase 6: Valeur à vie du client
   aiSummary           String?              // Phase 4: Résumé IA des intéractions WhatsApp
@@ -801,6 +802,9 @@ model Ticket {
   description    String?      @db.Text
   status         String       @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
   priority       String       @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  csatScore      Int?         // 1 to 5
+  csatComment    String?      @db.Text
+  resolvedAt     DateTime?
   contactId      String
   organizationId String
   createdAt      DateTime     @default(now())
