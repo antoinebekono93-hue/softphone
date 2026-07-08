@@ -20,8 +20,8 @@ export default async function DashboardPage() {
   let org = null;
   let callsToday = 0;
   let smsToday = 0;
-  let openTickets = [];
-  let aiEmployees = [];
+  let openTickets: any[] = [];
+  let aiEmployees: any[] = [];
 
   try {
     const results = await Promise.all([
