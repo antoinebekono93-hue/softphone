@@ -50,22 +50,31 @@ export async function POST(req: Request) {
       }
     }
 
-    const settings = await prisma.rcsSettings.upsert({
-      where: { organizationId: session.user.organizationId },
-      create: {
-        organizationId: session.user.organizationId,
-        agentId,
-        messagingProfileId,
-        aiAssistantId
-      },
-      update: {
-        agentId,
-        messagingProfileId,
-        aiAssistantId
-      }
+    const existing = await prisma.rcsSettings.findUnique({
+      where: { organizationId: session.user.organizationId }
     });
 
-    return NextResponse.json(settings);
+    if (existing) {
+      const updated = await prisma.rcsSettings.update({
+        where: { id: existing.id },
+        data: {
+          agentId,
+          messagingProfileId,
+          aiEmployeeId
+        }
+      });
+      return NextResponse.json(updated);
+    } else {
+      const created = await prisma.rcsSettings.create({
+        data: {
+          organizationId: session.user.organizationId,
+          agentId,
+          messagingProfileId,
+          aiEmployeeId
+        }
+      });
+      return NextResponse.json(created);
+    }
   } catch (error: any) {
     console.error('RCS Settings Update Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

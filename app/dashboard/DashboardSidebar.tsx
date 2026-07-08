@@ -121,18 +121,10 @@ export function DashboardSidebar({
     ],
     ai: [
       {
-        title: "Employés Virtuels",
+        title: "Délégation de Support",
         items: [
-          { name: "Mes Agents Vocaux", href: "/dashboard/ai-agents", icon: Bot },
-          { name: "Mémoire & RAG", href: "/dashboard/rag-memory", icon: Brain },
+          { name: "Mon Équipe IA", href: "/dashboard/ai-team", icon: UsersRound },
           { name: "Playground IA", href: "/dashboard/ai-playground", icon: Terminal },
-        ]
-      },
-      {
-        title: "Outils Avancés",
-        items: [
-          { name: "Laboratoire Vocal", href: "/dashboard/voice-lab", icon: Sparkles },
-          { name: "Studio Vocal (TTS)", href: "/dashboard/tts", icon: Mic2 },
         ]
       }
     ]

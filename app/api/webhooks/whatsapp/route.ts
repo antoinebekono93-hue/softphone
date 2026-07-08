@@ -27,7 +27,16 @@ export async function POST(req: Request) {
           body = payloadInfo.interactive.list_reply.title;
         }
       }
-      if (!body) body = "Message média ou non supporté";
+      let isVoiceNote = false;
+      let audioUrl = null;
+
+      if (!body && payloadInfo.type === "audio") {
+        isVoiceNote = true;
+        audioUrl = payloadInfo.audio?.url;
+        body = "🎵 [Note Vocale reçue]"; // Temporary body
+      } else if (!body) {
+        body = "Message média ou non supporté";
+      }
       
       if (!fromNumber || !toNumber) {
         return NextResponse.json({ success: true });
@@ -131,12 +140,49 @@ export async function POST(req: Request) {
             const OpenAI = (await import('openai')).default;
             const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
             
-            // 1. Récupérer l'Assistant de l'Organisation
-            const assistant = await prisma.aIAssistant.findFirst({
-              where: { organizationId: waAccount.organizationId, isActive: true }
+            // 1. Récupérer l'Employé IA assigné à WhatsApp pour cette organisation
+            const employee = await prisma.aIEmployee.findFirst({
+              where: { 
+                organizationId: waAccount.organizationId, 
+                isActive: true,
+                handlesWhatsApp: true
+              }
             });
 
-            if (assistant && assistant.openaiId) {
+            if (employee && employee.openaiAssistantId) {
+              // --- GESTION DES NOTES VOCALES ---
+              if (isVoiceNote && audioUrl) {
+                console.log(`[RAG] Traitement de la note vocale: ${audioUrl}`);
+                try {
+                  // 1. Download Media
+                  const mediaRes = await fetch(audioUrl);
+                  const arrayBuffer = await mediaRes.arrayBuffer();
+                  
+                  // NOTE: En production avec FFmpeg (selon le CDCF) :
+                  // a. fs.writeFileSync('temp.ogg', Buffer.from(arrayBuffer))
+                  // b. execSync('ffmpeg -i temp.ogg -ar 16000 temp.wav')
+                  // c. const file = fs.createReadStream('temp.wav')
+                  
+                  // Pour OpenAI Whisper, on peut utiliser directement le fichier en simulant un nom
+                  const file = new File([arrayBuffer], 'audio.ogg', { type: 'audio/ogg' });
+                  
+                  const transcription = await openai.audio.transcriptions.create({
+                    file: file,
+                    model: 'whisper-1',
+                    language: employee.language.split('-')[0] // ex: 'fr'
+                  });
+                  
+                  if (transcription.text) {
+                    body = transcription.text;
+                    console.log(`[RAG] Whisper Transcription: ${body}`);
+                  }
+                } catch (e) {
+                  console.error("[RAG] Erreur Whisper transcription:", e);
+                  body = "Le client a envoyé une note vocale mais la transcription a échoué.";
+                }
+              }
+              // ---------------------------------
+              
               let threadId = contact.openaiThreadId;
               
               // 2. Créer un Thread si inexistant
@@ -149,21 +195,113 @@ export async function POST(req: Request) {
                 });
               }
 
+              // --- SMART DEBOUNCING (REDIS) ---
+              let finalMessage = body;
+              
+              try {
+                const { redis } = await import('@/lib/redis');
+                if (redis) {
+                  const bufferKey = `session:wa:${fromNumber}:buffer`;
+                  const lockKey = `session:wa:${fromNumber}:lock`;
+                  
+                  // Add message to ZSET with current timestamp
+                  const now = Date.now();
+                  await redis.zadd(bufferKey, { score: now, member: `${now}||${body}` });
+                  
+                  // Wait 5 seconds to group messages
+                  await new Promise(resolve => setTimeout(resolve, 5000));
+                  
+                  // Try to acquire lock to process
+                  const acquired = await redis.set(lockKey, "locked", { nx: true, ex: 10 });
+                  
+                  if (!acquired) {
+                    console.log(`[Debouncer] Un autre processus gère la rafale pour ${fromNumber}`);
+                    return NextResponse.json({ success: true });
+                  }
+
+                  // We have the lock, fetch all messages in buffer
+                  const messages = await redis.zrange(bufferKey, 0, -1);
+                  await redis.del(bufferKey); // Clear buffer
+                  
+                  if (messages && messages.length > 0) {
+                    // Sort by timestamp just in case
+                    const sorted = (messages as string[]).sort((a, b) => parseInt(a.split('||')[0]) - parseInt(b.split('||')[0]));
+                    finalMessage = sorted.map(m => m.split('||')[1]).join('\n');
+                    console.log(`[Debouncer] Fusion de ${messages.length} messages: ${finalMessage}`);
+                  }
+                }
+              } catch (err) {
+                console.error("[Debouncer] Redis error:", err);
+              }
+              // --------------------------------
+
               // 3. Ajouter le message de l'utilisateur au Thread
               await openai.beta.threads.messages.create(threadId, {
                 role: "user",
-                content: body
+                content: finalMessage
               });
 
               // 4. Lancer le run et attendre la fin
               const run = await openai.beta.threads.runs.createAndPoll(threadId, {
-                assistant_id: assistant.openaiId,
+                assistant_id: employee.openaiAssistantId,
                 // On peut surcharger les instructions ici si besoin, par exemple en injectant le nom du contact
                 additional_instructions: `Le client s'appelle ${contact.name || 'Client'}.`
               });
 
-              if (run.status === 'completed') {
-                const messages = await openai.beta.threads.messages.list(run.thread_id);
+              let currentRun = run;
+
+              // Handle tool calls for escalation
+              if (currentRun.status === 'requires_action' && currentRun.required_action?.type === 'submit_tool_outputs') {
+                const toolCalls = currentRun.required_action.submit_tool_outputs.tool_calls;
+                for (const toolCall of toolCalls) {
+                  if (toolCall.function.name === 'transfer_to_human') {
+                    const args = JSON.parse(toolCall.function.arguments);
+                    console.log(`[RAG] Escalade demandée. Raison: ${args.reason}`);
+
+                    // 1. Mettre à jour le contact (désactiver le bot)
+                    await prisma.contact.update({
+                      where: { id: contact.id },
+                      data: {
+                        botMode: false,
+                        escalationStatus: 'REQUESTED',
+                        escalationReason: args.reason
+                      }
+                    });
+
+                    // 2. Notifier le Dashboard (via Pusher)
+                    const pusher = (await import('@/lib/pusher')).pusherServer;
+                    await pusher.trigger(
+                      `org-${waAccount.organizationId}`,
+                      'contact-escalated',
+                      { contactId: contact.id, reason: args.reason, phone: contact.phone }
+                    );
+
+                    // 3. Informer le client et annuler le run OpenAI
+                    await openai.beta.threads.runs.cancel(threadId, currentRun.id);
+                    
+                    const telnyxRes = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        from: waAccount.phoneNumber,
+                        to: fromNumber,
+                        whatsapp_message: {
+                          type: 'text',
+                          text: { body: "J'ai bien noté votre demande. Je vous transfère immédiatement à mon responsable qui va prendre le relais.", preview_url: false }
+                        }
+                      })
+                    });
+
+                    return NextResponse.json({ success: true, escalated: true });
+                  }
+                }
+              }
+
+              if (currentRun.status === 'completed') {
+                const messages = await openai.beta.threads.messages.list(currentRun.thread_id);
                 // Le dernier message de l'assistant est le premier de la liste retournée (tri décroissant)
                 const lastMessageForRun = messages.data.find(m => m.role === 'assistant' && m.run_id === run.id);
                 
@@ -171,6 +309,36 @@ export async function POST(req: Request) {
                   const responseText = lastMessageForRun.content[0].text.value;
                   
                   // 5. Envoyer la réponse via Telnyx (comme si l'agent avait répondu)
+                  // On vérifie si le client nous a parlé à la voix pour lui répondre à la voix
+                  const shouldReplyWithVoice = isVoiceNote && employee.voiceId;
+                  
+                  let payloadData: any = {
+                    type: 'text',
+                    text: { body: responseText, preview_url: false }
+                  };
+
+                  if (shouldReplyWithVoice) {
+                    // Generate TTS via OpenAI
+                    const mp3 = await openai.audio.speech.create({
+                      model: "tts-1",
+                      voice: employee.voiceId as any,
+                      input: responseText,
+                    });
+                    const buffer = Buffer.from(await mp3.arrayBuffer());
+                    const base64Audio = buffer.toString('base64');
+                    // Upload to a temporary URL or use data URI if Telnyx supports it.
+                    // For WhatsApp Native Voice (PTT), Telnyx allows uploading media or providing a URL.
+                    // Assuming we have a public URL for the generated audio:
+                    // Here we mock the URL, but the payload structure respects the CDCF:
+                    payloadData = {
+                      type: 'audio',
+                      audio: {
+                        link: `data:audio/mpeg;base64,${base64Audio}`, // OR a public URL
+                        voice: true // The CDCF specifies this flag for Push-To-Talk
+                      }
+                    };
+                  }
+
                   const telnyxRes = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
                     method: 'POST',
                     headers: {
@@ -180,10 +348,7 @@ export async function POST(req: Request) {
                     body: JSON.stringify({
                       from: waAccount.phoneNumber,
                       to: fromNumber,
-                      whatsapp_message: {
-                        type: 'text',
-                        text: { body: responseText, preview_url: false }
-                      }
+                      whatsapp_message: payloadData
                     })
                   });
 

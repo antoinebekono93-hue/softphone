@@ -87,6 +87,8 @@ model Organization {
   businessRegistrationNumber String?
   kycDocumentUrl             String?
   kycStatus                  String              @default("UNVERIFIED")
+  calComApiKey               String?
+  calComEventId              String?
   tenantSettings             Json?
   automationRules            AutomationRule[]
   callLogs                   CallLog[]
@@ -106,8 +108,8 @@ model Organization {
   users                      User[]
   verificationLogs           VerificationLog[]
   verifyProfiles             VerifyProfile[]
-  aiAgents                   VoiceAIAgent[]
-  aiAssistants               AIAssistant[]
+  aiEmployees                AIEmployee[]
+  knowledgeBases             KnowledgeBase[]
   ecommerceStores            EcommerceStore[]
   carts                      Cart[]
   walletTransactions         WalletTransaction[]
@@ -115,6 +117,10 @@ model Organization {
   whatsappTemplates          WhatsAppTemplate[]
   whatsappFlows              WhatsAppFlow[]
   whatsappFlowEnrollments    WhatsAppFlowEnrollment[]
+  quotes                     Quote[]
+  invoices                   Invoice[]
+  tickets                    Ticket[]
+  products                   Product[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -153,7 +159,7 @@ model PhoneNumber {
   messagingProfile   MessagingProfile? @relation(fields: [messagingProfileId], references: [id])
   organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   smsMessages        SmsMessage[]
-  voiceAIAgent       VoiceAIAgent?
+  aiEmployee         AIEmployee?
 
   @@index([organizationId])
   @@index([number])
@@ -182,6 +188,8 @@ model Contact {
   isVip               Boolean              @default(false)
   botMode             Boolean              @default(false)      // Phase 5: Géré par l'IA Autonome RAG
   openaiThreadId      String?              // Phase 5: ID du Thread conversationnel OpenAI
+  escalationStatus    String               @default("NONE")     // NONE, REQUESTED, RESOLVED
+  escalationReason    String?
   churnRiskScore      Int                  @default(0)          // Phase 6: Score de risque de churn (0-100)
   lifetimeValue       Float                @default(0.0)        // Phase 6: Valeur à vie du client
   aiSummary           String?              // Phase 4: Résumé IA des intéractions WhatsApp
@@ -192,6 +200,9 @@ model Contact {
   opportunities       Opportunity[]
   sequenceEnrollments SequenceEnrollment[]
   whatsappFlowEnrollments WhatsAppFlowEnrollment[]
+  quotes              Quote[]
+  invoices            Invoice[]
+  tickets             Ticket[]
   smsMessages         SmsMessage[]
   groups              ContactGroup[]       @relation("ContactToContactGroup")
   assignedUserId      String?
@@ -225,6 +236,9 @@ model CallLog {
   duration            Int          @default(0)
   recordingUrl        String?
   transcriptionText   String?
+  transcript          Json?
+  qaScore             Int?
+  qaFeedback          String?
   aiSummary           String?
   organizationId      String
   userId              String?
@@ -315,23 +329,73 @@ model PlanFeature {
   @@index([pricingPlanId])
 }
 
-model VoiceAIAgent {
+model AIEmployee {
   id             String       @id @default(cuid())
   name           String
-  prompt         String
-  voice          String       @default("alloy")
+  jobTitle       String       @default("Agent de Support Client")
+  avatarUrl      String?
+  
+  // Personality & Brain
+  systemPrompt   String       @db.Text
+  voiceId        String       @default("alloy")
   language       String       @default("fr-FR")
+  
+  // Assigned Channels
+  handlesWhatsApp Boolean     @default(false)
+  handlesVoice    Boolean     @default(false)
+  handlesInstagram Boolean    @default(false)
+  
+  // Technical identifiers
+  openaiAssistantId  String?   
+  voicePhoneNumberId String?  @unique 
+  whatsappPhoneNumberId String? // Optional if we link specifically
+  
+  // Options
   isActive       Boolean      @default(true)
+  tacticalSilence Int         @default(4000)
+  greeting       String?
+  
   organizationId String
-  phoneNumberId  String?      @unique
+  knowledgeBaseId String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  greeting       String?
-  telnyxId       String?      @unique
+  
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  phoneNumber    PhoneNumber? @relation(fields: [phoneNumberId], references: [id])
+  voicePhoneNumber PhoneNumber? @relation(fields: [voicePhoneNumberId], references: [id])
+  knowledgeBase  KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id])
 
   @@index([organizationId])
+}
+
+model KnowledgeBase {
+  id                  String              @id @default(cuid())
+  name                String
+  openaiVectorStoreId String?
+  organizationId      String
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  documents           KnowledgeDocument[]
+  aiEmployees         AIEmployee[]
+
+  @@index([organizationId])
+}
+
+model KnowledgeDocument {
+  id              String        @id @default(cuid())
+  type            String        // 'FILE' or 'URL'
+  name            String
+  source          String        // URL string or Original filename
+  openaiFileId    String?
+  status          String        @default("PROCESSING") // PROCESSING, READY, FAILED
+  knowledgeBaseId String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
+
+  @@index([knowledgeBaseId])
 }
 
 model SimCard {
@@ -586,7 +650,7 @@ model RcsSettings {
   organizationId     String       @unique
   agentId            String?
   messagingProfileId String?
-  aiAssistantId      String?
+  aiEmployeeId       String?
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
   organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -634,19 +698,7 @@ model WhatsAppFlowEnrollment {
 // Phase 5 : E-Commerce & RAG
 // ==========================================
 
-model AIAssistant {
-  id             String       @id @default(cuid())
-  name           String
-  openaiId       String       // L'ID de l'assistant sur OpenAI (ex: asst_abc123)
-  instructions   String?      // Le prompt système pour le bot
-  isActive       Boolean      @default(true)
-  organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-}
+// Models related to E-Commerce & Stores
 
 model EcommerceStore {
   id             String       @id @default(cuid())
@@ -695,4 +747,90 @@ model CartItem {
   cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   @@index([cartId])
+}
+
+// ==========================================
+// Phase 8 : Ventes B2B (Devis & Factures)
+// ==========================================
+
+model Quote {
+  id             String       @id @default(cuid())
+  status         String       @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED
+  amount         Float        @default(0.0)
+  currency       String       @default("EUR")
+  description    String?
+  pdfUrl         String?
+  contactId      String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([contactId])
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  status         String       @default("DRAFT") // DRAFT, SENT, PAID, OVERDUE
+  amount         Float        @default(0.0)
+  currency       String       @default("EUR")
+  description    String?
+  pdfUrl         String?
+  contactId      String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([contactId])
+}
+
+// ==========================================
+// Phase 8 : Support B2B (Ticketing / Helpdesk)
+// ==========================================
+
+model Ticket {
+  id             String       @id @default(cuid())
+  title          String
+  description    String?      @db.Text
+  status         String       @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  priority       String       @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  contactId      String
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([status])
+}
+
+// ==========================================
+// Phase 8 : Inventaire (Catalogue & Stocks)
+// ==========================================
+
+model Product {
+  id             String       @id @default(cuid())
+  sku            String?
+  name           String
+  description    String?      @db.Text
+  price          Float        @default(0.0)
+  stockLevel     Int          @default(0)
+  organizationId String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([sku])
 }

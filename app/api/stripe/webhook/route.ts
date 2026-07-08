@@ -84,14 +84,15 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * After a successful checkout, activate the plan and provision Twilio.
+ * After a successful checkout, activate the plan and provision Twilio, or top up wallet.
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const organizationId = session.metadata?.organizationId;
   const plan = session.metadata?.plan as "STARTER" | "PRO" | "ENTERPRISE";
+  const type = session.metadata?.type;
 
-  if (!organizationId || !plan) {
-    console.error("[Stripe] Missing metadata in checkout session");
+  if (!organizationId) {
+    console.error("[Stripe] Missing organizationId in checkout session");
     return;
   }
 
@@ -101,19 +102,32 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!org) return;
 
-  // Update the organization
-  await prisma.organization.update({
-    where: { id: organizationId },
-    data: {
-      // Note: We leave pricingPlanId alone here or it should be mapped properly.
-      planStatus: "ACTIVE",
-      stripeSubscriptionId: session.subscription as string,
-    },
-  });
+  if (type === 'WALLET_TOPUP') {
+    const amountStr = session.metadata?.amount;
+    const amount = parseFloat(amountStr || '0');
+    
+    if (amount > 0) {
+      const { creditWallet } = await import('@/lib/billing');
+      await creditWallet(organizationId, amount, `Recharge Wallet via Stripe (Session: ${session.id})`);
+      console.log(`[Stripe] Organization ${organizationId} wallet topped up by ${amount}€`);
+    }
+    return;
+  }
 
-  console.log(
-    `[Stripe] Organization ${organizationId} activated with plan ${plan}`
-  );
+  if (plan) {
+    // Update the organization for plan subscription
+    await prisma.organization.update({
+      where: { id: organizationId },
+      data: {
+        planStatus: "ACTIVE",
+        stripeSubscriptionId: session.subscription as string,
+      },
+    });
+
+    console.log(
+      `[Stripe] Organization ${organizationId} activated with plan ${plan}`
+    );
+  }
 }
 
 /**

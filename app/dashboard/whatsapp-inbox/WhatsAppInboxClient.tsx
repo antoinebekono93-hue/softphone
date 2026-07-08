@@ -48,6 +48,10 @@ export default function UnifiedInboxClient({
     contacts.reduce((acc, c) => ({ ...acc, [c.id]: c.assignedUserId }), {})
   );
 
+  const [contactEscalations, setContactEscalations] = useState<Record<string, { status: string, reason: string | null, botMode: boolean }>>(
+    contacts.reduce((acc, c) => ({ ...acc, [c.id]: { status: c.escalationStatus || 'NONE', reason: c.escalationReason || null, botMode: c.botMode !== false } }), {})
+  );
+
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [contactSummaries, setContactSummaries] = useState<Record<string, string | null>>(
     contacts.reduce((acc, c) => ({ ...acc, [c.id]: c.aiSummary }), {})
@@ -70,6 +74,13 @@ export default function UnifiedInboxClient({
         setEvents(prev => prev.map(ev => 
           ev.id === data.messageId ? { ...ev, status: data.status } : ev
         ));
+      });
+
+      channel.bind('contact-escalated', (data: { contactId: string, reason: string, phone: string }) => {
+        setContactEscalations(prev => ({
+          ...prev,
+          [data.contactId]: { status: 'REQUESTED', reason: data.reason, botMode: false }
+        }));
       });
     });
 
@@ -228,19 +239,23 @@ export default function UnifiedInboxClient({
               const isSelected = contactNumber === number;
               const contactId = messages.find(m => m.contactId)?.contactId;
               const assignedUserId = contactId ? contactAssignments[contactId] : null;
-              const isHandledByBot = !assignedUserId;
+              const contactEscalation = contactId ? contactEscalations[contactId] : null;
+              const isHandledByBot = contactEscalation ? contactEscalation.botMode : !assignedUserId;
+              const isEscalated = contactEscalation?.status === 'REQUESTED';
 
               return (
                 <button
                   key={number}
                   onClick={() => setSelectedEventId(latestMessage.id)}
-                  className={`w-full text-left p-4 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex gap-3 ${isSelected ? 'bg-[var(--bg-surface-hover)] border-l-2 border-l-emerald-500' : 'border-l-2 border-l-transparent'}`}
+                  className={`w-full text-left p-4 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex gap-3 ${isSelected ? 'bg-[var(--bg-surface-hover)] border-l-2 border-l-emerald-500' : 'border-l-2 border-l-transparent'} ${isEscalated ? 'bg-red-500/5' : ''}`}
                 >
-                  <div className={`mt-1 p-2 rounded-full shrink-0 ${isHandledByBot ? 'bg-indigo-500/10' : 'bg-amber-500/10'}`}>
-                    {isHandledByBot ? (
-                       <Bot className="w-5 h-5 text-indigo-500" />
+                  <div className={`mt-1 p-2 rounded-full shrink-0 ${isEscalated ? 'bg-red-500/20 text-red-500' : isHandledByBot ? 'bg-indigo-500/10 text-indigo-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                    {isEscalated ? (
+                       <AlertCircle className="w-5 h-5" />
+                    ) : isHandledByBot ? (
+                       <Bot className="w-5 h-5" />
                     ) : (
-                       <User className="w-5 h-5 text-amber-500" />
+                       <User className="w-5 h-5" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -280,12 +295,17 @@ export default function UnifiedInboxClient({
                    <User className="w-6 h-6 text-gray-500 dark:text-gray-300" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                     {contactNumber}
+                    {currentContactId && contactEscalations[currentContactId]?.status === 'REQUESTED' && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 font-bold animate-pulse">
+                        <AlertCircle className="w-3 h-3" /> Escalade Requise
+                      </span>
+                    )}
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${!currentAssignedUserId ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400'}`}>
-                      {!currentAssignedUserId ? <><Bot className="w-3 h-3" /> Géré par Bot</> : <><User className="w-3 h-3" /> Géré par Humain</>}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${currentContactId && contactEscalations[currentContactId]?.botMode ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-400'}`}>
+                      {currentContactId && contactEscalations[currentContactId]?.botMode ? <><Bot className="w-3 h-3" /> Géré par Bot</> : <><User className="w-3 h-3" /> Géré par Humain</>}
                     </span>
                   </div>
                 </div>
@@ -310,7 +330,7 @@ export default function UnifiedInboxClient({
                       disabled={isAssigning}
                       className="pl-9 pr-3 py-2 bg-white dark:bg-[#2a3942] border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white rounded-lg text-sm font-medium focus:outline-none focus:ring-1 focus:ring-emerald-500 appearance-none cursor-pointer hover:bg-gray-50 dark:hover:bg-[#324550] transition-colors shadow-sm"
                     >
-                      <option value="">Géré par le Bot</option>
+                      <option value="">Bot uniquement</option>
                       {teamMembers.map(tm => (
                          <option key={tm.id} value={tm.id}>{tm.name || tm.email}</option>
                       ))}
@@ -319,6 +339,20 @@ export default function UnifiedInboxClient({
                 </div>
               )}
             </div>
+
+            {/* Escalation Alert */}
+            {currentContactId && contactEscalations[currentContactId]?.status === 'REQUESTED' && (
+              <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800 p-4 shrink-0 flex items-center justify-between">
+                <div>
+                  <h4 className="text-red-800 dark:text-red-400 font-bold flex items-center gap-2 text-sm">
+                    <AlertCircle className="w-4 h-4" /> L'Employé IA a demandé une intervention humaine
+                  </h4>
+                  <p className="text-red-600 dark:text-red-300 text-sm mt-1">
+                    Raison : "{contactEscalations[currentContactId].reason}"
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Chat Content */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative z-0 flex flex-col" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundRepeat: 'repeat', opacity: 0.9 }}>
@@ -467,10 +501,36 @@ export default function UnifiedInboxClient({
                    <Send className="w-5 h-5 ml-1" />
                  </button>
                </div>
-               {!currentAssignedUserId && (
-                 <div className="mt-2 text-center text-xs text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1">
-                   <AlertCircle className="w-3 h-3" />
-                   Attention : Si vous répondez, prenez le relais pour mettre en pause le Bot.
+               {currentContactId && !contactEscalations[currentContactId]?.botMode ? (
+                 <div className="mt-4 flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                   <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                     L'IA est actuellement en pause.
+                   </p>
+                   <button 
+                     onClick={async () => {
+                        try {
+                          await fetch('/api/whatsapp/escalation/resolve', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contactId: currentContactId })
+                          });
+                          setContactEscalations(prev => ({
+                            ...prev,
+                            [currentContactId]: { status: 'NONE', reason: null, botMode: true }
+                          }));
+                        } catch (e) {
+                          alert("Erreur lors de la réactivation");
+                        }
+                     }}
+                     className="text-xs font-bold bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors"
+                   >
+                     Résoudre et réactiver l'IA
+                   </button>
+                 </div>
+               ) : (
+                 <div className="mt-2 text-center text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-1">
+                   <Bot className="w-3 h-3" />
+                   L'IA répond automatiquement à ce contact.
                  </div>
                )}
             </div>

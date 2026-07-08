@@ -39,7 +39,7 @@ export default async function WhatsAppInboxPage() {
     // Fetch contacts to get their assignment status and AI Summary
     const contacts = await prisma.contact.findMany({
       where: { organizationId: orgId },
-      select: { id: true, phone: true, name: true, assignedUserId: true, aiSummary: true }
+      select: { id: true, phone: true, name: true, assignedUserId: true, aiSummary: true, botMode: true, escalationStatus: true, escalationReason: true }
     });
 
     // Fetch team members

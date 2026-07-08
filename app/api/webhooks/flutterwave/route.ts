@@ -11,11 +11,18 @@ export async function POST(req: Request) {
   const payload = await req.json();
 
   if (payload.event === 'charge.completed' && payload.data.status === 'successful') {
-    // tx_ref contains topup-{orgId}-{timestamp}
+    // tx_ref contains topup-{orgId}-{timestamp} or WALLET_TOPUP_{orgId}_{timestamp}_{hash}
     const txRef = payload.data.tx_ref;
-    if (txRef && txRef.startsWith('topup-')) {
-      const parts = txRef.split('-');
-      const orgId = parts[1];
+    if (txRef && (txRef.startsWith('topup-') || txRef.startsWith('WALLET_TOPUP_'))) {
+      let orgId = '';
+      if (txRef.startsWith('topup-')) {
+        const parts = txRef.split('-');
+        orgId = parts[1];
+      } else if (txRef.startsWith('WALLET_TOPUP_')) {
+        const parts = txRef.split('_');
+        orgId = parts[2];
+      }
+      
       const amountPaid = payload.data.amount;
 
       if (orgId && amountPaid > 0) {
@@ -23,25 +30,12 @@ export async function POST(req: Request) {
         // Since we don't have a transaction ID unique field in WalletTransaction,
         // we'll just check if a transaction with this description/txRef exists (approximate)
         const existing = await prisma.walletTransaction.findFirst({
-          where: { description: `Flutterwave Top-up: ${txRef}` }
+          where: { description: { contains: txRef } }
         });
 
         if (!existing) {
-          await prisma.organization.update({
-            where: { id: orgId },
-            data: {
-              walletBalance: { increment: amountPaid }
-            }
-          });
-
-          await prisma.walletTransaction.create({
-            data: {
-              amount: amountPaid,
-              type: 'CREDIT',
-              description: `Flutterwave Top-up: ${txRef}`,
-              organizationId: orgId
-            }
-          });
+          const { creditWallet } = await import('@/lib/billing');
+          await creditWallet(orgId, amountPaid, `Flutterwave Top-up: ${txRef}`);
         }
       }
     }

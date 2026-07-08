@@ -25,7 +25,7 @@ async function processEvent(event: any) {
       if (direction === 'incoming') {
         const phoneNumber = await prisma.phoneNumber.findUnique({
           where: { number: to },
-          include: { voiceAIAgent: true }
+          include: { aiEmployee: true }
         });
 
         if (phoneNumber) {
@@ -42,7 +42,7 @@ async function processEvent(event: any) {
           });
 
           // If there is an active AI Agent assigned to this number, take over the call
-          if (phoneNumber.voiceAIAgent && phoneNumber.voiceAIAgent.isActive) {
+          if (phoneNumber.aiEmployee && phoneNumber.aiEmployee.isActive) {
             const call = new telnyx.Call({ call_control_id: callControlId });
             await call.answer({ command_id: crypto.randomUUID() });
           }
@@ -58,10 +58,10 @@ async function processEvent(event: any) {
       // Fetch the call log to see if this call has an AI Agent assigned
       const callLog = await prisma.callLog.findUnique({
         where: { telnyxCallControlId: callControlId },
-        include: { phoneNumber: { include: { voiceAIAgent: true } } }
+        include: { phoneNumber: { include: { aiEmployee: true } } }
       });
 
-      const agent = callLog?.phoneNumber?.voiceAIAgent;
+      const agent = callLog?.phoneNumber?.aiEmployee;
 
       // Only start streaming if there's an active AI Agent
       // Only start streaming if there's an active AI Agent
@@ -77,7 +77,7 @@ async function processEvent(event: any) {
         // LiveKit will receive these headers when the SIP call arrives
         const customHeaders = [
           { name: "X-Agent-Name", value: Buffer.from(agent.name).toString('base64') },
-          { name: "X-Agent-Voice", value: agent.voice },
+          { name: "X-Agent-Voice", value: agent.voiceId },
           { name: "X-Organization-Id", value: callLog?.organizationId || "" },
           { name: "X-Call-Log-Id", value: callLog?.id || "" }
           // We don't send the full prompt in headers because SIP headers have size limits (usually ~1KB max).
@@ -159,10 +159,10 @@ async function processEvent(event: any) {
       if (finalStatus === 'NO_ANSWER' && callLog?.contactId && callLog?.phoneNumberId) {
         const phoneNumber = await prisma.phoneNumber.findUnique({
           where: { id: callLog.phoneNumberId },
-          include: { voiceAIAgent: true }
+          include: { aiEmployee: true }
         });
 
-        if (phoneNumber?.voiceAIAgent) {
+        if (phoneNumber?.aiEmployee) {
           const rule = await prisma.automationRule.findFirst({
             where: {
               organizationId: callLog.organizationId,

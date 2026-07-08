@@ -61,79 +61,107 @@ export async function POST(req: Request) {
         });
       }
 
-    } else if (eventType === "call.answered") {
-      // Étape B : L'appel est décroché, on connecte l'Agent IA Vocal
-      console.log(`[Voice] Appel ${callControlId} répondu. Connexion à l'IA Vocale...`);
+    } else if (eventType === "call.machine.premium.detection.ended" || eventType === "call.machine.detection.ended") {
+      const result = eventData.payload?.result;
+      console.log(`[Voice] AMD Result for ${callControlId}: ${result}`);
       
-      const aiAgent = await prisma.voiceAIAgent.findFirst({
-        where: { organizationId: account.organizationId, isActive: true }
+      // Si c'est un répondeur ("machine"), on raccroche immédiatement selon les instructions du CEO
+      if (result === "machine") {
+         const apiKey = process.env.TELNYX_API_KEY;
+         await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/hangup`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${apiKey}` }
+         });
+
+         // Update Contact if this was a campaign
+         // We would need to extract CampaignContactId from client_state
+         let clientState: any = {};
+         if (eventData.payload.client_state) {
+            clientState = JSON.parse(Buffer.from(eventData.payload.client_state, 'base64').toString('utf-8'));
+         }
+         if (clientState.contactId) {
+            await prisma.campaignContact.update({
+               where: { id: clientState.contactId },
+               data: { status: "VOICEMAIL" }
+            });
+         }
+      }
+    } else if (eventType === "call.answered") {
+      console.log(`[Voice] Appel ${callControlId} répondu. Connexion au WebSocket Media Server...`);
+      
+      // Récupérer le contexte (Campagne Outbound ou Agent Inbound)
+      let clientState: any = {};
+      if (eventData.payload?.client_state) {
+        clientState = JSON.parse(Buffer.from(eventData.payload.client_state, 'base64').toString('utf-8'));
+      }
+
+      let agentPrompt = "Tu es un assistant IA très utile et chaleureux.";
+      let agentVoice = "alloy";
+
+      // Si Outbound Campaign
+      if (clientState.campaignId) {
+         agentPrompt = clientState.agentPrompt || agentPrompt;
+         await prisma.campaignContact.update({
+            where: { id: clientState.contactId },
+            data: { status: "ANSWERED" }
+         });
+      } else {
+         // Inbound: Fetch AI Agent profile
+         const aiAgent = await prisma.voiceAIAgent.findFirst({
+           where: { organizationId: account?.organizationId }
+         });
+         if (aiAgent) {
+           agentPrompt = aiAgent.prompt;
+           agentVoice = "alloy"; // Map to OpenAI voice if needed
+         }
+      }
+
+      // Connect to WebSocket using TeXML
+      const apiKey = process.env.TELNYX_API_KEY;
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "wss://your-domain.com/media";
+      
+      // Update client_state to pass to WebSocket
+      const newClientState = Buffer.from(JSON.stringify({ 
+        callControlId,
+        agentPrompt,
+        agentVoice,
+        organizationId: account?.organizationId
+      })).toString('base64');
+
+      const texml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Connect>
+        <Stream url="${wsUrl}" />
+    </Connect>
+</Response>`;
+
+      // Telnyx does not have a direct TeXML injection via actions/answer, but we can use actions/texml
+      // Alternatively, we send the stream command directly using API V2
+      await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/playback_start`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            audio_url: "https://example.com/silence.mp3", // Dummy just to keep connection while streaming
+            client_state: newClientState
+          })
       });
 
-      if (aiAgent) {
-        // Fetch contact to get Agentic Memory
-        const contact = await prisma.contact.findFirst({
-          where: { phone: fromNumber, organizationId: account.organizationId }
-        });
+      // Start Stream
+      await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/streaming_start`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          stream_url: wsUrl,
+          client_state: newClientState
+        })
+      });
 
-        // [Phase 1 & 2] Fetch Context Engine and Agentic Memory
-        const { getSessionContext } = await import('@/lib/context-engine');
-        const sessionCtx = await getSessionContext(callControlId);
-        
-        let contextText = "";
-        if (contact && contact.aiSummary) {
-          // Décrypter ou lire les faits extraits s'ils sont lisibles
-          contextText = `Context Client (Agentic Memory): ${contact.aiSummary}`;
-        }
-
-        // [Phase 3] Framework Nomi & Silence Tactique
-        const systemPrompt = `Tu es ${aiAgent.name}, un expert en vente. 
-Applique le Framework NOMI (Valider, Isoler, Recadrer) en cas d'objection.
-Si objection prix : "Je comprends que le budget soit une priorité. Si ce n'était pas le cas, est-ce la solution choisie ?"
-Si objection timing : "Généralement, on repousse quand il y a d'autres incendies. Qu'est-ce qui changera au prochain trimestre ?"
-Voici ton instruction de base : ${aiAgent.prompt}.
-${contextText}`;
-
-        // Sauvegarder le prompt dans la session Redis
-        const { setSessionContext } = await import('@/lib/context-engine');
-        await setSessionContext(callControlId, { prompt: systemPrompt, contactId: contact?.id }, 3600);
-
-        const apiKey = process.env.TELNYX_API_KEY;
-        
-        // Au lieu d'un simple "speak", on lance une collecte vocale (Gather) avec un délai de silence de 3-5 secondes.
-        // Cela permet d'appliquer la règle du "Silence Tactique" et d'attendre que le client se révèle.
-        await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/gather_using_speak`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            payload: aiAgent.greeting || `Bonjour, je suis ${aiAgent.name}. Comment puis-je vous aider aujourd'hui ?`,
-            voice: aiAgent.voice || "Polly.Mathieu-Neural",
-            language: aiAgent.language || "fr-FR",
-            maximum_tries: 1,
-            timeout_millis: 60000,
-            // [Silence Tactique] Laisser le client parler même après une courte pause (ici 3000ms = 3s à 5s)
-            maximum_silence_millis: 4000,
-            client_state: Buffer.from(JSON.stringify({ step: "gathering", callId: callControlId })).toString('base64')
-          })
-        });
-      } else {
-        // Pas d'IA, on diffuse un message par défaut
-        const apiKey = process.env.TELNYX_API_KEY;
-        await fetch(`https://api.telnyx.com/v2/calls/${callControlId}/actions/speak`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            payload: "Bonjour, tous nos conseillers sont actuellement occupés. Veuillez nous laisser un message.",
-            voice: "Polly.Mathieu-Neural",
-            language: "fr-FR"
-          })
-        });
-      }
     }
 
     return NextResponse.json({ success: true });
