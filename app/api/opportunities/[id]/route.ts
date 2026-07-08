@@ -23,11 +23,11 @@ export async function GET(
         contact: {
           include: {
             callLogs: {
-              orderBy: { createdAt: 'desc' },
+              orderBy: { startedAt: 'desc' },
               take: 5
             },
-            messages: {
-              orderBy: { createdAt: 'desc' },
+            smsMessages: {
+              orderBy: { sentAt: 'desc' },
               take: 5
             }
           }
