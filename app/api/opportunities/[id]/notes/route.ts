@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -12,10 +12,12 @@ export async function POST(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const resolvedParams = await params;
+
     // Verify opportunity ownership
     const opportunity = await prisma.opportunity.findUnique({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         organizationId: session.user.organizationId
       }
     });

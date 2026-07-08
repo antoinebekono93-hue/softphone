@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -12,9 +12,11 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const resolvedParams = await params;
+
     const opportunity = await prisma.opportunity.findUnique({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         organizationId: session.user.organizationId
       },
       include: {
@@ -50,7 +52,7 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -61,9 +63,11 @@ export async function PATCH(
     const body = await req.json();
     const { name, expectedRevenue, stage } = body;
 
+    const resolvedParams = await params;
+
     const opportunity = await prisma.opportunity.update({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         organizationId: session.user.organizationId
       },
       data: {
@@ -82,7 +86,7 @@ export async function PATCH(
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -90,9 +94,11 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const resolvedParams = await params;
+
     await prisma.opportunity.delete({
       where: {
-        id: params.id,
+        id: resolvedParams.id,
         organizationId: session.user.organizationId
       }
     });

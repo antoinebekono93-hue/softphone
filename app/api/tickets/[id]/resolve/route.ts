@@ -5,7 +5,7 @@ import { executeAutomation } from "@/lib/automations";
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -13,7 +13,8 @@ export async function POST(
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const ticketId = params.id;
+    const resolvedParams = await params;
+    const ticketId = resolvedParams.id;
 
     // Récupérer le ticket et le contact associé
     const ticket = await prisma.ticket.findUnique({
