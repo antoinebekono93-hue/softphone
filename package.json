@@ -37,6 +37,7 @@
     "pusher-js": "^8.5.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-hot-toast": "^2.6.0",
     "recharts": "^3.9.1",
     "sonner": "^2.0.7",
     "stripe": "^22.3.0",
