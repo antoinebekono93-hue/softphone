@@ -213,6 +213,8 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
         name: "",
         jobTitle: "",
         systemPrompt: "",
+        templateId: "",
+        selectedTone: "",
         voiceId: "alloy",
         handlesWhatsApp: false,
         handlesVoice: false,
