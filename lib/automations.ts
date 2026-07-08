@@ -103,6 +103,15 @@ export async function executeAutomation(organizationId: string, triggerType: str
         }
         else if (rule.actionType === "CREATE_OPPORTUNITY") {
           // Créer une opportunité dans le CRM avec une note interne
+          const systemUser = await prisma.user.findFirst({
+            where: { organizationId: organizationId }
+          });
+          
+          if (!systemUser) {
+             console.error("[AUTOMATION] Impossible de créer une note interne d'opportunité: aucun utilisateur trouvé.");
+             continue;
+          }
+
           await prisma.opportunity.create({
             data: {
               name: `Opportunité: ${contact.name || contact.phone}`,
@@ -113,7 +122,9 @@ export async function executeAutomation(organizationId: string, triggerType: str
               internalNotes: {
                 create: {
                   content: `Créé automatiquement par la règle d'automatisation: "${rule.name}" (Déclencheur: ${triggerType}).`,
-                  contactId: contact.id
+                  contactId: contact.id,
+                  organizationId: organizationId,
+                  authorId: systemUser.id
                 }
               }
             }
