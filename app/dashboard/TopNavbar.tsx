@@ -27,7 +27,7 @@ export function TopNavbar({
     { id: "phone", name: "Téléphone", icon: Phone, href: "/dashboard" },
     { id: "sms", name: "SMS", icon: MessageSquare, href: "/dashboard/sms" },
     { id: "whatsapp", name: "WhatsApp", icon: MessageCircle, href: "/dashboard/whatsapp-campaigns" },
-    { id: "ai", name: "IA & Agents", icon: Bot, href: "/dashboard/ai-agents" },
+    { id: "ai", name: "IA & Agents", icon: Bot, href: "/dashboard/ai-team" },
   ];
 
   return (
