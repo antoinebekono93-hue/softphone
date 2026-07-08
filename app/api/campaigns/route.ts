@@ -20,13 +20,26 @@ export async function POST(req: Request) {
       data: {
         organizationId: session.user.organizationId,
         name,
-        agentPrompt,
+        body: agentPrompt,
         status: "RUNNING", // Starts immediately
-        contacts: {
-          create: contacts.map(c => ({
-            name: c.name,
-            phone: c.phone,
-            status: "PENDING"
+        recipients: {
+          create: contacts.map((c: any) => ({
+            status: "PENDING",
+            contact: {
+              connectOrCreate: {
+                where: {
+                  organizationId_phone: {
+                    organizationId: session.user.organizationId,
+                    phone: c.phone
+                  }
+                },
+                create: {
+                  organizationId: session.user.organizationId,
+                  name: c.name,
+                  phone: c.phone
+                }
+              }
+            }
           }))
         }
       }
