@@ -59,13 +59,10 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
   const handleSelectTemplate = (template: any) => {
     setSelectedTemplate(template);
     setFormData({
+      ...formData,
       name: template.name,
       jobTitle: template.jobTitle,
-      systemPrompt: template.systemPrompt,
-      voiceId: "alloy",
-      handlesWhatsApp: false,
-      handlesVoice: false,
-      handlesSms: false,
+      systemPrompt: template.systemPrompt
     });
     setView('configure');
   };
@@ -76,18 +73,24 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
       const res = await fetch("/api/ai-employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(formData)
       });
-
-      if (!res.ok) throw new Error("Erreur lors de la création");
-      
-      const newEmployee = await res.json();
-      setEmployees([newEmployee, ...employees]);
+      if (!res.ok) throw new Error("Failed to create AI employee");
+      const newEmp = await res.json();
+      setEmployees([newEmp, ...employees]);
+      toast.success("Agent recruté avec succès !", { id: toastId });
       setView('list');
-      toast.success("Employé IA recruté avec succès !", { id: toastId });
+      setFormData({
+        name: "",
+        jobTitle: "",
+        systemPrompt: "",
+        voiceId: "alloy",
+        handlesWhatsApp: false,
+        handlesVoice: false,
+      });
       router.refresh();
-    } catch (e: any) {
-      toast.error(e.message);
+    } catch (error) {
+      toast.error("Erreur lors de la création");
     }
   };
 
@@ -100,34 +103,37 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
             {view === 'catalog' && "Catalogue d'Agents IA"}
             {view === 'configure' && "Configuration de l'Agent"}
           </h2>
-          {view === 'catalog' && <p className="text-sm text-[var(--text-secondary)] mt-1">Choisissez un profil pré-configuré pour rejoindre votre équipe.</p>}
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            {view === 'list' && "Gérez vos employés virtuels actuels."}
+            {view === 'catalog' && "Choisissez un profil adapté à vos besoins."}
+            {view === 'configure' && "Personnalisez les paramètres de votre agent."}
+          </p>
         </div>
 
         <div className="flex gap-3">
           <button 
             onClick={() => setIsKnowledgeModalOpen(true)}
-            className="flex items-center gap-2 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-4 py-2 rounded-xl font-medium hover:bg-[var(--bg-base)] transition-colors"
+            className="flex items-center gap-2 bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-4 py-2 rounded-xl font-medium hover:bg-[var(--bg-base)] transition-opacity"
           >
-            <Brain className="w-5 h-5" />
-            Base de Connaissances
+            <Brain className="w-5 h-5 text-purple-500" />
+            Base de connaissances
           </button>
           
           {view === 'list' && (
             <button 
               onClick={() => setView('catalog')}
-              className="flex items-center gap-2 bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-2 bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-4 py-2 rounded-xl font-medium shadow-sm hover:opacity-90 transition-opacity"
             >
               <Plus className="w-5 h-5" />
-              Recruter un Employé
+              Recruter un agent
             </button>
           )}
           
-          {(view === 'catalog' || view === 'configure') && (
+          {view !== 'list' && (
             <button 
               onClick={() => setView('list')}
-              className="flex items-center gap-2 bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-4 py-2 rounded-xl font-medium hover:bg-[var(--bg-base)] transition-opacity"
+              className="flex items-center gap-2 bg-[var(--bg-base)] text-[var(--text-secondary)] px-4 py-2 rounded-xl font-medium hover:text-[var(--text-primary)] transition-opacity border border-[var(--border-subtle)]"
             >
-              <ArrowLeft className="w-5 h-5" />
               Retour à l'équipe
             </button>
           )}
@@ -237,16 +243,6 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                   <input type="checkbox" checked={formData.handlesVoice} onChange={e => setFormData({...formData, handlesVoice: e.target.checked})} className="w-5 h-5 rounded border-[var(--border-subtle)] text-blue-500 focus:ring-blue-500" />
                 </div>
                 <span className={`font-medium ${formData.handlesVoice ? 'text-blue-600 dark:text-blue-400' : 'text-[var(--text-primary)]'}`}>Appels Vocaux</span>
-              </label>
-
-              <label className={`flex flex-col gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${formData.handlesSms ? 'border-amber-500 bg-amber-500/5' : 'border-[var(--border-subtle)] hover:border-[var(--text-secondary)]'}`}>
-                <div className="flex justify-between items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.handlesSms ? 'bg-amber-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-secondary)]'}`}>
-                    <MessageSquare className="w-5 h-5" />
-                  </div>
-                  <input type="checkbox" checked={formData.handlesSms} onChange={e => setFormData({...formData, handlesSms: e.target.checked})} className="w-5 h-5 rounded border-[var(--border-subtle)] text-amber-500 focus:ring-amber-500" />
-                </div>
-                <span className={`font-medium ${formData.handlesSms ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-primary)]'}`}>SMS</span>
               </label>
             </div>
           </div>

@@ -218,7 +218,6 @@ export async function POST(req: Request) {
         language: language || 'fr-FR',
         handlesWhatsApp: !!handlesWhatsApp,
         handlesVoice: !!handlesVoice,
-        handlesSms: !!handlesSms,
         handlesInstagram: !!handlesInstagram,
         voicePhoneNumberId: voicePhoneNumberId || null,
         isActive: true,

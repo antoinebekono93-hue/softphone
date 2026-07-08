@@ -343,7 +343,6 @@ model AIEmployee {
   // Assigned Channels
   handlesWhatsApp Boolean     @default(false)
   handlesVoice    Boolean     @default(false)
-  handlesSms      Boolean     @default(false)
   handlesInstagram Boolean    @default(false)
   
   // Technical identifiers
