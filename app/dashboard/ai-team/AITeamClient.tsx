@@ -45,7 +45,6 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
   const [view, setView] = useState<'list' | 'catalog' | 'configure'>('list');
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
-  
   const [formData, setFormData] = useState({
     name: "",
     jobTitle: "",
@@ -53,7 +52,6 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
     voiceId: "alloy",
     handlesWhatsApp: false,
     handlesVoice: false,
-    handlesSms: false,
   });
 
   const handleSelectTemplate = (template: any) => {
