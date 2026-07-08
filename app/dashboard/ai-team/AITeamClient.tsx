@@ -1,28 +1,78 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Bot, Phone, MessageSquare, Briefcase, Settings2, Trash2, Brain } from "lucide-react";
+import { Plus, Bot, Phone, MessageSquare, Briefcase, Settings2, Trash2, Brain, Headset, Calendar, Sparkles, MessageCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import KnowledgeBaseModal from "./KnowledgeBaseModal";
 
+const AI_TEMPLATES = [
+  {
+    id: "support",
+    name: "Emma",
+    jobTitle: "Agent de Support Client",
+    icon: Headset,
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
+    skills: ["Empathie et écoute", "Résolution de problèmes", "Recherche dans la base de connaissances"],
+    systemPrompt: "Tu es Emma, une agente de support client chaleureuse et professionnelle. Ta mission principale est d'aider les clients à résoudre leurs problèmes rapidement. Règle n°1 : Sois toujours polie et rassurante. Règle n°2 : Utilise la base de connaissances pour trouver des réponses précises. Règle n°3 : Si tu ne peux pas résoudre le problème, propose gentiment d'escalader la demande à un humain."
+  },
+  {
+    id: "sales",
+    name: "Lucas",
+    jobTitle: "Commercial B2B",
+    icon: Briefcase,
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
+    skills: ["Qualification de leads", "Génération de devis", "Négociation et vente croisée"],
+    systemPrompt: "Tu es Lucas, un commercial B2B dynamique et persuasif. Ton objectif est de qualifier les prospects et de conclure des ventes. Règle n°1 : Pose des questions ouvertes pour comprendre les besoins du client. Règle n°2 : Mets en avant les bénéfices de nos produits. Règle n°3 : N'invente jamais de prix, vérifie toujours dans le catalogue. Règle n°4 : Propose de générer un devis dès que le client montre un intérêt d'achat."
+  },
+  {
+    id: "appointment",
+    name: "Chloé",
+    jobTitle: "Assistante Agenda",
+    icon: Calendar,
+    color: "text-purple-500",
+    bgColor: "bg-purple-500/10",
+    skills: ["Prise de rendez-vous", "Gestion des disponibilités", "Rappels amicaux"],
+    systemPrompt: "Tu es Chloé, une assistante de direction virtuelle experte en gestion d'agenda. Ton rôle est de faciliter la prise de rendez-vous pour les clients. Règle n°1 : Sois concise et claire sur les disponibilités. Règle n°2 : Demande toujours confirmation avant de bloquer un créneau. Règle n°3 : Ne propose pas plus de deux options de date/heure à la fois pour ne pas surcharger le client."
+  }
+];
+
 export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappAccounts }: any) {
   const router = useRouter();
   const [employees, setEmployees] = useState(initialEmployees);
-  const [isCreating, setIsCreating] = useState(false);
+  const [view, setView] = useState<'list' | 'catalog' | 'configure'>('list');
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
-    jobTitle: "Agent de Support Client",
-    systemPrompt: "Tu es un agent de support chaleureux. Règle n°1: toujours saluer le client.",
+    jobTitle: "",
+    systemPrompt: "",
     voiceId: "alloy",
     handlesWhatsApp: false,
     handlesVoice: false,
+    handlesSms: false,
   });
+
+  const handleSelectTemplate = (template: any) => {
+    setSelectedTemplate(template);
+    setFormData({
+      name: template.name,
+      jobTitle: template.jobTitle,
+      systemPrompt: template.systemPrompt,
+      voiceId: "alloy",
+      handlesWhatsApp: false,
+      handlesVoice: false,
+      handlesSms: false,
+    });
+    setView('configure');
+  };
 
   const handleCreate = async () => {
     try {
+      const toastId = toast.loading("Recrutement en cours...");
       const res = await fetch("/api/ai-employees", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,8 +83,8 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
       
       const newEmployee = await res.json();
       setEmployees([newEmployee, ...employees]);
-      setIsCreating(false);
-      toast.success("Employé IA recruté !");
+      setView('list');
+      toast.success("Employé IA recruté avec succès !", { id: toastId });
       router.refresh();
     } catch (e: any) {
       toast.error(e.message);
@@ -44,7 +94,15 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-[var(--text-primary)]">Membres de l'équipe ({employees.length})</h2>
+        <div>
+          <h2 className="text-xl font-bold text-[var(--text-primary)]">
+            {view === 'list' && `Membres de l'équipe (${employees.length})`}
+            {view === 'catalog' && "Catalogue d'Agents IA"}
+            {view === 'configure' && "Configuration de l'Agent"}
+          </h2>
+          {view === 'catalog' && <p className="text-sm text-[var(--text-secondary)] mt-1">Choisissez un profil pré-configuré pour rejoindre votre équipe.</p>}
+        </div>
+
         <div className="flex gap-3">
           <button 
             onClick={() => setIsKnowledgeModalOpen(true)}
@@ -53,135 +111,225 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
             <Brain className="w-5 h-5" />
             Base de Connaissances
           </button>
-          <button 
-            onClick={() => setIsCreating(true)}
-            className="flex items-center gap-2 bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity"
-          >
-            <Plus className="w-5 h-5" />
-            Recruter un Employé IA
-          </button>
+          
+          {view === 'list' && (
+            <button 
+              onClick={() => setView('catalog')}
+              className="flex items-center gap-2 bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-4 py-2 rounded-xl font-medium hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-5 h-5" />
+              Recruter un Employé
+            </button>
+          )}
+          
+          {(view === 'catalog' || view === 'configure') && (
+            <button 
+              onClick={() => setView('list')}
+              className="flex items-center gap-2 bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-4 py-2 rounded-xl font-medium hover:bg-[var(--bg-base)] transition-opacity"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Retour à l'équipe
+            </button>
+          )}
         </div>
       </div>
 
-      {isCreating && (
-        <div className="glass-panel p-6 rounded-2xl border border-[var(--border-subtle)] space-y-4">
-          <h3 className="font-bold text-lg text-[var(--text-primary)]">Nouveau Recrutement</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* VIEW: CATALOG */}
+      {view === 'catalog' && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {AI_TEMPLATES.map((template) => {
+            const Icon = template.icon;
+            return (
+              <div key={template.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full">
+                <div className={`w-14 h-14 rounded-2xl ${template.bgColor} ${template.color} flex items-center justify-center mb-4`}>
+                  <Icon className="w-7 h-7" />
+                </div>
+                <h3 className="font-bold text-xl text-[var(--text-primary)]">{template.name}</h3>
+                <p className="text-sm font-medium text-[var(--accent-primary)] mb-4">{template.jobTitle}</p>
+                
+                <div className="space-y-2 mb-6 flex-grow">
+                  <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wider mb-2">Compétences</p>
+                  {template.skills.map((skill, idx) => (
+                    <div key={idx} className="flex items-start gap-2 text-sm text-[var(--text-primary)]">
+                      <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${template.color}`} />
+                      <span>{skill}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={() => handleSelectTemplate(template)}
+                  className="w-full py-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-medium group-hover:bg-[var(--accent-primary)] group-hover:text-[var(--accent-foreground)] group-hover:border-[var(--accent-primary)] transition-all"
+                >
+                  Recruter ce profil
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* VIEW: CONFIGURE */}
+      {view === 'configure' && (
+        <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
+          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-[var(--border-subtle)]">
+            <div className={`w-16 h-16 rounded-2xl ${selectedTemplate?.bgColor} ${selectedTemplate?.color} flex items-center justify-center`}>
+              {selectedTemplate && <selectedTemplate.icon className="w-8 h-8" />}
+            </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Nom de l'employé</label>
+              <h3 className="font-bold text-2xl text-[var(--text-primary)]">Finaliser le recrutement</h3>
+              <p className="text-[var(--text-secondary)]">Personnalisez votre agent et assignez-lui des canaux de communication.</p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Nom de l'employé</label>
               <input 
                 type="text" 
                 value={formData.name}
                 onChange={e => setFormData({...formData, name: e.target.value})}
-                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-[var(--text-primary)]"
-                placeholder="Ex: Sophie"
+                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 focus:border-[var(--accent-primary)] transition-all outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Rôle / Poste</label>
+              <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Rôle / Poste</label>
               <input 
                 type="text" 
                 value={formData.jobTitle}
                 onChange={e => setFormData({...formData, jobTitle: e.target.value})}
-                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-[var(--text-primary)]"
+                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 focus:border-[var(--accent-primary)] transition-all outline-none"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Instructions (Cerveau)</label>
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2 flex items-center gap-2">
+              <Brain className="w-4 h-4" /> Instructions (Le "Cerveau" de l'IA)
+            </label>
             <textarea 
-              rows={4}
+              rows={6}
               value={formData.systemPrompt}
               onChange={e => setFormData({...formData, systemPrompt: e.target.value})}
-              className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-[var(--text-primary)]"
+              className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 focus:border-[var(--accent-primary)] transition-all outline-none resize-none leading-relaxed"
             />
+            <p className="text-xs text-[var(--text-secondary)] mt-2">Vous pouvez modifier ces instructions à tout moment pour affiner son comportement.</p>
           </div>
 
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
-              <input 
-                type="checkbox" 
-                checked={formData.handlesWhatsApp}
-                onChange={e => setFormData({...formData, handlesWhatsApp: e.target.checked})}
-                className="rounded text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] bg-[var(--bg-base)] border-[var(--border-subtle)]"
-              />
-              Gérer WhatsApp
-            </label>
-            <label className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
-              <input 
-                type="checkbox" 
-                checked={formData.handlesVoice}
-                onChange={e => setFormData({...formData, handlesVoice: e.target.checked})}
-                className="rounded text-[var(--accent-primary)] focus:ring-[var(--accent-primary)] bg-[var(--bg-base)] border-[var(--border-subtle)]"
-              />
-              Gérer les Appels Vocaux
-            </label>
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-4">Canaux de communication autorisés</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label className={`flex flex-col gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${formData.handlesWhatsApp ? 'border-green-500 bg-green-500/5' : 'border-[var(--border-subtle)] hover:border-[var(--text-secondary)]'}`}>
+                <div className="flex justify-between items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.handlesWhatsApp ? 'bg-green-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-secondary)]'}`}>
+                    <MessageCircle className="w-5 h-5" />
+                  </div>
+                  <input type="checkbox" checked={formData.handlesWhatsApp} onChange={e => setFormData({...formData, handlesWhatsApp: e.target.checked})} className="w-5 h-5 rounded border-[var(--border-subtle)] text-green-500 focus:ring-green-500" />
+                </div>
+                <span className={`font-medium ${formData.handlesWhatsApp ? 'text-green-600 dark:text-green-400' : 'text-[var(--text-primary)]'}`}>WhatsApp</span>
+              </label>
+
+              <label className={`flex flex-col gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${formData.handlesVoice ? 'border-blue-500 bg-blue-500/5' : 'border-[var(--border-subtle)] hover:border-[var(--text-secondary)]'}`}>
+                <div className="flex justify-between items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.handlesVoice ? 'bg-blue-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-secondary)]'}`}>
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  <input type="checkbox" checked={formData.handlesVoice} onChange={e => setFormData({...formData, handlesVoice: e.target.checked})} className="w-5 h-5 rounded border-[var(--border-subtle)] text-blue-500 focus:ring-blue-500" />
+                </div>
+                <span className={`font-medium ${formData.handlesVoice ? 'text-blue-600 dark:text-blue-400' : 'text-[var(--text-primary)]'}`}>Appels Vocaux</span>
+              </label>
+
+              <label className={`flex flex-col gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${formData.handlesSms ? 'border-amber-500 bg-amber-500/5' : 'border-[var(--border-subtle)] hover:border-[var(--text-secondary)]'}`}>
+                <div className="flex justify-between items-center">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${formData.handlesSms ? 'bg-amber-500 text-white' : 'bg-[var(--bg-base)] text-[var(--text-secondary)]'}`}>
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <input type="checkbox" checked={formData.handlesSms} onChange={e => setFormData({...formData, handlesSms: e.target.checked})} className="w-5 h-5 rounded border-[var(--border-subtle)] text-amber-500 focus:ring-amber-500" />
+                </div>
+                <span className={`font-medium ${formData.handlesSms ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-primary)]'}`}>SMS</span>
+              </label>
+            </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
-            <button onClick={handleCreate} className="bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-4 py-2 rounded-xl font-medium">Confirmer le recrutement</button>
-            <button onClick={() => setIsCreating(false)} className="px-4 py-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Annuler</button>
+          <div className="flex gap-3 pt-6 border-t border-[var(--border-subtle)] justify-end">
+            <button onClick={() => setView('catalog')} className="px-6 py-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium">Annuler</button>
+            <button onClick={handleCreate} className="bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-8 py-3 rounded-xl font-medium flex items-center gap-2 hover:shadow-lg hover:shadow-[var(--accent-primary)]/20 transition-all">
+              <Sparkles className="w-5 h-5" />
+              Confirmer le recrutement
+            </button>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {employees.map((emp: any) => (
-          <div key={emp.id} className="glass-panel p-6 rounded-2xl border border-[var(--border-subtle)] relative group">
-            <div className="flex gap-4 items-start">
-              <div className="w-12 h-12 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] flex items-center justify-center shrink-0">
-                <Bot className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-bold text-lg text-[var(--text-primary)]">{emp.name}</h3>
-                <p className="text-sm text-[var(--text-secondary)] flex items-center gap-1">
-                  <Briefcase className="w-4 h-4" />
-                  {emp.jobTitle}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[var(--text-secondary)]">Canaux assignés :</span>
-                <div className="flex gap-2 text-[var(--text-primary)]">
-                  {emp.handlesWhatsApp && <MessageSquare className="w-4 h-4 text-green-500" />}
-                  {emp.handlesVoice && <Phone className="w-4 h-4 text-blue-500" />}
-                  {!emp.handlesWhatsApp && !emp.handlesVoice && <span className="text-xs text-[var(--text-secondary)]">Aucun</span>}
+      {/* VIEW: LIST */}
+      {view === 'list' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {employees.map((emp: any) => (
+            <div key={emp.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] relative group">
+              <div className="flex gap-4 items-start">
+                <div className="w-14 h-14 rounded-2xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] flex items-center justify-center shrink-0">
+                  <Bot className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-xl text-[var(--text-primary)]">{emp.name}</h3>
+                  <p className="text-sm font-medium text-[var(--accent-primary)] flex items-center gap-1 mt-1">
+                    <Briefcase className="w-4 h-4" />
+                    {emp.jobTitle}
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-[var(--text-secondary)]">Statut :</span>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${emp.isActive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                  {emp.isActive ? 'En poste' : 'Inactif'}
-                </span>
+
+              <div className="mt-8 space-y-4">
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] block mb-2">Canaux assignés</span>
+                  <div className="flex gap-2 text-[var(--text-primary)]">
+                    {emp.handlesWhatsApp && <div className="bg-green-500/10 text-green-500 p-2 rounded-xl" title="WhatsApp"><MessageCircle className="w-5 h-5" /></div>}
+                    {emp.handlesVoice && <div className="bg-blue-500/10 text-blue-500 p-2 rounded-xl" title="Appels"><Phone className="w-5 h-5" /></div>}
+                    {emp.handlesSms && <div className="bg-amber-500/10 text-amber-500 p-2 rounded-xl" title="SMS"><MessageSquare className="w-5 h-5" /></div>}
+                    {!emp.handlesWhatsApp && !emp.handlesVoice && !emp.handlesSms && <span className="text-sm text-[var(--text-secondary)] italic">Aucun canal assigné</span>}
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm pt-4 border-t border-[var(--border-subtle)]">
+                  <span className="text-[var(--text-secondary)] font-medium">Statut</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${emp.isActive ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                    {emp.isActive ? 'En poste' : 'Inactif'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex justify-between">
+                <button className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">
+                  <Settings2 className="w-4 h-4" />
+                  Configurer
+                </button>
+                <button className="text-[var(--text-secondary)] hover:text-red-500 transition-colors bg-red-500/5 hover:bg-red-500/10 p-2 rounded-lg">
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
+          ))}
 
-            <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex justify-between">
-              <button className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">
-                <Settings2 className="w-4 h-4" />
-                Configurer
-              </button>
-              <button className="text-[var(--text-secondary)] hover:text-red-500 transition-colors">
-                <Trash2 className="w-4 h-4" />
+          {employees.length === 0 && (
+            <div className="col-span-full py-16 text-center border-2 border-dashed border-[var(--border-subtle)] rounded-[2rem] bg-[var(--bg-base)]/50">
+              <div className="w-20 h-20 bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] rounded-full flex items-center justify-center mx-auto mb-6">
+                <Sparkles className="w-10 h-10" />
+              </div>
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Construisez votre équipe idéale</h3>
+              <p className="text-[var(--text-secondary)] max-w-md mx-auto mb-8 text-lg">
+                Déléguez votre support, vos ventes et votre secrétariat à des agents IA ultra-compétents.
+              </p>
+              <button 
+                onClick={() => setView('catalog')}
+                className="bg-[var(--accent-primary)] text-[var(--accent-foreground)] px-8 py-4 rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-[var(--accent-primary)]/20 transition-all inline-flex items-center gap-3 hover:-translate-y-1"
+              >
+                Découvrir le catalogue d'agents
+                <ArrowLeft className="w-5 h-5 rotate-180" />
               </button>
             </div>
-          </div>
-        ))}
-
-        {employees.length === 0 && !isCreating && (
-          <div className="col-span-full py-12 text-center border-2 border-dashed border-[var(--border-subtle)] rounded-3xl">
-            <Bot className="w-12 h-12 text-[var(--text-secondary)]/50 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-[var(--text-primary)]">Aucun employé IA</h3>
-            <p className="text-[var(--text-secondary)] mt-1 max-w-md mx-auto">
-              Commencez à déléguer votre support client en recrutant votre premier employé IA.
-            </p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {isKnowledgeModalOpen && (
         <KnowledgeBaseModal onClose={() => setIsKnowledgeModalOpen(false)} />

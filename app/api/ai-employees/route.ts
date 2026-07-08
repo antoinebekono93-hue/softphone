@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, jobTitle, systemPrompt, voiceId, language, handlesWhatsApp, handlesVoice, handlesInstagram, voicePhoneNumberId } = body;
+    const { name, jobTitle, systemPrompt, voiceId, language, handlesWhatsApp, handlesVoice, handlesSms, handlesInstagram, voicePhoneNumberId } = body;
 
     if (!name || !systemPrompt) {
       return NextResponse.json({ error: 'Name and instructions are required' }, { status: 400 });
@@ -218,6 +218,7 @@ export async function POST(req: Request) {
         language: language || 'fr-FR',
         handlesWhatsApp: !!handlesWhatsApp,
         handlesVoice: !!handlesVoice,
+        handlesSms: !!handlesSms,
         handlesInstagram: !!handlesInstagram,
         voicePhoneNumberId: voicePhoneNumberId || null,
         isActive: true,
