@@ -12,9 +12,9 @@ export async function GET() {
     }
     if (!orgId) return NextResponse.json({ error: "No org" }, { status: 404 });
 
-    const agents = await prisma.voiceAIAgent.findMany({
+    const agents = await prisma.aIEmployee.findMany({
       where: { organizationId: orgId },
-      include: { phoneNumber: true }
+      include: { voicePhoneNumber: true }
     });
     
     const phoneNumbers = await prisma.phoneNumber.findMany({
@@ -38,14 +38,14 @@ export async function POST(request: Request) {
     }
     if (!orgId) return NextResponse.json({ error: "No org" }, { status: 404 });
 
-    const agent = await prisma.voiceAIAgent.create({
+    const agent = await prisma.aIEmployee.create({
       data: {
         name: body.name,
-        prompt: body.prompt,
-        voice: body.voice,
-        language: body.language,
+        systemPrompt: body.prompt || "You are a helpful AI assistant.",
+        voiceId: body.voice || "alloy",
+        language: body.language || "fr-FR",
         organizationId: orgId,
-        phoneNumberId: body.phoneNumberId || null
+        voicePhoneNumberId: body.phoneNumberId || null
       }
     });
     return NextResponse.json(agent);
