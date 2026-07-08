@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Phone, MessageSquare, MessageCircle, Bot, Search, Bell } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function TopNavbar({
   organizationName,
@@ -12,6 +13,7 @@ export function TopNavbar({
   walletBalance?: number;
 }) {
   const pathname = usePathname();
+  const { language, setLanguage, t } = useLanguage();
 
   // Determine active module based on URL
   const getActiveModule = () => {
@@ -83,6 +85,16 @@ export function TopNavbar({
             <span className="text-xs font-semibold text-[var(--text-secondary)]">Wallet</span>
             <span className="text-sm font-bold text-[var(--text-primary)]">${walletBalance?.toFixed(2) || "0.00"}</span>
           </div>
+
+          <select 
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value as any)}
+            className="hidden md:block bg-[var(--bg-surface-hover)] text-sm border-none rounded-lg focus:ring-1 focus:ring-[var(--border-glow)] px-2 py-1 outline-none cursor-pointer"
+          >
+            <option value="fr">FR</option>
+            <option value="en">EN</option>
+            <option value="ar">AR</option>
+          </select>
 
           <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] rounded-full transition-colors relative">
             <Bell className="w-5 h-5" />

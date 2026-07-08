@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { executeAutomation } from "@/lib/automations";
 
 export async function POST(
   req: Request,
@@ -81,6 +82,11 @@ export async function POST(
           }
         })
       });
+    }
+
+    // --- GENERIC AUTOMATION BRIDGE ---
+    if (ticket.contact) {
+      await executeAutomation(session.user.organizationId, 'TICKET_RESOLVED', { contact: ticket.contact });
     }
 
     return NextResponse.json({ success: true, message: "Ticket résolu et demande CSAT envoyée." });

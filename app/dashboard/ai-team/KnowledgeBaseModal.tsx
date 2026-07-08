@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Upload, Link as LinkIcon, FileText, Trash2, Loader2, Brain } from "lucide-react";
 import toast from "react-hot-toast";
 
-export default function KnowledgeBaseModal({ onClose }: { onClose: () => void }) {
+export default function KnowledgeBaseModal({ onClose, employeeId, employeeName }: { onClose: () => void, employeeId: string, employeeName?: string }) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -17,7 +17,7 @@ export default function KnowledgeBaseModal({ onClose }: { onClose: () => void })
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch("/api/knowledge/documents");
+      const res = await fetch(`/api/knowledge/documents?employeeId=${employeeId}`);
       if (res.ok) {
         const data = await res.json();
         setDocuments(data.documents || []);
@@ -42,6 +42,7 @@ export default function KnowledgeBaseModal({ onClose }: { onClose: () => void })
     setIsUploading(true);
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("employeeId", employeeId);
 
     try {
       const res = await fetch("/api/knowledge/upload", {
@@ -75,7 +76,7 @@ export default function KnowledgeBaseModal({ onClose }: { onClose: () => void })
       const res = await fetch("/api/knowledge/scrape", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: urlInput }),
+        body: JSON.stringify({ url: urlInput, employeeId }),
       });
 
       if (!res.ok) {
@@ -120,7 +121,9 @@ export default function KnowledgeBaseModal({ onClose }: { onClose: () => void })
             </div>
             <div>
               <h2 className="text-xl font-bold text-[var(--text-primary)]">Base de Connaissances</h2>
-              <p className="text-sm text-[var(--text-secondary)]">Formez vos employés IA (PDF, TXT, Sites Web)</p>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Mémoire dédiée pour {employeeName || "cet agent"}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] rounded-full transition-colors">

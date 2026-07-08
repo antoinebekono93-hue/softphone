@@ -46,3 +46,41 @@ export async function toggleAiAutomation(isActive: boolean, campaignId?: string)
     return { success: false, error: "Server Error" };
   }
 }
+
+export async function createAutomationRule(data: {
+  name: string;
+  triggerType: string;
+  actionType: string;
+  actionPayload: any;
+}) {
+  const session = await auth();
+  if (!session?.user?.organizationId) throw new Error("Non autorisé");
+
+  await prisma.automationRule.create({
+    data: {
+      name: data.name,
+      triggerType: data.triggerType,
+      actionType: data.actionType,
+      actionPayload: JSON.stringify(data.actionPayload),
+      organizationId: session.user.organizationId
+    }
+  });
+
+  revalidatePath('/dashboard/automations');
+  return { success: true };
+}
+
+export async function deleteAutomationRule(id: string) {
+  const session = await auth();
+  if (!session?.user?.organizationId) throw new Error("Non autorisé");
+
+  await prisma.automationRule.delete({
+    where: { 
+      id,
+      organizationId: session.user.organizationId
+    }
+  });
+
+  revalidatePath('/dashboard/automations');
+  return { success: true };
+}

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { telnyx } from '@/lib/telnyx';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
+import { executeAutomation } from '@/lib/automations';
 
 // We need the media server URL. Ideally, it's wss://our-domain/media
 const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'wss://your-ngrok-domain.ngrok-free.app/media';
@@ -195,6 +196,15 @@ async function processEvent(event: any) {
               console.error("[Automation Error]", e);
             }
           }
+        }
+      }
+
+      // --- GENERIC AUTOMATION BRIDGE ---
+      if (callLog?.contactId) {
+        const contactInfo = await prisma.contact.findUnique({ where: { id: callLog.contactId }});
+        if (contactInfo) {
+          const trigger = finalStatus === 'NO_ANSWER' ? 'CALL_MISSED' : 'CALL_COMPLETED';
+          await executeAutomation(callLog.organizationId, trigger, { contact: contactInfo });
         }
       }
     }

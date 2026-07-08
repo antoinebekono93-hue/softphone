@@ -38,22 +38,42 @@ export default function BillingClient({
     fetchWalletData();
   }, []);
 
-  const handleSimulatedTopup = async (amount: number) => {
+  const handleStripeCheckout = async (amount: number) => {
     setIsPending(true);
     try {
-      const res = await fetch("/api/billing/topup", {
+      const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount }),
       });
-      if (!res.ok) throw new Error("Rechargement échoué");
-      
-      toast.success(`Rechargement de $${amount} réussi !`);
-      await fetchWalletData();
+      if (!res.ok) throw new Error("Erreur de connexion à Stripe");
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
     } catch (error: any) {
       console.error(error);
       toast.error("Erreur : " + error.message);
-    } finally {
+      setIsPending(false);
+    }
+  };
+
+  const handleFlutterwaveCheckout = async (amount: number) => {
+    setIsPending(true);
+    try {
+      const res = await fetch("/api/flutterwave/create-payment-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      if (!res.ok) throw new Error("Erreur de connexion à Flutterwave");
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error("Erreur : " + error.message);
       setIsPending(false);
     }
   };
@@ -101,13 +121,20 @@ export default function BillingClient({
             </div>
           </div>
 
-          <div className="grid gap-3 pt-2">
+          <div className="grid grid-cols-2 gap-3 pt-2">
             <button 
-              onClick={() => handleSimulatedTopup(parseInt(customAmount))}
+              onClick={() => handleStripeCheckout(parseInt(customAmount))}
               disabled={isPending || !parseInt(customAmount) || parseInt(customAmount) < 5}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-emerald-500 to-emerald-400 hover:opacity-90 text-white transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-violet-600 to-violet-500 hover:opacity-90 text-white transition-all disabled:opacity-50"
             >
-              {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Simuler le paiement (Test)"}
+              {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Stripe"}
+            </button>
+            <button 
+              onClick={() => handleFlutterwaveCheckout(parseInt(customAmount))}
+              disabled={isPending || !parseInt(customAmount) || parseInt(customAmount) < 5}
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90 text-white transition-all disabled:opacity-50"
+            >
+              {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Flutterwave"}
             </button>
           </div>
         </div>

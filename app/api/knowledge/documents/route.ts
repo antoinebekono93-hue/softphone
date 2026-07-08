@@ -12,9 +12,23 @@ export async function GET(req: Request) {
     }
 
     const organizationId = session.user.organizationId;
+    const { searchParams } = new URL(req.url);
+    const employeeId = searchParams.get('employeeId');
 
-    const knowledgeBase = await prisma.knowledgeBase.findFirst({
-      where: { organizationId },
+    if (!employeeId) {
+      return NextResponse.json({ error: 'Missing employeeId' }, { status: 400 });
+    }
+
+    const employee = await prisma.aIEmployee.findUnique({
+      where: { id: employeeId, organizationId }
+    });
+
+    if (!employee || !employee.knowledgeBaseId) {
+      return NextResponse.json({ documents: [] });
+    }
+
+    const knowledgeBase = await prisma.knowledgeBase.findUnique({
+      where: { id: employee.knowledgeBaseId },
       include: { documents: { orderBy: { createdAt: 'desc' } } }
     });
 

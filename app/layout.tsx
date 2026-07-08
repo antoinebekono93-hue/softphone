@@ -1,6 +1,7 @@
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { TelnyxProvider } from "@/contexts/TelnyxContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
@@ -72,9 +73,11 @@ export default function RootLayout({
       <body className={`${inter.variable} font-sans`}>
         <ThemeProvider defaultTheme="dark">
           <AuthProvider>
-            <TelnyxProvider>
-              {children}
-            </TelnyxProvider>
+            <LanguageProvider>
+              <TelnyxProvider>
+                {children}
+              </TelnyxProvider>
+            </LanguageProvider>
           </AuthProvider>
           <Toaster position="top-center" theme="dark" />
         </ThemeProvider>

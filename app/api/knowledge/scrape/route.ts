@@ -15,10 +15,18 @@ export async function POST(req: Request) {
 
     const organizationId = session.user.organizationId;
     const body = await req.json();
-    const url = body.url;
+    const { url, employeeId } = body;
 
-    if (!url) {
-      return NextResponse.json({ error: 'No URL provided' }, { status: 400 });
+    if (!url || !employeeId) {
+      return NextResponse.json({ error: 'URL and employeeId are required' }, { status: 400 });
+    }
+
+    const employee = await prisma.aIEmployee.findUnique({
+      where: { id: employeeId, organizationId }
+    });
+
+    if (!employee) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // 1. Fetch and Scrape URL
@@ -41,17 +49,21 @@ export async function POST(req: Request) {
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // 2. Get or Create Knowledge Base
-    let knowledgeBase = await prisma.knowledgeBase.findFirst({
-      where: { organizationId }
-    });
+    // 2. Get or Create Knowledge Base for this employee
+    let knowledgeBase = employee.knowledgeBaseId 
+      ? await prisma.knowledgeBase.findUnique({ where: { id: employee.knowledgeBaseId } })
+      : null;
 
     if (!knowledgeBase) {
       knowledgeBase = await prisma.knowledgeBase.create({
         data: {
-          name: 'Base de connaissances principale',
+          name: `Base de ${employee.name}`,
           organizationId: organizationId
         }
+      });
+      await prisma.aIEmployee.update({
+        where: { id: employee.id },
+        data: { knowledgeBaseId: knowledgeBase.id }
       });
     }
 
@@ -92,18 +104,9 @@ export async function POST(req: Request) {
       }
     });
 
-    // 7. Update AI Employees to use this Vector Store
-    const employees = await prisma.aIEmployee.findMany({
-      where: { organizationId, openaiAssistantId: { not: null } }
-    });
-
-    for (const employee of employees) {
-      await prisma.aIEmployee.update({
-        where: { id: employee.id },
-        data: { knowledgeBaseId: knowledgeBase.id }
-      });
-
-      await openai.beta.assistants.update(employee.openaiAssistantId!, {
+    // 7. Update AI Employee to use this Vector Store
+    if (employee.openaiAssistantId) {
+      await openai.beta.assistants.update(employee.openaiAssistantId, {
         tools: [{ type: "file_search" }],
         tool_resources: {
           file_search: {

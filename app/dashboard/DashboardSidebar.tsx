@@ -36,6 +36,7 @@ import {
   Terminal
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function DashboardSidebar({
   organizationName,
@@ -56,6 +57,7 @@ export function DashboardSidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { t } = useLanguage();
 
   // Grouped Navigation by Module
   const getActiveModule = () => {
@@ -70,49 +72,42 @@ export function DashboardSidebar({
   const allNavGroups = {
     phone: [
       {
-        title: "Téléphone & CRM",
+        title: t("dashboard.phone_crm") || "Téléphone & CRM",
         items: [
-          { name: "Tableau de bord", href: "/dashboard", icon: Home },
-          { name: "Softphone", href: "/dashboard/softphone", icon: Phone },
-          { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
-          { name: "Séquences d'appels", href: "/dashboard/sequences", icon: Workflow },
-          { name: "Boîte de réception", href: "/dashboard/inbox", icon: Inbox },
-          { name: "Revenus & Churn", href: "/dashboard/analytics/revenue", icon: BarChart2 },
+          { name: t("dashboard.overview"), href: "/dashboard", icon: Home },
+          { name: t("dashboard.softphone"), href: "/dashboard/softphone", icon: Phone },
+          { name: t("dashboard.contacts"), href: "/dashboard/contacts", icon: BookUser },
+          { name: t("dashboard.sequences"), href: "/dashboard/sequences", icon: Workflow },
+          { name: t("dashboard.inbox"), href: "/dashboard/inbox", icon: Inbox },
+          { name: t("dashboard.analytics"), href: "/dashboard/analytics/revenue", icon: BarChart2 },
         ]
       },
       {
-        title: "Configuration",
+        title: t("dashboard.configuration") || "Configuration",
         items: [
-          { name: "Numéros de téléphone", href: "/dashboard/numbers", icon: Hash },
-          { name: "SVI & Routage", href: "/dashboard/ivr", icon: GitMerge },
-          { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
+          { name: t("dashboard.numbers"), href: "/dashboard/numbers", icon: Hash },
+          { name: t("dashboard.ivr"), href: "/dashboard/ivr", icon: GitMerge },
+          { name: t("dashboard.settings"), href: "/dashboard/settings", icon: Settings },
         ]
       }
     ],
     sms: [
       {
-        title: "Messagerie SMS",
+        title: t("dashboard.sms_messaging") || "Messagerie SMS",
         items: [
-          { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
-          { name: "Boîte de réception", href: "/dashboard/sms-inbox", icon: Inbox },
-          { name: "Profils SMS", href: "/dashboard/sms/profiles", icon: Settings },
-          { name: "Modèles (Bientôt)", href: "/dashboard/sms", icon: BookUser },
+          { name: t("dashboard.sms_campaigns"), href: "/dashboard/sms", icon: MessageSquare },
+          { name: t("dashboard.sms_inbox"), href: "/dashboard/sms-inbox", icon: Inbox },
+          { name: t("dashboard.sms_profiles"), href: "/dashboard/sms/profiles", icon: Settings },
+          { name: t("dashboard.sms_templates"), href: "/dashboard/sms", icon: BookUser },
         ]
       }
     ],
     whatsapp: [
       {
-        title: "CRM & Ventes",
-        items: [
-          { name: "Pipeline de Ventes", href: "/dashboard/pipeline", icon: GitMerge },
-          { name: "Contacts", href: "/dashboard/contacts", icon: BookUser },
-        ]
-      },
-      {
         title: "WhatsApp Business",
         items: [
-          { name: "Séquences (Flows)", href: "/dashboard/whatsapp/flows", icon: Workflow },
-          { name: "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
+          { name: t("dashboard.wa_crm") || "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
+          { name: t("dashboard.wa_campaigns") || "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
           { name: "Chat WhatsApp", href: "/dashboard/whatsapp-inbox", icon: Inbox },
           { name: "Modèles (Templates)", href: "/dashboard/whatsapp/templates", icon: BookUser },
           { name: "Paramètres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
@@ -121,10 +116,13 @@ export function DashboardSidebar({
     ],
     ai: [
       {
-        title: "Délégation de Support",
+        title: t("dashboard.ai_automation") || "Délégation de Support",
         items: [
-          { name: "Mon Équipe IA", href: "/dashboard/ai-team", icon: UsersRound },
-          { name: "Playground IA", href: "/dashboard/ai-playground", icon: Terminal },
+          { name: t("dashboard.ai_agents") || "Mon Équipe IA", href: "/dashboard/ai-team", icon: UsersRound },
+          { name: t("dashboard.ai_tickets") || "Tickets Support", href: "/dashboard/tickets", icon: CreditCard },
+          { name: t("dashboard.ai_automations") || "Automatisations", href: "/dashboard/automations", icon: Workflow },
+          { name: t("dashboard.ai_voices") || "Voix IA", href: "/dashboard/voice", icon: Mic2 },
+          { name: t("dashboard.ai_rag") || "Base de Connaissances", href: "/dashboard/rag", icon: BookUser },
         ]
       }
     ]

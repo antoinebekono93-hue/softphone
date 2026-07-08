@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Bot, Phone, MessageSquare, Briefcase, Settings2, Trash2, Brain, Headset, Calendar, Sparkles, MessageCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -96,6 +96,39 @@ const AI_TEMPLATES = [
     bgColor: "bg-orange-500/10",
     skills: ["Tri de CV", "Qualification des candidats", "Rédaction d'offres d'emploi"],
     systemPrompt: "Tu es Rony, un recruteur talentueux et bienveillant. Ton rôle est d'aider l'entreprise à rédiger des fiches de poste attractives et d'analyser les profils des candidats. Règle n°1 : Sois constructif dans tes retours d'évaluation. Règle n°2 : Rédige des offres d'emploi centrées sur la culture d'entreprise et les avantages. Règle n°3 : Prépare des questions d'entretien pertinentes basées sur les compétences requises."
+  },
+  {
+    id: "facebook_manager",
+    name: "Zuck",
+    jobTitle: "Manager Facebook",
+    icon: Sparkles,
+    color: "text-blue-600",
+    bgColor: "bg-blue-600/10",
+    skills: ["Création de posts engageants", "Réponse aux commentaires", "Croissance de la communauté"],
+    systemPrompt: "Tu es un Community Manager spécialisé sur Facebook. Ton rôle est de créer du contenu engageant et de répondre aux commentaires de la page. Règle n°1 : Utilise un ton dynamique et interactif. Règle n°2 : Incite toujours à l'engagement (questions, sondages).",
+    roleType: "FACEBOOK_MANAGER"
+  },
+  {
+    id: "linkedin_manager",
+    name: "Reid",
+    jobTitle: "Manager LinkedIn",
+    icon: Briefcase,
+    color: "text-sky-600",
+    bgColor: "bg-sky-600/10",
+    skills: ["Thought Leadership", "Réseautage B2B", "Contenu expert"],
+    systemPrompt: "Tu es un Social Media Manager spécialisé sur LinkedIn. Ton rôle est de positionner l'entreprise ou la personne comme un expert dans son domaine. Règle n°1 : Utilise un ton professionnel, inspirant et axé sur la valeur ajoutée. Règle n°2 : Structure tes posts avec des retours à la ligne marqués.",
+    roleType: "LINKEDIN_MANAGER"
+  },
+  {
+    id: "tiktok_manager",
+    name: "Byte",
+    jobTitle: "Manager TikTok",
+    icon: MessageSquare,
+    color: "text-zinc-800",
+    bgColor: "bg-zinc-800/10",
+    skills: ["Scripts vidéos", "Réponse aux commentaires", "Tendances virales"],
+    systemPrompt: "Tu es un Créateur de Contenu spécialisé sur TikTok. Ton rôle est de rédiger des scripts vidéos viraux et de modérer les commentaires. Règle n°1 : Sois ultra-créatif, jeune et branché. Règle n°2 : Utilise l'humour et les références à la pop culture.",
+    roleType: "TIKTOK_MANAGER"
   }
 ];
 
@@ -104,25 +137,63 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
   const [employees, setEmployees] = useState(initialEmployees);
   const [view, setView] = useState<'list' | 'catalog' | 'configure'>('list');
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
-  const [isKnowledgeModalOpen, setIsKnowledgeModalOpen] = useState(false);
+  const [selectedEmployeeForKB, setSelectedEmployeeForKB] = useState<any>(null);
+  const [dbTemplates, setDbTemplates] = useState<any[]>(AI_TEMPLATES);
+
+  useEffect(() => {
+    fetch('/api/god-mode/templates')
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data) && data.length > 0) setDbTemplates(data);
+      })
+      .catch(e => console.error("Error fetching templates", e));
+  }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     jobTitle: "",
     systemPrompt: "",
+    templateId: "",
+    selectedTone: "",
     voiceId: "alloy",
     handlesWhatsApp: false,
     handlesVoice: false,
+    roleType: "GENERAL",
   });
 
   const handleSelectTemplate = (template: any) => {
     setSelectedTemplate(template);
+    let parsedTones = [];
+    try {
+      parsedTones = typeof template.tones === 'string' ? JSON.parse(template.tones) : (template.tones || []);
+    } catch(e){}
+
     setFormData({
       ...formData,
       name: template.name,
       jobTitle: template.jobTitle,
-      systemPrompt: template.systemPrompt
+      systemPrompt: template.systemPrompt || "",
+      roleType: template.roleType || "GENERAL",
+      templateId: template.id || "",
+      selectedTone: parsedTones.length > 0 ? parsedTones[0].name : ""
     });
     setView('configure');
+  };
+
+  const handleConnectSocial = async (provider: string, employeeId: string) => {
+    try {
+      const toastId = toast.loading(`Connexion à ${provider}...`);
+      const res = await fetch(`/api/social/auth/${provider.toLowerCase()}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aiEmployeeId: employeeId })
+      });
+      if (!res.ok) throw new Error("Échec de la connexion");
+      toast.success(`Compte ${provider} connecté avec succès !`, { id: toastId });
+      router.refresh();
+    } catch (error) {
+      toast.error(`Erreur lors de la connexion à ${provider}`);
+    }
   };
 
   const handleCreate = async () => {
@@ -145,6 +216,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
         voiceId: "alloy",
         handlesWhatsApp: false,
         handlesVoice: false,
+        roleType: "GENERAL",
       });
       router.refresh();
     } catch (error) {
@@ -169,14 +241,6 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
         </div>
 
         <div className="flex gap-3">
-          <button 
-            onClick={() => setIsKnowledgeModalOpen(true)}
-            className="flex items-center gap-2 bg-[var(--bg-elevated)] text-[var(--text-primary)] border border-[var(--border-subtle)] px-4 py-2 rounded-xl font-medium hover:bg-[var(--bg-base)] transition-opacity"
-          >
-            <Brain className="w-5 h-5 text-purple-500" />
-            Base de connaissances
-          </button>
-          
           {view === 'list' && (
             <button 
               onClick={() => setView('catalog')}
@@ -201,7 +265,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
       {/* VIEW: CATALOG */}
       {view === 'catalog' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {AI_TEMPLATES.map((template) => {
+          {dbTemplates.map((template) => {
             const Icon = template.icon;
             return (
               <div key={template.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full">
@@ -213,12 +277,16 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                 
                 <div className="space-y-2 mb-6 flex-grow">
                   <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wider mb-2">Compétences</p>
-                  {template.skills.map((skill, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-sm text-[var(--text-primary)]">
-                      <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${template.color}`} />
-                      <span>{skill}</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    let skills: string[] = [];
+                    try { skills = typeof template.skills === 'string' ? JSON.parse(template.skills) : (template.skills || []); } catch(e){}
+                    return skills.map((skill, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-sm text-[var(--text-primary)]">
+                        <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${template.color}`} />
+                        <span>{skill}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
 
                 <button 
@@ -269,15 +337,33 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
 
           <div className="mb-8">
             <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2 flex items-center gap-2">
-              <Brain className="w-4 h-4" /> Instructions (Le "Cerveau" de l'IA)
+              <Brain className="w-4 h-4" /> Comportement & Ton (Âme de l'IA)
             </label>
-            <textarea 
-              rows={6}
-              value={formData.systemPrompt}
-              onChange={e => setFormData({...formData, systemPrompt: e.target.value})}
-              className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 focus:border-[var(--accent-primary)] transition-all outline-none resize-none leading-relaxed"
-            />
-            <p className="text-xs text-[var(--text-secondary)] mt-2">Vous pouvez modifier ces instructions à tout moment pour affiner son comportement.</p>
+            {(() => {
+              let tones: any[] = [];
+              try { tones = typeof selectedTemplate?.tones === 'string' ? JSON.parse(selectedTemplate.tones) : (selectedTemplate?.tones || []); } catch(e){}
+              
+              if (tones.length > 0) {
+                return (
+                  <select 
+                    value={formData.selectedTone}
+                    onChange={e => setFormData({...formData, selectedTone: e.target.value})}
+                    className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20 focus:border-[var(--accent-primary)] transition-all outline-none"
+                  >
+                    {tones.map((t: any, idx: number) => (
+                      <option key={idx} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                );
+              } else {
+                return (
+                  <div className="p-4 bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl text-sm text-[var(--text-secondary)] italic">
+                    Le comportement de cet agent est verrouillé par l'Administrateur pour garantir une efficacité maximale.
+                  </div>
+                );
+              }
+            })()}
+            <p className="text-xs text-[var(--text-secondary)] mt-2">Choisissez l'approche comportementale de votre agent face à vos clients.</p>
           </div>
 
           <div className="mb-8">
@@ -335,13 +421,30 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
 
               <div className="mt-8 space-y-4">
                 <div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] block mb-2">Canaux assignés</span>
-                  <div className="flex gap-2 text-[var(--text-primary)]">
-                    {emp.handlesWhatsApp && <div className="bg-green-500/10 text-green-500 p-2 rounded-xl" title="WhatsApp"><MessageCircle className="w-5 h-5" /></div>}
-                    {emp.handlesVoice && <div className="bg-blue-500/10 text-blue-500 p-2 rounded-xl" title="Appels"><Phone className="w-5 h-5" /></div>}
-                    {emp.handlesSms && <div className="bg-amber-500/10 text-amber-500 p-2 rounded-xl" title="SMS"><MessageSquare className="w-5 h-5" /></div>}
-                    {!emp.handlesWhatsApp && !emp.handlesVoice && !emp.handlesSms && <span className="text-sm text-[var(--text-secondary)] italic">Aucun canal assigné</span>}
-                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)] block mb-2">Canaux & Intégrations</span>
+                  
+                  {emp.roleType === 'FACEBOOK_MANAGER' ? (
+                    <button onClick={() => handleConnectSocial('FACEBOOK', emp.id)} className="w-full mt-2 bg-[#1877F2] text-white py-2 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                      Connecter Facebook
+                    </button>
+                  ) : emp.roleType === 'LINKEDIN_MANAGER' ? (
+                    <button onClick={() => handleConnectSocial('LINKEDIN', emp.id)} className="w-full mt-2 bg-[#0A66C2] text-white py-2 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                      Connecter LinkedIn
+                    </button>
+                  ) : emp.roleType === 'TIKTOK_MANAGER' ? (
+                    <button onClick={() => handleConnectSocial('TIKTOK', emp.id)} className="w-full mt-2 bg-black text-white py-2 rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+                      Connecter TikTok
+                    </button>
+                  ) : (
+                    <div className="flex gap-2 text-[var(--text-primary)]">
+                      {emp.handlesWhatsApp && <div className="bg-green-500/10 text-green-500 p-2 rounded-xl" title="WhatsApp"><MessageCircle className="w-5 h-5" /></div>}
+                      {emp.handlesVoice && <div className="bg-blue-500/10 text-blue-500 p-2 rounded-xl" title="Appels"><Phone className="w-5 h-5" /></div>}
+                      {!emp.handlesWhatsApp && !emp.handlesVoice && <span className="text-sm text-[var(--text-secondary)] italic">Aucun canal assigné</span>}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-between text-sm pt-4 border-t border-[var(--border-subtle)]">
@@ -352,14 +455,23 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex justify-between">
-                <button className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">
-                  <Settings2 className="w-4 h-4" />
-                  Configurer
+              <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] flex justify-between items-center">
+                <button 
+                  onClick={() => setSelectedEmployeeForKB(emp)}
+                  className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)] hover:text-purple-500 transition-colors bg-[var(--bg-surface-hover)] px-3 py-1.5 rounded-lg border border-[var(--border-subtle)]"
+                >
+                  <Brain className="w-4 h-4 text-purple-500" />
+                  Mémoire / Savoir
                 </button>
-                <button className="text-[var(--text-secondary)] hover:text-red-500 transition-colors bg-red-500/5 hover:bg-red-500/10 p-2 rounded-lg">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex gap-2">
+                  <button className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">
+                    <Settings2 className="w-4 h-4" />
+                    Configurer
+                  </button>
+                  <button className="text-[var(--text-secondary)] hover:text-red-500 transition-colors bg-red-500/5 hover:bg-red-500/10 p-2 rounded-lg">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -385,8 +497,12 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
         </div>
       )}
 
-      {isKnowledgeModalOpen && (
-        <KnowledgeBaseModal onClose={() => setIsKnowledgeModalOpen(false)} />
+      {selectedEmployeeForKB && (
+        <KnowledgeBaseModal 
+          employeeId={selectedEmployeeForKB.id}
+          employeeName={selectedEmployeeForKB.name}
+          onClose={() => setSelectedEmployeeForKB(null)} 
+        />
       )}
     </div>
   );

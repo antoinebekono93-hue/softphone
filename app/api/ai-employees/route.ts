@@ -30,10 +30,28 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, jobTitle, systemPrompt, voiceId, language, handlesWhatsApp, handlesVoice, handlesSms, handlesInstagram, voicePhoneNumberId } = body;
+    const { name, jobTitle, systemPrompt, templateId, selectedTone, voiceId, language, handlesWhatsApp, handlesVoice, handlesSms, handlesInstagram, voicePhoneNumberId, roleType } = body;
 
-    if (!name || !systemPrompt) {
-      return NextResponse.json({ error: 'Name and instructions are required' }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+    }
+
+    let finalSystemPrompt = systemPrompt || "Tu es un assistant virtuel utile.";
+
+    if (templateId) {
+      const template = await prisma.agentTemplate.findUnique({ where: { id: templateId } });
+      if (template) {
+        finalSystemPrompt = template.systemPrompt;
+        if (selectedTone) {
+          try {
+            const tones = JSON.parse(template.tones || '[]');
+            const toneObj = tones.find((t: any) => t.name === selectedTone);
+            if (toneObj) {
+              finalSystemPrompt += `\n\n[DIRECTIVE DE TON : ${toneObj.name}]\n${toneObj.prompt}`;
+            }
+          } catch(e) {}
+        }
+      }
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -202,7 +220,7 @@ export async function POST(req: Request) {
 
     const assistant = await openai.beta.assistants.create({
       name: name,
-      instructions: systemPrompt,
+      instructions: finalSystemPrompt,
       model: "gpt-4o-mini",
       tools: tools,
       tool_resources: tool_resources
@@ -213,13 +231,16 @@ export async function POST(req: Request) {
         organizationId: session.user.organizationId,
         name,
         jobTitle: jobTitle || 'Agent de Support Client',
-        systemPrompt,
+        systemPrompt: finalSystemPrompt,
+        templateId: templateId || null,
+        selectedTone: selectedTone || null,
         voiceId: voiceId || 'alloy',
         language: language || 'fr-FR',
         handlesWhatsApp: !!handlesWhatsApp,
         handlesVoice: !!handlesVoice,
         handlesInstagram: !!handlesInstagram,
         voicePhoneNumberId: voicePhoneNumberId || null,
+        roleType: roleType || 'GENERAL',
         isActive: true,
         openaiAssistantId: assistant.id,
         knowledgeBaseId: knowledgeBase?.id || null

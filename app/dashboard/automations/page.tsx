@@ -11,14 +11,15 @@ export default async function AutomationsPage() {
   
   let aiRule = null;
   let campaigns: any[] = [];
+  let genericRules: any[] = [];
 
   if (session?.user?.organizationId) {
-    aiRule = await prisma.automationRule.findFirst({
-      where: {
-        organizationId: session.user.organizationId,
-        triggerType: 'NO_ANSWER_AI'
-      }
+    const allRules = await prisma.automationRule.findMany({
+      where: { organizationId: session.user.organizationId }
     });
+
+    aiRule = allRules.find(r => r.triggerType === 'NO_ANSWER_AI') || null;
+    genericRules = allRules.filter(r => r.triggerType !== 'NO_ANSWER_AI');
 
     campaigns = await prisma.campaign.findMany({
       where: { organizationId: session.user.organizationId },
@@ -38,7 +39,7 @@ export default async function AutomationsPage() {
         </button>
       </div>
 
-      <AutomationsClient aiRule={aiRule} campaigns={campaigns} />
+      <AutomationsClient aiRule={aiRule} campaigns={campaigns} genericRules={genericRules} />
 
       <div className="mt-12">
         <h2 className="text-xl font-bold mb-4">Autres Automatisations (À venir)</h2>
