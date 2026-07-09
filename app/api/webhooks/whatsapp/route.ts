@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { queryRedisMemory, generateAndStoreSkill, formatMemoriesForPrompt } from "@/lib/hermes-memory";
+import { buildRunInstructions, isResolutionSignal } from "@/lib/hermes-prompt";
 
 export async function POST(req: Request) {
   try {
@@ -191,9 +193,9 @@ export async function POST(req: Request) {
           console.log(`[CRM] Nouvelle opportunité créée pour ${contact.phone}`);
         }
 
-        // --- PHASE 5: IA AUTONOME (RAG) ---
+        // --- PHASE 5: IA AUTONOME (RAG + HERMES MEMORY) ---
         if (contact.botMode && !contact.assignedUserId) {
-          console.log(`[RAG] Contact ${contact.phone} est en mode Bot. Traitement via OpenAI...`);
+          console.log(`[Hermes] Contact ${contact.phone} est en mode Bot. Traitement autonome...`);
           
           try {
             const OpenAI = (await import('openai')).default;
@@ -211,36 +213,54 @@ export async function POST(req: Request) {
             if (employee && employee.openaiAssistantId) {
               // --- GESTION DES NOTES VOCALES ---
               if (isVoiceNote && audioUrl) {
-                console.log(`[RAG] Traitement de la note vocale: ${audioUrl}`);
+                console.log(`[Hermes] Traitement de la note vocale: ${audioUrl}`);
                 try {
-                  // 1. Download Media
                   const mediaRes = await fetch(audioUrl);
                   const arrayBuffer = await mediaRes.arrayBuffer();
-                  
-                  // NOTE: En production avec FFmpeg (selon le CDCF) :
-                  // a. fs.writeFileSync('temp.ogg', Buffer.from(arrayBuffer))
-                  // b. execSync('ffmpeg -i temp.ogg -ar 16000 temp.wav')
-                  // c. const file = fs.createReadStream('temp.wav')
-                  
-                  // Pour OpenAI Whisper, on peut utiliser directement le fichier en simulant un nom
                   const file = new File([arrayBuffer], 'audio.ogg', { type: 'audio/ogg' });
                   
                   const transcription = await openai.audio.transcriptions.create({
                     file: file,
                     model: 'whisper-1',
-                    language: employee.language.split('-')[0] // ex: 'fr'
+                    language: employee.language.split('-')[0]
                   });
                   
                   if (transcription.text) {
                     body = transcription.text;
-                    console.log(`[RAG] Whisper Transcription: ${body}`);
+                    console.log(`[Hermes] Whisper Transcription: ${body}`);
                   }
                 } catch (e) {
-                  console.error("[RAG] Erreur Whisper transcription:", e);
+                  console.error("[Hermes] Erreur Whisper transcription:", e);
                   body = "Le client a envoyé une note vocale mais la transcription a échoué.";
                 }
               }
               // ---------------------------------
+
+              // --- SELF-IMPROVING LOOP: Détection résolution (message précédent) ---
+              // Si le message ENTRANT est un signal de satisfaction, on génère une SKILL
+              // basée sur les derniers messages du thread (si disponible)
+              if (isResolutionSignal(body) && contact.openaiThreadId) {
+                console.log(`[Hermes] 🎯 Signal de résolution détecté pour ${contact.phone}. Génération de SKILL...`);
+                try {
+                  // Récupérer les derniers messages du thread pour construire l'historique
+                  const recentMsgs = await openai.beta.threads.messages.list(contact.openaiThreadId, { limit: 10 });
+                  const history = recentMsgs.data.reverse().map(m => ({
+                    role: m.role as 'user' | 'assistant',
+                    content: m.content[0]?.type === 'text' ? m.content[0].text.value : '[media]'
+                  }));
+                  
+                  // Générer et stocker la SKILL en arrière-plan (non-bloquant)
+                  generateAndStoreSkill(
+                    waAccount.organizationId,
+                    employee.id,
+                    history,
+                    `Résolution confirmée par le client (message: "${body}")`
+                  ).catch(e => console.error('[Hermes] Erreur génération skill:', e));
+                } catch (e) {
+                  console.error('[Hermes] Erreur récupération historique pour skill:', e);
+                }
+              }
+              // ----------------------------------------------------------------
               
               let threadId = contact.openaiThreadId;
               
@@ -263,14 +283,10 @@ export async function POST(req: Request) {
                   const bufferKey = `session:wa:${fromNumber}:buffer`;
                   const lockKey = `session:wa:${fromNumber}:lock`;
                   
-                  // Add message to ZSET with current timestamp
                   const now = Date.now();
                   await redis.zadd(bufferKey, { score: now, member: `${now}||${body}` });
-                  
-                  // Wait 5 seconds to group messages
                   await new Promise(resolve => setTimeout(resolve, 5000));
                   
-                  // Try to acquire lock to process
                   const acquired = await redis.set(lockKey, "locked", { nx: true, ex: 10 });
                   
                   if (!acquired) {
@@ -278,12 +294,10 @@ export async function POST(req: Request) {
                     return NextResponse.json({ success: true });
                   }
 
-                  // We have the lock, fetch all messages in buffer
                   const messages = await redis.zrange(bufferKey, 0, -1);
-                  await redis.del(bufferKey); // Clear buffer
+                  await redis.del(bufferKey);
                   
                   if (messages && messages.length > 0) {
-                    // Sort by timestamp just in case
                     const sorted = (messages as string[]).sort((a, b) => parseInt(a.split('||')[0]) - parseInt(b.split('||')[0]));
                     finalMessage = sorted.map(m => m.split('||')[1]).join('\n');
                     console.log(`[Debouncer] Fusion de ${messages.length} messages: ${finalMessage}`);
@@ -294,17 +308,41 @@ export async function POST(req: Request) {
               }
               // --------------------------------
 
+              // --- HERMES MEMORY: Recherche sémantique de procédures pertinentes ---
+              let relevantMemoriesText = '';
+              try {
+                const memories = await queryRedisMemory(
+                  waAccount.organizationId,
+                  finalMessage,
+                  3
+                );
+                if (memories.length > 0) {
+                  relevantMemoriesText = formatMemoriesForPrompt(memories);
+                  console.log(`[Hermes] 📚 ${memories.length} procédure(s) pertinente(s) trouvée(s) en mémoire`);
+                }
+              } catch (err) {
+                console.error('[Hermes] Erreur recherche mémoire:', err);
+              }
+              // -----------------------------------------------------------------------
+
               // 3. Ajouter le message de l'utilisateur au Thread
               await openai.beta.threads.messages.create(threadId, {
                 role: "user",
                 content: finalMessage
               });
 
-              // 4. Lancer le run et attendre la fin
+              // 4. Construire les instructions enrichies avec contexte Hermes
+              const runInstructions = buildRunInstructions({
+                contactName: contact.name || undefined,
+                contactHistory: contact.aiSummary || undefined,
+                relevantMemories: relevantMemoriesText || undefined,
+                currentDate: new Date().toISOString().split('T')[0],
+              });
+
+              // 5. Lancer le run avec le contexte Hermes injecté
               const run = await openai.beta.threads.runs.createAndPoll(threadId, {
                 assistant_id: employee.openaiAssistantId,
-                // On peut surcharger les instructions ici si besoin, par exemple en injectant le nom du contact
-                additional_instructions: `Le client s'appelle ${contact.name || 'Client'}.`
+                additional_instructions: runInstructions
               });
 
               let currentRun = run;
