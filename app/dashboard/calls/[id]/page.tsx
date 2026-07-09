@@ -6,13 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { User, Bot, PlayCircle } from 'lucide-react';
 
-export default async function CallDetailsPage({ params }: { params: { id: string } }) {
+export default async function CallDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.organizationId) redirect('/login');
 
+  const resolvedParams = await params;
   const call = await prisma.callLog.findUnique({
     where: { 
-      id: params.id,
+      id: resolvedParams.id,
       organizationId: session.user.organizationId 
     }
   });

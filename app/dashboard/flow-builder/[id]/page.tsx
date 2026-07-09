@@ -7,12 +7,13 @@ export const metadata = {
   title: 'Flow Editor | Antigravity',
 };
 
-export default async function FlowEditorPage({ params }: { params: { id: string } }) {
+export default async function FlowEditorPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session?.user?.organizationId) redirect('/login');
   
+  const resolvedParams = await params;
   const flow = await prisma.whatsAppFlow.findUnique({
-    where: { id: params.id, organizationId: session.user.organizationId }
+    where: { id: resolvedParams.id, organizationId: session.user.organizationId }
   });
 
   if (!flow) redirect('/dashboard/flow-builder');
