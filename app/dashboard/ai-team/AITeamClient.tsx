@@ -14,6 +14,7 @@ const AI_TEMPLATES = [
     name: "Charly+",
     jobTitle: "Orchestrateur & Superviseur",
     icon: Brain,
+    avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80",
     color: "text-indigo-500",
     bgColor: "bg-indigo-500/10",
     skills: ["Supervision d'équipe IA", "Gestion de To-do list", "Routage complexe"],
@@ -24,6 +25,7 @@ const AI_TEMPLATES = [
     name: "Emma",
     jobTitle: "Agent de Support Client",
     icon: Headset,
+    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
     skills: ["Empathie et écoute", "Résolution de problèmes", "Recherche dans la base de connaissances"],
@@ -34,6 +36,7 @@ const AI_TEMPLATES = [
     name: "Lucas",
     jobTitle: "Commercial B2B",
     icon: Briefcase,
+    avatarUrl: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80",
     color: "text-emerald-500",
     bgColor: "bg-emerald-500/10",
     skills: ["Qualification de leads", "Génération de devis", "Négociation et vente croisée"],
@@ -44,6 +47,7 @@ const AI_TEMPLATES = [
     name: "John",
     jobTitle: "Expert Marketing & Social",
     icon: Sparkles,
+    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80",
     color: "text-pink-500",
     bgColor: "bg-pink-500/10",
     skills: ["Création de contenu", "Stratégie Social Media", "Copywriting persuasif"],
@@ -54,6 +58,7 @@ const AI_TEMPLATES = [
     name: "Lou",
     jobTitle: "Expert SEO & Contenu",
     icon: MessageSquare,
+    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80",
     color: "text-cyan-500",
     bgColor: "bg-cyan-500/10",
     skills: ["Audit sémantique", "Rédaction web", "Optimisation On-page"],
@@ -64,6 +69,7 @@ const AI_TEMPLATES = [
     name: "Chloé",
     jobTitle: "Assistante Agenda",
     icon: Calendar,
+    avatarUrl: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80",
     color: "text-purple-500",
     bgColor: "bg-purple-500/10",
     skills: ["Prise de rendez-vous", "Gestion des disponibilités", "Rappels amicaux"],
@@ -74,16 +80,18 @@ const AI_TEMPLATES = [
     name: "Julia",
     jobTitle: "Assistante Juridique",
     icon: Settings2,
+    avatarUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=150&q=80",
     color: "text-slate-500",
     bgColor: "bg-slate-500/10",
     skills: ["Rédaction de contrats", "Conformité RGPD", "Analyse juridique de premier niveau"],
-    systemPrompt: "Tu es Julia, une assistante juridique virtuelle spécialisée en droit des affaires et RGPD. Ton rôle est de rédiger des documents légaux (CGV, NDA, contrats) et d'apporter des conseils de conformité. Règle n°1 : Utilise un ton formel, précis et professionnel. Règle n°2 : Rappelle toujours que tu n'es pas une avocate inscrite au barreau et que tes conseils ne remplacent pas une consultation officielle. Règle n°3 : Sois intransigeante sur la protection des données."
+    systemPrompt: "Tu es Julia, une assistante juridique virtuelle spécialisée en droit des affaires et RGPD. Ton rôle est de rédiger documents légaux (CGV, NDA, contrats) et d'apporter des conseils de conformité. Règle n°1 : Utilise un ton formel, précis et professionnel. Règle n°2 : Rappelle toujours que tu n'es pas une avocate inscrite au barreau et que tes conseils ne remplacent pas une consultation officielle. Règle n°3 : Sois intransigeante sur la protection des données."
   },
   {
     id: "accounting",
     name: "Manue",
     jobTitle: "Assistante Comptable",
     icon: CheckCircle2,
+    avatarUrl: "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?auto=format&fit=crop&w=150&q=80",
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
     skills: ["Analyse financière", "Gestion des relances", "Production de rapports"],
@@ -94,6 +102,7 @@ const AI_TEMPLATES = [
     name: "Rony",
     jobTitle: "Expert Recrutement",
     icon: MessageCircle,
+    avatarUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80",
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
     skills: ["Tri de CV", "Qualification des candidats", "Rédaction d'offres d'emploi"],
@@ -104,6 +113,7 @@ const AI_TEMPLATES = [
     name: "Zuck",
     jobTitle: "Manager Facebook",
     icon: Sparkles,
+    avatarUrl: "https://images.unsplash.com/photo-1550525811-e5869dd03032?auto=format&fit=crop&w=150&q=80",
     color: "text-blue-600",
     bgColor: "bg-blue-600/10",
     skills: ["Création de posts engageants", "Réponse aux commentaires", "Croissance de la communauté"],
@@ -115,6 +125,7 @@ const AI_TEMPLATES = [
     name: "Reid",
     jobTitle: "Manager LinkedIn",
     icon: Briefcase,
+    avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80",
     color: "text-sky-600",
     bgColor: "bg-sky-600/10",
     skills: ["Thought Leadership", "Réseautage B2B", "Contenu expert"],
@@ -126,6 +137,7 @@ const AI_TEMPLATES = [
     name: "Byte",
     jobTitle: "Manager TikTok",
     icon: MessageSquare,
+    avatarUrl: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=150&q=80",
     color: "text-zinc-800",
     bgColor: "bg-zinc-800/10",
     skills: ["Scripts vidéos", "Réponse aux commentaires", "Tendances virales"],
@@ -273,12 +285,30 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
           {dbTemplates.map((template) => {
             const Icon = template.icon;
             return (
-              <div key={template.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full">
-                <div className={`w-14 h-14 rounded-2xl ${template.bgColor} ${template.color} flex items-center justify-center mb-4`}>
-                  <Icon className="w-7 h-7" />
+              <div key={template.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4">
+                  <div className={`w-8 h-8 rounded-full ${template.bgColor} ${template.color} flex items-center justify-center opacity-50`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
                 </div>
-                <h3 className="font-bold text-xl text-[var(--text-primary)]">{template.name}</h3>
-                <p className="text-sm font-medium text-[var(--accent-primary)] mb-4">{template.jobTitle}</p>
+                
+                <div className="flex items-center gap-4 mb-6">
+                  {template.avatarUrl ? (
+                    <img 
+                      src={template.avatarUrl} 
+                      alt={template.name} 
+                      className="w-16 h-16 rounded-full object-cover border-2 border-[var(--border-subtle)]"
+                    />
+                  ) : (
+                    <div className={`w-16 h-16 rounded-full ${template.bgColor} ${template.color} flex items-center justify-center border-2 border-[var(--border-subtle)]`}>
+                      <Icon className="w-8 h-8" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-bold text-xl text-[var(--text-primary)]">{template.name}</h3>
+                    <p className="text-sm font-medium text-[var(--accent-primary)]">{template.jobTitle}</p>
+                  </div>
+                </div>
                 
                 <div className="space-y-2 mb-6 flex-grow">
                   <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wider mb-2">Compétences</p>
@@ -310,9 +340,17 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
       {view === 'configure' && (
         <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-8 pb-6 border-b border-[var(--border-subtle)]">
-            <div className={`w-16 h-16 rounded-2xl ${selectedTemplate?.bgColor} ${selectedTemplate?.color} flex items-center justify-center`}>
-              {selectedTemplate && <selectedTemplate.icon className="w-8 h-8" />}
-            </div>
+            {selectedTemplate?.avatarUrl ? (
+              <img 
+                src={selectedTemplate.avatarUrl} 
+                alt={selectedTemplate.name} 
+                className="w-16 h-16 rounded-full object-cover border-2 border-[var(--border-subtle)]"
+              />
+            ) : (
+              <div className={`w-16 h-16 rounded-full ${selectedTemplate?.bgColor} ${selectedTemplate?.color} flex items-center justify-center border-2 border-[var(--border-subtle)]`}>
+                {selectedTemplate && <selectedTemplate.icon className="w-8 h-8" />}
+              </div>
+            )}
             <div>
               <h3 className="font-bold text-2xl text-[var(--text-primary)]">Finaliser le recrutement</h3>
               <p className="text-[var(--text-secondary)]">Personnalisez votre agent et assignez-lui des canaux de communication.</p>
@@ -409,12 +447,22 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
       {/* VIEW: LIST */}
       {view === 'list' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {employees.map((emp: any) => (
+          {employees.map((emp: any) => {
+            const template = dbTemplates.find(t => t.id === emp.templateId);
+            return (
             <div key={emp.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] relative group">
               <div className="flex gap-4 items-start">
-                <div className="w-14 h-14 rounded-2xl bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] flex items-center justify-center shrink-0">
-                  <Bot className="w-7 h-7" />
-                </div>
+                {template?.avatarUrl ? (
+                  <img 
+                    src={template.avatarUrl} 
+                    alt={emp.name} 
+                    className="w-14 h-14 rounded-full object-cover border-2 border-[var(--border-subtle)] shrink-0"
+                  />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] flex items-center justify-center shrink-0 border-2 border-[var(--border-subtle)]">
+                    <Bot className="w-7 h-7" />
+                  </div>
+                )}
                 <div>
                   <h3 className="font-bold text-xl text-[var(--text-primary)]">{emp.name}</h3>
                   <p className="text-sm font-medium text-[var(--accent-primary)] flex items-center gap-1 mt-1">
@@ -486,7 +534,8 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
 
           {employees.length === 0 && (
             <div className="col-span-full py-16 text-center border-2 border-dashed border-[var(--border-subtle)] rounded-[2rem] bg-[var(--bg-base)]/50">
