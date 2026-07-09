@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { queryRedisMemory, generateAndStoreSkill, formatMemoriesForPrompt } from "@/lib/hermes-memory";
 import { buildRunInstructions, isResolutionSignal } from "@/lib/hermes-prompt";
+import { redis } from "@/lib/redis";
+
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
@@ -82,6 +85,17 @@ export async function POST(req: Request) {
         });
         
         console.log(`[WhatsApp] Message enregistré pour l'organisation ${waAccount.organizationId}`);
+
+        // --- NOUVEAU: DISPATCH WEBHOOK ---
+        import('@/lib/webhooks').then(({ dispatchOrganizationWebhook }) => {
+          dispatchOrganizationWebhook(waAccount.organizationId, 'message.received', {
+            messageId: telnyxMessageId,
+            body: body,
+            from: fromNumber,
+            contactId: contact.id
+          });
+        });
+        // ---------------------------------
 
         // --- NOUVEAU: GESTION DES OPT-OUTS (PHASE 2) ---
         const messageBodyUpper = body.trim().toUpperCase();
@@ -179,19 +193,52 @@ export async function POST(req: Request) {
             });
             console.log(`[CRM] Opportunité ${existingOpp.id} passée en Négociation.`);
           }
-        } else {
-          // S'il n'y a pas d'opportunité, on en crée une automatiquement (Lead entrant)
-          await prisma.opportunity.create({
-            data: {
-              name: `Lead WhatsApp: ${contact.name || contact.phone}`,
-              stage: "QUALIFIED", // Client qualifié puisqu'il a interagi
-              expectedRevenue: 0,
-              contactId: contact.id,
-              organizationId: waAccount.organizationId,
-            }
-          });
           console.log(`[CRM] Nouvelle opportunité créée pour ${contact.phone}`);
         }
+
+        // --- NOUVEAU: MOTEUR D'EXÉCUTION DES SCÉNARIOS (FLOW BUILDER) ---
+        // 1. Chercher si le contact est déjà dans un Flow actif (en pause/attente)
+        const activeEnrollment = await prisma.whatsAppFlowEnrollment.findFirst({
+          where: {
+            contactId: contact.id,
+            status: "ACTIVE"
+          }
+        });
+
+        if (activeEnrollment) {
+          // Normalement on reprend l'exécution.
+          // Mais pour l'instant notre Flow n'attend pas de message utilisateur (pas de WaitForReplyNode),
+          // il continue jusqu'à un délai ou un Agent IA. Donc un message entrant ne déclenche rien sur un flow Actif 
+          // (sauf si on ajoute un noeud spécifique plus tard).
+        } else {
+          // 2. Chercher si le message déclenche un Flow existant
+          // Pour la démo, on cherche le premier flow actif de l'orga qui s'appelle "Défaut" ou qui a un trigger "Tous messages"
+          const defaultFlow = await prisma.whatsAppFlow.findFirst({
+            where: {
+              organizationId: waAccount.organizationId,
+              isActive: true
+            }
+          });
+
+          if (defaultFlow && !contact.botMode) {
+            // Créer l'enrollment et lancer le moteur
+            const newEnrollment = await prisma.whatsAppFlowEnrollment.create({
+              data: {
+                flowId: defaultFlow.id,
+                contactId: contact.id,
+                organizationId: waAccount.organizationId,
+                status: "ACTIVE"
+              }
+            });
+
+            console.log(`[Flow] Nouveau contact ${contact.phone} inscrit au Flow ${defaultFlow.id}`);
+            const { executeFlow } = await import('@/lib/flow-engine');
+            await executeFlow(newEnrollment.id, { message: body });
+            
+            return NextResponse.json({ success: true, flow: true }); // On arrête ici car le flow a pris le relai
+          }
+        }
+        // ----------------------------------------------------------------
 
         // --- PHASE 5: IA AUTONOME (RAG + HERMES MEMORY) ---
         if (contact.botMode && !contact.assignedUserId) {
@@ -200,6 +247,51 @@ export async function POST(req: Request) {
           try {
             const OpenAI = (await import('openai')).default;
             const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            
+            // --- SMART DEBOUNCING (REDIS) ---
+            if (redis) {
+              await redis.rpush(`wa:messages:${contact.id}`, body);
+              const isProcessing = await redis.get(`wa:processing:${contact.id}`);
+              if (isProcessing) {
+                console.log(`[Debounce] Message empilé pour ${contact.phone}`);
+                return NextResponse.json({ success: true, debounced: true });
+              }
+              
+              await redis.setex(`wa:processing:${contact.id}`, 10, '1');
+              await new Promise(r => setTimeout(r, 4000)); // 4s debouncing window
+              
+              const allMessages = await redis.lrange(`wa:messages:${contact.id}`, 0, -1);
+              await redis.del(`wa:messages:${contact.id}`);
+              await redis.del(`wa:processing:${contact.id}`);
+              
+              if (allMessages && allMessages.length > 0) {
+                body = allMessages.join('\n');
+                console.log(`[Debounce] Processed ${allMessages.length} messages combined for ${contact.phone}`);
+              }
+            }
+            // --------------------------------
+
+            // --- VOICE NOTE TO TEXT (WHISPER) ---
+            let isUserVoice = false;
+            if (isVoiceNote && audioUrl) {
+              console.log(`[Whisper] Transcription de la note vocale en cours...`);
+              const mediaRes = await fetch(audioUrl, {
+                headers: { 'Authorization': `Bearer ${process.env.TELNYX_API_KEY}` }
+              });
+              if (mediaRes.ok) {
+                const audioBuffer = await mediaRes.arrayBuffer();
+                const file = new File([audioBuffer], "audio.ogg", { type: "audio/ogg" });
+                
+                const transcription = await openai.audio.transcriptions.create({
+                  file: file,
+                  model: "whisper-1",
+                });
+                body = transcription.text || body;
+                isUserVoice = true;
+                console.log(`[Whisper] Résultat: ${body}`);
+              }
+            }
+            // ------------------------------------
             
             // 1. Récupérer l'Employé IA assigné à WhatsApp pour cette organisation
             const employee = await prisma.aIEmployee.findFirst({
@@ -255,7 +347,7 @@ export async function POST(req: Request) {
                     employee.id,
                     history,
                     `Résolution confirmée par le client (message: "${body}")`
-                  ).catch(e => console.error('[Hermes] Erreur génération skill:', e));
+                  ).catch((e: any) => console.error('[Hermes] Erreur génération skill:', e));
                 } catch (e) {
                   console.error('[Hermes] Erreur récupération historique pour skill:', e);
                 }
@@ -274,45 +366,14 @@ export async function POST(req: Request) {
                 });
               }
 
-              // --- SMART DEBOUNCING (REDIS) ---
               let finalMessage = body;
-              
-              try {
-                const { redis } = await import('@/lib/redis');
-                if (redis) {
-                  const bufferKey = `session:wa:${fromNumber}:buffer`;
-                  const lockKey = `session:wa:${fromNumber}:lock`;
-                  
-                  const now = Date.now();
-                  await redis.zadd(bufferKey, { score: now, member: `${now}||${body}` });
-                  await new Promise(resolve => setTimeout(resolve, 5000));
-                  
-                  const acquired = await redis.set(lockKey, "locked", { nx: true, ex: 10 });
-                  
-                  if (!acquired) {
-                    console.log(`[Debouncer] Un autre processus gère la rafale pour ${fromNumber}`);
-                    return NextResponse.json({ success: true });
-                  }
-
-                  const messages = await redis.zrange(bufferKey, 0, -1);
-                  await redis.del(bufferKey);
-                  
-                  if (messages && messages.length > 0) {
-                    const sorted = (messages as string[]).sort((a, b) => parseInt(a.split('||')[0]) - parseInt(b.split('||')[0]));
-                    finalMessage = sorted.map(m => m.split('||')[1]).join('\n');
-                    console.log(`[Debouncer] Fusion de ${messages.length} messages: ${finalMessage}`);
-                  }
-                }
-              } catch (err) {
-                console.error("[Debouncer] Redis error:", err);
-              }
-              // --------------------------------
 
               // --- HERMES MEMORY: Recherche sémantique de procédures pertinentes ---
               let relevantMemoriesText = '';
               try {
                 const memories = await queryRedisMemory(
                   waAccount.organizationId,
+                  employee.id,
                   finalMessage,
                   3
                 );
@@ -347,53 +408,175 @@ export async function POST(req: Request) {
 
               let currentRun = run;
 
-              // Handle tool calls for escalation
-              if (currentRun.status === 'requires_action' && currentRun.required_action?.type === 'submit_tool_outputs') {
+              // Handle tool calls in a loop
+              while (currentRun.status === 'requires_action' && currentRun.required_action?.type === 'submit_tool_outputs') {
                 const toolCalls = currentRun.required_action.submit_tool_outputs.tool_calls;
+                const toolOutputs: any[] = [];
+                let hasEscalation = false;
+
                 for (const toolCall of toolCalls) {
                   if (toolCall.function.name === 'transfer_to_human') {
                     const args = JSON.parse(toolCall.function.arguments);
                     console.log(`[RAG] Escalade demandée. Raison: ${args.reason}`);
 
-                    // 1. Mettre à jour le contact (désactiver le bot)
                     await prisma.contact.update({
                       where: { id: contact.id },
-                      data: {
-                        botMode: false,
-                        escalationStatus: 'REQUESTED',
-                        escalationReason: args.reason
-                      }
+                      data: { botMode: false, escalationStatus: 'REQUESTED', escalationReason: args.reason }
                     });
 
-                    // 2. Notifier le Dashboard (via Pusher)
                     const pusher = (await import('@/lib/pusher')).pusherServer;
-                    await pusher.trigger(
-                      `org-${waAccount.organizationId}`,
-                      'contact-escalated',
-                      { contactId: contact.id, reason: args.reason, phone: contact.phone }
-                    );
+                    await pusher.trigger(`org-${waAccount.organizationId}`, 'contact-escalated', { contactId: contact.id, reason: args.reason, phone: contact.phone });
 
-                    // 3. Informer le client et annuler le run OpenAI
+                    const { dispatchOrganizationWebhook } = await import('@/lib/webhooks');
+                    dispatchOrganizationWebhook(waAccount.organizationId, 'ticket.escalated', { contactId: contact.id, phone: contact.phone, reason: args.reason, agentId: employee.id });
+
                     await (openai.beta.threads.runs as any).cancel(threadId, currentRun.id);
+                    hasEscalation = true;
                     
-                    const telnyxRes = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
+                    await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
                       method: 'POST',
-                      headers: {
-                        'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
-                        'Content-Type': 'application/json',
-                      },
+                      headers: { 'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`, 'Content-Type': 'application/json' },
                       body: JSON.stringify({
-                        from: waAccount.phoneNumber,
-                        to: fromNumber,
-                        whatsapp_message: {
-                          type: 'text',
-                          text: { body: "J'ai bien noté votre demande. Je vous transfère immédiatement à mon responsable qui va prendre le relais.", preview_url: false }
-                        }
+                        from: waAccount.phoneNumber, to: fromNumber,
+                        whatsapp_message: { type: 'text', text: { body: "J'ai bien noté votre demande. Je vous transfère immédiatement à mon responsable qui va prendre le relais.", preview_url: false } }
                       })
                     });
+                  } else if (toolCall.function.name === 'verifier_stock') {
+                    const args = JSON.parse(toolCall.function.arguments || "{}");
+                    const product = await prisma.product.findFirst({
+                      where: { organizationId: waAccount.organizationId, sku: args.sku_id }
+                    });
+                    
+                    if (product) {
+                      toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ in_stock: product.stockLevel > 0, stock_level: product.stockLevel, price: product.price }) });
+                    } else {
+                      toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ error: "Produit introuvable. Demandez si l'utilisateur a un autre nom ou SKU." }) });
+                    }
+                  } else if (toolCall.function.name === 'look_up_order') {
+                    const args = JSON.parse(toolCall.function.arguments || "{}");
+                    const cart = await prisma.cart.findFirst({
+                      where: { organizationId: waAccount.organizationId, contactId: contact.id },
+                      orderBy: { createdAt: 'desc' }
+                    });
+                    if (cart) {
+                      toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ status: cart.status, total: cart.totalPrice, url: cart.checkoutUrl }) });
+                    } else {
+                      toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ error: "Aucune commande ou panier trouvé pour ce client." }) });
+                    }
+                  } else if (toolCall.function.name === 'generer_facture') {
+                    const args = JSON.parse(toolCall.function.arguments || "{}");
+                    const invoice = await prisma.invoice.create({
+                      data: {
+                        organizationId: waAccount.organizationId,
+                        contactId: contact.id,
+                        amount: args.montant || 0,
+                        description: args.description || "Facture générée par IA",
+                        status: "DRAFT"
+                      }
+                    });
+                    toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ facture_id: invoice.id, status: "succès" }) });
+                  } else if (toolCall.function.name === 'envoyer_facture_pdf') {
+                    const args = JSON.parse(toolCall.function.arguments || "{}");
+                    const invoice = await prisma.invoice.findUnique({ where: { id: args.facture_id } });
+                    if (invoice) {
+                      // Fake PDF URL for demonstration
+                      const pdfUrl = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+                      
+                      // Update invoice with PDF url
+                      await prisma.invoice.update({
+                        where: { id: invoice.id },
+                        data: { pdfUrl: pdfUrl, status: "SENT" }
+                      });
 
-                    return NextResponse.json({ success: true, escalated: true });
+                      // Send via Telnyx
+                      await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
+                        method: 'POST',
+                        headers: { 
+                          'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`, 
+                          'Content-Type': 'application/json' 
+                        },
+                        body: JSON.stringify({
+                          from: waAccount.phoneNumber, 
+                          to: fromNumber,
+                          whatsapp_message: { 
+                            type: 'document', 
+                            document: { 
+                              link: pdfUrl, 
+                              caption: `Voici votre facture: ${invoice.description}` 
+                            } 
+                          }
+                        })
+                      });
+
+                      toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ status: "PDF envoyé au client avec succès sur WhatsApp." }) });
+                    } else {
+                      toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ error: "Facture introuvable." }) });
+                    }
+                  } else {
+                    // Chercher si c'est un Skill dynamique dans la base
+                    const skill = await prisma.agentSkill.findFirst({
+                      where: { aiEmployeeId: employee.id, name: toolCall.function.name }
+                    });
+
+                    if (skill) {
+                      try {
+                        const args = JSON.parse(toolCall.function.arguments || "{}");
+                        const fetchOptions: RequestInit = {
+                          method: skill.method,
+                          headers: {
+                            'Content-Type': 'application/json',
+                            ...(skill.headers ? JSON.parse(skill.headers as string) : {})
+                          }
+                        };
+                        
+                        if (skill.method === 'POST') {
+                          fetchOptions.body = JSON.stringify(args);
+                        } else if (skill.method === 'GET' && Object.keys(args).length > 0) {
+                          const query = new URLSearchParams(args as Record<string, string>).toString();
+                          skill.endpointUrl = `${skill.endpointUrl}?${query}`;
+                        }
+
+                        console.log(`[Skills] Exécution du skill dynamique ${skill.name} vers ${skill.endpointUrl}`);
+                        const res = await fetch(skill.endpointUrl, fetchOptions);
+                        
+                        let responseData;
+                        try {
+                          responseData = await res.json();
+                        } catch {
+                          responseData = await res.text();
+                        }
+
+                        toolOutputs.push({ 
+                          tool_call_id: toolCall.id, 
+                          output: typeof responseData === 'string' ? responseData : JSON.stringify(responseData) 
+                        });
+
+                      } catch (err: any) {
+                        console.error(`[Skills] Erreur exécution du skill ${skill.name}:`, err);
+                        toolOutputs.push({ 
+                          tool_call_id: toolCall.id, 
+                          output: JSON.stringify({ error: "L'action a échoué. " + err.message }) 
+                        });
+                      }
+                    } else {
+                      // Fallback for unknown tools
+                      toolOutputs.push({ tool_call_id: toolCall.id, output: JSON.stringify({ error: "Tool not implemented yet" }) });
+                    }
                   }
+                }
+
+                if (hasEscalation) {
+                  return NextResponse.json({ success: true, escalated: true });
+                }
+
+                if (toolOutputs.length > 0) {
+                  currentRun = await (openai.beta.threads.runs as any).submitToolOutputsAndPoll(
+                    threadId,
+                    currentRun.id,
+                    { tool_outputs: toolOutputs }
+                  );
+                } else {
+                  break; // Security fallback
                 }
               }
 

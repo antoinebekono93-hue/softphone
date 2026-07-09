@@ -10,6 +10,8 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
   const [name, setName] = useState("");
   const [templateId, setTemplateId] = useState("");
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
+  const [botEnabled, setBotEnabled] = useState(false);
+  const [aiGoal, setAiGoal] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
@@ -29,7 +31,9 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
         body: JSON.stringify({
           name,
           templateId,
-          groupIds: selectedGroups
+          groupIds: selectedGroups,
+          botEnabled,
+          aiGoal
         })
       });
 
@@ -44,6 +48,8 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
       setName("");
       setTemplateId("");
       setSelectedGroups([]);
+      setBotEnabled(false);
+      setAiGoal("");
       router.refresh();
       alert("Campagne lancée avec succès !");
     } catch (error: any) {
@@ -172,6 +178,29 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
                     </label>
                   ))}
                 </div>
+              </div>
+
+              <div className="pt-4 border-t border-[var(--border-subtle)]">
+                <label className="flex items-center gap-3 cursor-pointer group mb-4">
+                  <div className={`w-12 h-6 rounded-full p-1 transition-colors ${botEnabled ? 'bg-cyan-500' : 'bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)]'}`}>
+                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${botEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                  </div>
+                  <div>
+                    <div className="font-bold text-[var(--text-primary)]">Activer le Pilotage par l'IA</div>
+                    <div className="text-xs text-[var(--text-secondary)]">Si le client répond, l'IA prendra le relais automatiquement.</div>
+                  </div>
+                </label>
+
+                {botEnabled && (
+                  <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+                    <label className="block text-sm font-bold text-cyan-600 mb-2">Objectif de l'IA (Prompt)</label>
+                    <textarea 
+                      value={aiGoal} onChange={e => setAiGoal(e.target.value)}
+                      placeholder="Ex: Si le client répond, essaie de lui vendre le maillot de bain en promotion avec le code SUMMER20..."
+                      className="w-full bg-[var(--bg-base)] border border-cyan-500/30 rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none h-24 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 mt-8">

@@ -1,18 +1,16 @@
 import { Redis } from '@upstash/redis';
 
-// Provide a mock client or a real client depending on env variables.
-// If not configured, we'll use a local in-memory Map for testing, 
-// though Upstash is required for production serverless environments.
+// Use the standard UPSTASH_REDIS_REST variables as the interface is compatible,
+// even though this is now connecting to Redis Cloud's Agent Memory service.
+const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL || '';
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 
-const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL || '';
-const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
-
-export const redis = (UPSTASH_REDIS_REST_URL && UPSTASH_REDIS_REST_TOKEN)
+export const redis = (REDIS_URL && REDIS_TOKEN)
   ? new Redis({
-      url: UPSTASH_REDIS_REST_URL,
-      token: UPSTASH_REDIS_REST_TOKEN,
+      url: REDIS_URL,
+      token: REDIS_TOKEN,
     })
-  : null; // Fallback to be handled by the consumer if null
+  : null;
 
 /**
  * Multi-Tenant Redis Routing & Session Memory
@@ -23,14 +21,12 @@ export const redis = (UPSTASH_REDIS_REST_URL && UPSTASH_REDIS_REST_TOKEN)
 // 1. Dynamic Routing: Map a phone number to a Tenant ID
 export async function cacheTenantRouting(phone: string, tenantId: string) {
   if (!redis) return;
-  // Use a global mapping key: `routing:phone:{phone}` -> tenantId
-  // This allows O(1) lookup of tenantId from an incoming webhook
   await redis.set(`routing:phone:${phone}`, tenantId);
 }
 
 export async function getTenantFromPhone(phone: string): Promise<string | null> {
   if (!redis) return null;
-  return await redis.get(`routing:phone:${phone}`);
+  return await redis.get(`routing:phone:${phone}`) as string | null;
 }
 
 // 2. Session Memory: Fast access to recent context
@@ -43,5 +39,5 @@ export async function cacheSessionContext(tenantId: string, phone: string, conte
 export async function getSessionContext(tenantId: string, phone: string): Promise<string | null> {
   if (!redis) return null;
   const key = `tenant:{${tenantId}}:session:${phone}`;
-  return await redis.get(key);
+  return await redis.get(key) as string | null;
 }

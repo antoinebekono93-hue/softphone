@@ -5,6 +5,8 @@ import { Plus, Bot, Phone, MessageSquare, Briefcase, Settings2, Trash2, Brain, H
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import KnowledgeBaseModal from "./KnowledgeBaseModal";
+import SkillsModal from "./SkillsModal";
+import { Wrench } from "lucide-react";
 
 const AI_TEMPLATES = [
   {
@@ -138,6 +140,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
   const [view, setView] = useState<'list' | 'catalog' | 'configure'>('list');
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [selectedEmployeeForKB, setSelectedEmployeeForKB] = useState<any>(null);
+  const [selectedEmployeeForSkills, setSelectedEmployeeForSkills] = useState<any>(null);
   const [dbTemplates, setDbTemplates] = useState<any[]>(AI_TEMPLATES);
 
   useEffect(() => {
@@ -465,6 +468,13 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                   <Brain className="w-4 h-4 text-purple-500" />
                   Mémoire / Savoir
                 </button>
+                <button 
+                  onClick={() => setSelectedEmployeeForSkills(emp)}
+                  className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)] hover:text-violet-500 transition-colors bg-[var(--bg-surface-hover)] px-3 py-1.5 rounded-lg border border-[var(--border-subtle)]"
+                >
+                  <Wrench className="w-4 h-4 text-violet-500" />
+                  Skills
+                </button>
                 <div className="flex gap-2">
                   <button className="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--accent-primary)] transition-colors">
                     <Settings2 className="w-4 h-4" />
@@ -504,6 +514,14 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
           employeeId={selectedEmployeeForKB.id}
           employeeName={selectedEmployeeForKB.name}
           onClose={() => setSelectedEmployeeForKB(null)} 
+        />
+      )}
+
+      {selectedEmployeeForSkills && (
+        <SkillsModal 
+          employeeId={selectedEmployeeForSkills.id}
+          employeeName={selectedEmployeeForSkills.name}
+          onClose={() => setSelectedEmployeeForSkills(null)}
         />
       )}
     </div>

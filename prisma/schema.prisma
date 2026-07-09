@@ -89,6 +89,8 @@ model Organization {
   kycStatus                  String                   @default("UNVERIFIED")
   calComApiKey               String?
   calComEventId              String?
+  webhookUrl                 String?
+  webhookSecret              String?
   tenantSettings             Json?
   automationRules            AutomationRule[]
   callLogs                   CallLog[]
@@ -376,6 +378,7 @@ model AIEmployee {
   socialAccount    SocialAccount?
   socialPosts      SocialPost[]
   template         AgentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  skills           AgentSkill[]
 
   @@index([organizationId])
   @@index([templateId])
@@ -491,6 +494,8 @@ model Campaign {
   repliedCount   Int                 @default(0)
   templateId     String?
   body           String?
+  botEnabled     Boolean             @default(false)
+  aiGoal         String?
   organizationId String
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
@@ -913,5 +918,23 @@ model SocialPost {
   aiEmployee   AIEmployee   @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+  @@index([aiEmployeeId])
+}
+
+model AgentSkill {
+  id               String   @id @default(cuid())
+  name             String   // e.g., "check_stock"
+  description      String   @db.Text
+  endpointUrl      String
+  method           String   @default("POST") // GET or POST
+  parametersSchema Json?    // JSON schema for parameters
+  headers          Json?    // Optional JSON for custom headers (like Auth)
+  
+  aiEmployeeId     String
+  aiEmployee       AIEmployee @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
   @@index([aiEmployeeId])
 }

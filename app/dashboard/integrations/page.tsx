@@ -1,4 +1,6 @@
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import WebhookForm from "./WebhookForm";
 
 export const metadata = {
   title: "Integrations | Antigravity",
@@ -6,6 +8,14 @@ export const metadata = {
 
 export default async function IntegrationsPage() {
   const session = await auth();
+  
+  let org = null;
+  if (session?.user?.organizationId) {
+    org = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId },
+      select: { webhookUrl: true, webhookSecret: true }
+    });
+  }
 
   const integrations = [
     { id: "slack", name: "Slack", description: "Send call logs, voicemail transcripts, and SMS to Slack channels.", icon: "slack", status: "Connected", color: "bg-[#4A154B]" },
@@ -48,6 +58,9 @@ export default async function IntegrationsPage() {
           </div>
         ))}
       </div>
+      
+      {/* SECTION WEBHOOK GÉNÉRIQUE */}
+      <WebhookForm initialUrl={org?.webhookUrl || null} initialSecret={org?.webhookSecret || null} />
     </div>
   );
 }

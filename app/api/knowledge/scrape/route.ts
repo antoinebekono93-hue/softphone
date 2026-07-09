@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
 import * as cheerio from 'cheerio';
+import { syncAgentSkillsWithOpenAI } from '@/lib/openai-skills';
 
 export const maxDuration = 60;
 
@@ -104,16 +105,9 @@ export async function POST(req: Request) {
       }
     });
 
-    // 7. Update AI Employee to use this Vector Store
+    // 7. Update AI Employee to use this Vector Store and its skills
     if (employee.openaiAssistantId) {
-      await openai.beta.assistants.update(employee.openaiAssistantId, {
-        tools: [{ type: "file_search" }],
-        tool_resources: {
-          file_search: {
-            vector_store_ids: [vectorStoreId as string]
-          }
-        }
-      });
+      await syncAgentSkillsWithOpenAI(employee.id);
     }
 
     return NextResponse.json({ success: true, document: doc });

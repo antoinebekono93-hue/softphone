@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import OpenAI from 'openai';
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +11,7 @@ export async function POST(req: Request) {
     }
     const organizationId = session.user.organizationId;
 
-    const { name, templateId, groupIds } = await req.json();
+    const { name, templateId, groupIds, botEnabled, aiGoal } = await req.json();
 
     if (!name || !templateId || !groupIds || groupIds.length === 0) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -72,12 +73,15 @@ export async function POST(req: Request) {
         templateId,
         organizationId,
         status: 'PROCESSING',
-        body: template.name // just a ref
+        body: template.name,
+        botEnabled: !!botEnabled,
+        aiGoal: aiGoal || null
       }
     });
 
     let sentCount = 0;
     const apiKey = process.env.TELNYX_API_KEY;
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // Send messages (in a real prod app, this should be sent to a background worker like Redis/BullMQ)
     // For this prototype, we'll do it inline, but beware of Vercel 10s timeout if contacts array is huge.
@@ -136,6 +140,33 @@ export async function POST(req: Request) {
           });
 
           sentCount++;
+
+          // --- AI OUTBOUND CAMPAIGN LOGIC ---
+          if (botEnabled) {
+            let threadId = contact.openaiThreadId;
+            if (!threadId) {
+              const newThread = await openai.beta.threads.create();
+              threadId = newThread.id;
+            }
+
+            // Mettre à jour le contact (botMode = true, enregistrer le thread)
+            await prisma.contact.update({
+              where: { id: contact.id },
+              data: { botMode: true, openaiThreadId: threadId, escalationStatus: 'NONE' }
+            });
+
+            // Injecter le contexte de la campagne dans le thread
+            const prompt = `[SYSTEM MESSAGE - CAMPAGNE MARKETING OUTBOUND]
+Nous venons d'envoyer la campagne marketing '${campaign.name}' à ce contact.
+Si le client répond à ce message, voici ton objectif absolu : ${aiGoal}
+S'il ne répond pas, NE LUI ÉCRIS RIEN. Attends sa réponse.`;
+
+            await openai.beta.threads.messages.create(threadId, {
+              role: "assistant",
+              content: prompt
+            });
+          }
+          // ----------------------------------
         }
       } catch (err) {
         console.error(`Failed to send campaign message to ${contact.phone}`, err);

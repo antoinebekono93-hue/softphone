@@ -10,19 +10,19 @@
 }
 
 :root {
-  /* Supastarter-like Clean Light Theme */
-  --bg-base: #fafafa; /* Very light gray/off-white */
-  --bg-surface: #ffffff; /* Pure white for cards */
-  --bg-surface-solid: #ffffff;
-  --bg-surface-hover: #f3f4f6; /* Hover state for rows/cards */
+  /* n8n-like Ultra-Premium Dark Theme */
+  --bg-base: #0f172a; /* Deep slate dark */
+  --bg-surface: rgba(30, 41, 59, 0.4); /* Translucent slate */
+  --bg-surface-solid: #1e293b;
+  --bg-surface-hover: rgba(51, 65, 85, 0.6); 
   
-  --border-subtle: #e5e7eb; /* Very light gray border */
-  --border-glow: #d1d5db;
+  --border-subtle: rgba(255, 255, 255, 0.1); 
+  --border-glow: rgba(255, 87, 87, 0.5); /* Neon coral glow */
   
-  --text-primary: #111827; /* Near black */
-  --text-secondary: #6b7280; /* Medium gray */
+  --text-primary: #f8fafc; /* Near white */
+  --text-secondary: #94a3b8; /* Slate gray */
   
-  --accent-primary: #171717; /* Solid black for primary buttons */
+  --accent-primary: #ff4f4f; /* n8n coral/red */
   --accent-foreground: #ffffff;
   
   /* Brand accents */
@@ -33,9 +33,9 @@
   --success: #10b981;
   --danger: #ef4444;
 
-  /* Soft, clean SaaS shadows */
-  --shadow-panel: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  --shadow-hover: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  /* Smooth Dark Shadows */
+  --shadow-panel: 0 4px 24px -1px rgba(0, 0, 0, 0.2), 0 2px 8px -1px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 10px 32px -4px rgba(255, 87, 87, 0.2), 0 4px 12px -4px rgba(255, 87, 87, 0.1);
 }
 
 body {
@@ -46,18 +46,37 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Clean Panels (No glassmorphism) */
-.glass-panel {
+/* Glass Panels */
+.glass-panel, .glass-panel-premium {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: 16px; /* softer rounded corners */
+  border-radius: 16px;
   box-shadow: var(--shadow-panel);
-  transition: all 0.2s ease-in-out;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.glass-panel:hover {
+.glass-panel:hover, .glass-panel-premium:hover {
   border-color: var(--border-glow);
   box-shadow: var(--shadow-hover);
+  background: var(--bg-surface-hover);
+}
+
+.n8n-gradient-text {
+  background: linear-gradient(135deg, #ff4f4f 0%, #ff8c00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.n8n-gradient-bg {
+  background: linear-gradient(135deg, #ff4f4f 0%, #ff8c00 100%);
+  color: #fff;
+  border: none;
+}
+.n8n-gradient-bg:hover {
+  box-shadow: 0 0 20px rgba(255, 79, 79, 0.4);
 }
 
 /* Pill Buttons (Supastarter Style) */
@@ -108,40 +127,44 @@ body {
 
 /* Badges */
 .badge-glass-green {
-  background: #ecfdf5; /* emerald-50 */
-  border: 1px solid #d1fae5; /* emerald-100 */
+  background: rgba(16, 185, 129, 0.1); 
+  border: 1px solid rgba(16, 185, 129, 0.2); 
   color: var(--success);
-  border-radius: 9999px; /* Pill shape */
+  border-radius: 9999px;
   padding: 0.125rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
+  backdrop-filter: blur(4px);
 }
 .badge-glass-red {
-  background: #fef2f2; /* red-50 */
-  border: 1px solid #fee2e2; /* red-100 */
+  background: rgba(239, 68, 68, 0.1); 
+  border: 1px solid rgba(239, 68, 68, 0.2); 
   color: var(--danger);
   border-radius: 9999px;
   padding: 0.125rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
+  backdrop-filter: blur(4px);
 }
 .badge-glass-blue {
-  background: #eff6ff; /* blue-50 */
-  border: 1px solid #dbeafe; /* blue-100 */
-  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1); 
+  border: 1px solid rgba(59, 130, 246, 0.2); 
+  color: #60a5fa;
   border-radius: 9999px;
   padding: 0.125rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
+  backdrop-filter: blur(4px);
 }
 .badge-glass-gray {
-  background: #f3f4f6; /* gray-100 */
-  border: 1px solid #e5e7eb; /* gray-200 */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
   border-radius: 9999px;
   padding: 0.125rem 0.625rem;
   font-size: 0.75rem;
   font-weight: 500;
+  backdrop-filter: blur(4px);
 }
 
 /* Typography Overrides */

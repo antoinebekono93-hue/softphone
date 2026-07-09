@@ -84,12 +84,12 @@ export default function BillingClient({
     <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       {/* Wallet Balance Card */}
-      <div className="glass rounded-2xl p-6 border border-[var(--border-subtle)] space-y-6">
+      <div className="glass-panel-premium rounded-[32px] p-8 border border-white/10 space-y-6">
         <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cyan-400"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4H6a2 2 0 01-2-2V6"/><path d="M20 12v4h-2a2 2 0 01-2-2v-2h4z"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-orange-500"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4H6a2 2 0 01-2-2V6"/><path d="M20 12v4h-2a2 2 0 01-2-2v-2h4z"/></svg>
           Wallet Balance
         </h2>
-        <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400">
+        <div className="text-5xl font-black text-transparent bg-clip-text n8n-gradient-text">
           ${balance.toFixed(2)}
         </div>
         <p className="text-sm text-[var(--text-secondary)]">
@@ -104,7 +104,7 @@ export default function BillingClient({
               <button
                 key={amount}
                 onClick={() => setCustomAmount(amount.toString())}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${parseInt(customAmount) === amount ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:text-white'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${parseInt(customAmount) === amount ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:text-white'}`}
               >
                 +${amount}
               </button>
@@ -116,7 +116,7 @@ export default function BillingClient({
                 min="5"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
-                className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 pl-7 pr-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 pl-7 pr-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-orange-500 transition-colors"
               />
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function BillingClient({
             <button 
               onClick={() => handleStripeCheckout(parseInt(customAmount))}
               disabled={isPending || !parseInt(customAmount) || parseInt(customAmount) < 5}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-violet-600 to-violet-500 hover:opacity-90 text-white transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium n8n-gradient-bg shadow-lg shadow-rose-500/20 hover:scale-105 text-white transition-all disabled:opacity-50"
             >
               {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Stripe"}
             </button>
@@ -141,9 +141,9 @@ export default function BillingClient({
       </div>
 
       {/* Current Plan Card */}
-      <div className="glass rounded-2xl p-6 border border-[var(--border-subtle)] flex flex-col">
+      <div className="glass-panel-premium rounded-[32px] p-8 border border-white/10 flex flex-col">
         <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2 mb-6">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-violet-400"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-rose-500"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Current Plan
         </h2>
         
@@ -160,7 +160,7 @@ export default function BillingClient({
     </div>
 
     {/* Transactions History */}
-    <div className="glass rounded-2xl p-6 border border-[var(--border-subtle)]">
+    <div className="glass-panel-premium rounded-[32px] p-8 border border-white/10">
       <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6 flex items-center justify-between">
         Historique des Transactions
         <button onClick={fetchWalletData} className="p-2 hover:bg-[var(--bg-surface-hover)] rounded-full transition-colors">

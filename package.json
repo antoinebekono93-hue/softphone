@@ -14,6 +14,7 @@
     "@auth/prisma-adapter": "^2.11.2",
     "@hello-pangea/dnd": "^18.0.1",
     "@prisma/client": "6.19.3",
+    "@redis-iris/agent-memory": "^0.1.1",
     "@stripe/stripe-js": "^9.8.0",
     "@tailwindcss/postcss": "^4.3.1",
     "@telnyx/video": "^1.0.2",

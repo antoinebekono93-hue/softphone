@@ -34,10 +34,10 @@ export async function GET(req: Request) {
 
     // --- Search mode ---
     if (query) {
-      const memories = await queryRedisMemory(orgId, query, topK);
+      const memories = await queryRedisMemory(orgId, "", query, topK);
 
       // Parse metadata JSON for each memory
-      const formatted = memories.map(m => ({
+      const formatted = memories.map((m: any) => ({
         id: m.id,
         content: m.content,
         type: m.type,

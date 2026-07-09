@@ -133,6 +133,39 @@ export async function POST(req: Request) {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // --- NOUVEAU: INJECTION DU CONTEXTE DANS LE THREAD OPENAI ---
+        try {
+          const OpenAI = (await import('openai')).default;
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          
+          let threadId = contact.openaiThreadId;
+          if (!threadId) {
+            const thread = await openai.beta.threads.create();
+            threadId = thread.id;
+            await prisma.contact.update({
+              where: { id: contact.id },
+              data: { openaiThreadId: threadId }
+            });
+          }
+
+          // Injecter une note de système invisible pour l'utilisateur mais visible par l'IA
+          const systemNote = `[SYSTÈME] Un événement de PANIER ABANDONNÉ vient de se produire.
+Montant du panier : ${totalPrice} ${currency}.
+Produits abandonnés : ${itemsString}.
+Un message de relance vient d'être envoyé automatiquement au client : "${messageText}".
+Ton rôle : Si le client répond, essaie de comprendre pourquoi il a abandonné son panier (prix, frais de port, hésitation) et offre de l'aide ou une réduction si nécessaire pour conclure la vente.`;
+
+          await openai.beta.threads.messages.create(threadId, {
+            role: "user",
+            content: systemNote
+          });
+          console.log(`[Ecommerce] Contexte panier abandonné injecté dans le thread ${threadId}`);
+        } catch (e) {
+          console.error("[Ecommerce] Erreur injection contexte OpenAI:", e);
+        }
+        // -------------------------------------------------------------
+
         await prisma.smsMessage.create({
           data: {
             telnyxMessageId: data.data?.id || `wa_${Date.now()}`,
