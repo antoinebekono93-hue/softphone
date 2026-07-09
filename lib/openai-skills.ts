@@ -1,5 +1,4 @@
 import OpenAI from "openai";
-const openai = new OpenAI();
 import { prisma } from "./prisma";
 import { AssistantTool } from "openai/resources/beta/assistants";
 
@@ -8,6 +7,8 @@ import { AssistantTool } from "openai/resources/beta/assistants";
  * It combines any hardcoded tools with the custom skills defined in the DB.
  */
 export async function syncAgentSkillsWithOpenAI(employeeId: string) {
+  const openai = new OpenAI();
+  
   const employee = await prisma.aIEmployee.findUnique({
     where: { id: employeeId },
     include: { skills: true, knowledgeBase: true }

@@ -1,10 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export async function evaluateCallQA(callLogId: string) {
   try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const callLog = await prisma.callLog.findUnique({
       where: { id: callLogId }
     });
