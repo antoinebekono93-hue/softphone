@@ -38,6 +38,52 @@
   --shadow-hover: 0 10px 32px -4px rgba(255, 87, 87, 0.2), 0 4px 12px -4px rgba(255, 87, 87, 0.1);
 }
 
+.dashboard-theme {
+  /* n8n-like Light Theme */
+  --bg-base: #fafafa; /* Light gray background */
+  --bg-surface: #ffffff; /* White solid panels */
+  --bg-surface-solid: #ffffff;
+  --bg-surface-hover: #f1f5f9;
+  
+  --border-subtle: #e2e8f0; 
+  --border-glow: rgba(255, 79, 79, 0.3);
+  
+  --text-primary: #0f172a; /* Dark slate */
+  --text-secondary: #64748b; /* Medium slate gray */
+  
+  --shadow-panel: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+/* Fix glass panels for light theme (remove heavy blur for solid white look like n8n) */
+.dashboard-theme .glass-panel, 
+.dashboard-theme .glass-panel-premium {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: var(--bg-surface);
+}
+
+.dashboard-theme .badge-glass-green {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+.dashboard-theme .badge-glass-red {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+.dashboard-theme .badge-glass-blue {
+  background: #dbeafe;
+  border-color: #bfdbfe;
+  color: #1e40af;
+}
+.dashboard-theme .badge-glass-gray {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+
 body {
   background-color: var(--bg-base);
   color: var(--text-primary);
