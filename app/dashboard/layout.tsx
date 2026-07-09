@@ -25,7 +25,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="dashboard-theme flex flex-col h-screen bg-[var(--bg-base)] overflow-hidden text-[var(--text-primary)] font-sans">
+    <div className="flex flex-col h-screen bg-[var(--bg-base)] overflow-hidden text-[var(--text-primary)] font-sans">
       <TopNavbar 
         organizationName={session?.user?.organizationName}
         walletBalance={walletBalance}

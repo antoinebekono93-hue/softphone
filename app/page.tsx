@@ -3,7 +3,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-[var(--text-primary)] selection:bg-rose-500/30 font-sans overflow-x-hidden">
+    <div data-theme="dark" className="min-h-screen flex flex-col bg-slate-950 text-[var(--text-primary)] selection:bg-rose-500/30 font-sans overflow-x-hidden">
       {/* CSS personnalisé pour le marquee (défilement infini) */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee {

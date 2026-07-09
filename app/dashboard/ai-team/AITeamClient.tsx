@@ -285,30 +285,35 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
           {dbTemplates.map((template) => {
             const Icon = template.icon || Bot;
             return (
-              <div key={template.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4">
-                  <div className={`w-8 h-8 rounded-full ${template.bgColor} ${template.color} flex items-center justify-center opacity-50`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4 mb-6">
+              <div key={template.id} className="glass-panel rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full relative overflow-hidden">
+                <div className="relative w-full h-48 sm:h-56 shrink-0">
                   {template.avatarUrl ? (
                     <img 
                       src={template.avatarUrl} 
                       alt={template.name} 
-                      className="w-16 h-16 rounded-full object-cover border-2 border-[var(--border-subtle)]"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className={`w-16 h-16 rounded-full ${template.bgColor} ${template.color} flex items-center justify-center border-2 border-[var(--border-subtle)]`}>
-                      <Icon className="w-8 h-8" />
+                    <div className={`w-full h-full ${template.bgColor} ${template.color} flex items-center justify-center`}>
+                      <Icon className="w-16 h-16 opacity-50" />
                     </div>
                   )}
-                  <div>
-                    <h3 className="font-bold text-xl text-[var(--text-primary)]">{template.name}</h3>
-                    <p className="text-sm font-medium text-[var(--accent-primary)]">{template.jobTitle}</p>
+                  {/* Gradient Separator */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--accent-primary)] to-orange-500"></div>
+                  
+                  {/* Top Right Icon */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <div className={`w-8 h-8 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center shadow-lg`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
+                
+                <div className="p-6 flex flex-col flex-grow">
+                  <div className="mb-6">
+                    <h3 className="font-bold text-2xl text-[var(--text-primary)]">{template.name}</h3>
+                    <p className="text-sm font-medium text-[var(--accent-primary)]">{template.jobTitle}</p>
+                  </div>
                 
                 <div className="space-y-2 mb-6 flex-grow">
                   <p className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wider mb-2">Compétences</p>
@@ -326,10 +331,11 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
 
                 <button 
                   onClick={() => handleSelectTemplate(template)}
-                  className="w-full py-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-medium group-hover:bg-[var(--accent-primary)] group-hover:text-[var(--accent-foreground)] group-hover:border-[var(--accent-primary)] transition-all"
+                  className="w-full mt-auto py-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)] text-[var(--text-primary)] font-medium group-hover:bg-[var(--accent-primary)] group-hover:text-[var(--accent-foreground)] group-hover:border-[var(--accent-primary)] transition-all"
                 >
                   Recruter ce profil
                 </button>
+                </div>
               </div>
             );
           })}
