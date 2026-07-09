@@ -283,7 +283,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
       {view === 'catalog' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {dbTemplates.map((template) => {
-            const Icon = template.icon;
+            const Icon = template.icon || Bot;
             return (
               <div key={template.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4">
@@ -348,7 +348,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
               />
             ) : (
               <div className={`w-16 h-16 rounded-full ${selectedTemplate?.bgColor} ${selectedTemplate?.color} flex items-center justify-center border-2 border-[var(--border-subtle)]`}>
-                {selectedTemplate && <selectedTemplate.icon className="w-8 h-8" />}
+                {selectedTemplate && (selectedTemplate.icon ? <selectedTemplate.icon className="w-8 h-8" /> : <Bot className="w-8 h-8" />)}
               </div>
             )}
             <div>
