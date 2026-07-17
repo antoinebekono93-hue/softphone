@@ -6,11 +6,7 @@ export async function GET() {
   try {
     const session = await auth();
     let orgId = session?.user?.organizationId;
-    if (!orgId) {
-      const defaultOrg = await prisma.organization.findFirst();
-      if (defaultOrg) orgId = defaultOrg.id;
-    }
-    if (!orgId) return NextResponse.json({ error: "No org" }, { status: 404 });
+    if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const agents = await prisma.aIEmployee.findMany({
       where: { organizationId: orgId },
@@ -32,11 +28,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const session = await auth();
     let orgId = session?.user?.organizationId;
-    if (!orgId) {
-      const defaultOrg = await prisma.organization.findFirst();
-      if (defaultOrg) orgId = defaultOrg.id;
-    }
-    if (!orgId) return NextResponse.json({ error: "No org" }, { status: 404 });
+    if (!orgId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const agent = await prisma.aIEmployee.create({
       data: {

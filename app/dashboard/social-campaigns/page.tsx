@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import CampaignsClient from "./CampaignsClient";
 
 export const metadata = {
-  title: "Campagnes WhatsApp | Antigravity",
+  title: "Campagnes Sociales | Antigravity",
 };
 
-export default async function WhatsAppCampaignsPage() {
+export default async function SocialCampaignsPage() {
   const session = await auth();
   if (!session?.user?.organizationId) redirect("/login");
   const orgId = session.user.organizationId;
@@ -23,7 +23,7 @@ export default async function WhatsAppCampaignsPage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  // 2. Fetch APPROVED templates only
+  // 2. Fetch APPROVED WhatsApp templates
   const templates = await prisma.whatsAppTemplate.findMany({
     where: { 
       organizationId: orgId,
@@ -32,14 +32,24 @@ export default async function WhatsAppCampaignsPage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  // 3. Fetch past campaigns
+  // 3. Fetch connected Facebook Pages
+  const facebookAccounts = await prisma.socialAccount.findMany({
+    where: {
+      organizationId: orgId,
+      provider: 'FACEBOOK',
+      status: 'ACTIVE'
+    }
+  });
+
+  // 4. Fetch past social campaigns (WhatsApp + Messenger)
   const campaigns = await prisma.campaign.findMany({
     where: { 
       organizationId: orgId,
-      templateId: { not: null } // We assume WhatsApp campaigns have a templateId
+      channel: { in: ['WHATSAPP', 'MESSENGER'] }
     },
     include: {
-      template: true
+      template: true,
+      socialAccount: true
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -49,6 +59,7 @@ export default async function WhatsAppCampaignsPage() {
       <CampaignsClient 
         groups={groups} 
         templates={templates} 
+        facebookAccounts={facebookAccounts}
         initialCampaigns={campaigns} 
       />
     </div>

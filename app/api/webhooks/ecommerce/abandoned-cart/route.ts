@@ -24,7 +24,8 @@ export async function POST(req: Request) {
     const payload = await req.json();
     
     // Shopify abandoned cart payload contains phone number in customer or billing_address
-    const phone = payload.customer?.phone || payload.billing_address?.phone;
+    // WooCommerce sends it in billing.phone
+    const phone = payload.customer?.phone || payload.billing_address?.phone || payload.billing?.phone;
     const cartId = payload.id?.toString();
     const totalPrice = parseFloat(payload.total_price || "0");
     const currency = payload.currency || "EUR";
@@ -150,11 +151,16 @@ export async function POST(req: Request) {
           }
 
           // Injecter une note de système invisible pour l'utilisateur mais visible par l'IA
+          let discountNote = "";
+          if (store.aiDiscountEnabled && store.aiDiscountValue) {
+            discountNote = `\nLe gérant de la boutique a autorisé une réduction de ${store.aiDiscountValue}. Si le client hésite à cause du prix ou des frais de port, tu es autorisé à lui offrir ce code promo pour conclure la vente.`;
+          }
+
           const systemNote = `[SYSTÈME] Un événement de PANIER ABANDONNÉ vient de se produire.
 Montant du panier : ${totalPrice} ${currency}.
 Produits abandonnés : ${itemsString}.
 Un message de relance vient d'être envoyé automatiquement au client : "${messageText}".
-Ton rôle : Si le client répond, essaie de comprendre pourquoi il a abandonné son panier (prix, frais de port, hésitation) et offre de l'aide ou une réduction si nécessaire pour conclure la vente.`;
+Ton rôle : Si le client répond, essaie de comprendre pourquoi il a abandonné son panier (prix, frais de port, hésitation) et offre de l'aide ou une réduction si nécessaire pour conclure la vente.${discountNote}`;
 
           await openai.beta.threads.messages.create(threadId, {
             role: "user",

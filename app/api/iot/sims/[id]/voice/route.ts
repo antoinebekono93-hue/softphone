@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
-    const org = await prisma.organization.findFirst();
+    const org = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId }
+    });
     if (!org) return NextResponse.json({ error: "No org" }, { status: 404 });
 
     const sim = await prisma.simCard.findFirst({
@@ -64,8 +72,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
-    const org = await prisma.organization.findFirst();
+    const org = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId }
+    });
     if (!org) return NextResponse.json({ error: "No org" }, { status: 404 });
 
     const sim = await prisma.simCard.findFirst({

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(request: Request) {
   try {
@@ -9,10 +10,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    const org = await prisma.organization.findFirst();
+    const sessionAuth = await auth();
+    if (!sessionAuth?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const org = await prisma.organization.findUnique({
+      where: { id: sessionAuth.user.organizationId }
+    });
 
     if (!org) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     const origin = request.headers.get("origin") || "http://localhost:3000";

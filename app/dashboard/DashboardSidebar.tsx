@@ -7,6 +7,7 @@ import {
   Home, 
   Inbox, 
   Phone, 
+  Smartphone,
   BarChart2, 
   Users, 
   Bot, 
@@ -107,8 +108,9 @@ export function DashboardSidebar({
         title: "WhatsApp Business",
         items: [
           { name: t("dashboard.wa_crm") || "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
-          { name: t("dashboard.wa_campaigns") || "Campagnes WhatsApp", href: "/dashboard/whatsapp-campaigns", icon: MessageSquare },
-          { name: "Chat WhatsApp", href: "/dashboard/whatsapp-inbox", icon: Inbox },
+          { name: "Flux Conversationnels", href: "/dashboard/whatsapp-flows", icon: Workflow },
+          { name: "Campagnes Sociales", href: "/dashboard/social-campaigns", icon: MessageSquare },
+          { name: "Numéros & eSIM", href: "/dashboard/numbers", icon: Smartphone },
           { name: "Modèles (Templates)", href: "/dashboard/whatsapp/templates", icon: BookUser },
           { name: "Paramètres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
         ]

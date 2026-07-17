@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
-    const org = await prisma.organization.findFirst();
-    if (!org) return NextResponse.json({ error: "No org" }, { status: 404 });
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const org = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId }
+    });
+    if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
 
     // Mock API for charts - normally we would sum transactions by type
     // But since it's hard to have enough dummy data across all types automatically, we'll mock it if not enough real data exists.

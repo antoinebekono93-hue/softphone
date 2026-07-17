@@ -104,10 +104,6 @@ async function processEvent(event: any) {
 
     else if (eventType === 'call.hangup') {
       console.log(`[Telnyx Webhook] Call Hangup: ${callControlId}`);
-      
-      // Generate AI summary for the CRM
-      const mockTranscription = "Le client est très intéressé par nos offres. Il souhaite un devis la semaine prochaine pour 50 licences.";
-      const mockSummary = "Intérêt fort validé. Action requise: envoyer un devis pour 50 licences semaine pro.";
 
       const ended = new Date();
       const callLog = await prisma.callLog.findUnique({ where: { telnyxCallControlId: callControlId } });
@@ -126,6 +122,7 @@ async function processEvent(event: any) {
         mosScore = parseFloat(event.payload.call_quality_stats.inbound.mos);
       }
 
+      // Only update stats. DO NOT OVERWRITE transcription or summary here (handled by media-server.ts).
       await prisma.callLog.update({
         where: { telnyxCallControlId: callControlId },
         data: {
@@ -134,27 +131,9 @@ async function processEvent(event: any) {
           duration,
           hangupCause,
           sipHangupCause,
-          mosScore,
-          transcriptionText: duration > 0 ? mockTranscription : null,
-          aiSummary: duration > 0 ? mockSummary : null
+          mosScore
         }
       });
-
-      // --- PHASE 2: LEAD SCORING & SENTIMENT ---
-      if (duration > 0 && callLog?.contactId) {
-        // Mocking AI analysis
-        const mockLeadScore = Math.floor(Math.random() * 41) + 50; // Score between 50 and 90
-        const mockSentiment = mockLeadScore > 75 ? 'POSITIVE' : (mockLeadScore < 60 ? 'NEGATIVE' : 'NEUTRAL');
-        
-        await prisma.contact.update({
-          where: { id: callLog.contactId },
-          data: {
-            leadScore: mockLeadScore,
-            sentiment: mockSentiment
-          }
-        });
-        console.log(`[AI] Updated Contact ${callLog.contactId} - Score: ${mockLeadScore}, Sentiment: ${mockSentiment}`);
-      }
 
       // --- AUTOMATION BRIDGE : NO_ANSWER_AI ---
       if (finalStatus === 'NO_ANSWER' && callLog?.contactId && callLog?.phoneNumberId) {
@@ -200,11 +179,11 @@ async function processEvent(event: any) {
       }
 
       // --- GENERIC AUTOMATION BRIDGE ---
-      if (callLog?.contactId) {
+      // We only handle CALL_MISSED here. CALL_COMPLETED will be handled by media-server.ts once AI processing is done.
+      if (callLog?.contactId && finalStatus === 'NO_ANSWER') {
         const contactInfo = await prisma.contact.findUnique({ where: { id: callLog.contactId }});
         if (contactInfo) {
-          const trigger = finalStatus === 'NO_ANSWER' ? 'CALL_MISSED' : 'CALL_COMPLETED';
-          await executeAutomation(callLog.organizationId, trigger, { contact: contactInfo });
+          await executeAutomation(callLog.organizationId, 'CALL_MISSED', { contact: contactInfo });
         }
       }
     }

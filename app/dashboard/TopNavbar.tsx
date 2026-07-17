@@ -27,8 +27,8 @@ export function TopNavbar({
 
   const modules = [
     { id: "phone", name: "Téléphone", icon: Phone, href: "/dashboard" },
-    { id: "sms", name: "SMS", icon: MessageSquare, href: "/dashboard/sms" },
-    { id: "whatsapp", name: "WhatsApp", icon: MessageCircle, href: "/dashboard/whatsapp-campaigns" },
+    { id: "voice", name: "Voix", icon: Phone, href: "/dashboard/campaigns" },
+    { id: "social", name: "Social (FB/WA)", icon: MessageCircle, href: "/dashboard/social-campaigns" },
     { id: "ai", name: "IA & Agents", icon: Bot, href: "/dashboard/ai-team" },
   ];
 

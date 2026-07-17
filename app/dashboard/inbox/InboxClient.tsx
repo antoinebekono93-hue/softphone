@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Phone, Send, User, Bot, AlertTriangle, ShieldCheck, Sparkles } from "lucide-react";
+import { MessageSquare, Phone, Send, User, Bot, AlertTriangle, ShieldCheck, Sparkles, MessageCircle, Camera, Monitor, PhoneCall } from "lucide-react";
 import Pusher from "pusher-js";
 
 type ContactPreview = {
@@ -14,23 +14,36 @@ type ContactPreview = {
   lastMessage: { body: string, sentAt: string, direction: string, type: string } | null;
 };
 
-type SmsMessage = {
+type OmnichannelMessage = {
   id: string;
   body: string;
   direction: string;
   type: string;
   sentAt: string;
+  mediaUrls?: string[];
+  recordingUrl?: string;
+  duration?: number;
 };
 
 export default function InboxClient({ organizationId, initialEvents }: { organizationId?: string, initialEvents?: any[] }) {
   const [contacts, setContacts] = useState<ContactPreview[]>([]);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<SmsMessage[]>([]);
+  const [messages, setMessages] = useState<OmnichannelMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [selectedChannel, setSelectedChannel] = useState("WHATSAPP");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const selectedContact = contacts.find(c => c.id === selectedContactId);
+
+  // Set default channel based on contact's last message type
+  useEffect(() => {
+    if (selectedContact?.lastMessage) {
+      if (['WHATSAPP', 'SMS', 'INSTAGRAM', 'FACEBOOK'].includes(selectedContact.lastMessage.type)) {
+        setSelectedChannel(selectedContact.lastMessage.type);
+      }
+    }
+  }, [selectedContactId, selectedContact]);
 
   // Fetch initial contacts
   useEffect(() => {
@@ -114,7 +127,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
       const res = await fetch('/api/inbox/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId: selectedContactId, body: textToSend })
+        body: JSON.stringify({ contactId: selectedContactId, body: textToSend, channel: selectedChannel })
       });
       // Errors will be caught, but Pusher handles the success state
     } catch (e) {
@@ -176,6 +189,11 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                       <AlertTriangle className="w-3 h-3" /> Escaladé
                     </span>
                   )}
+                  {contact.lastMessage?.type === 'WHATSAPP' && <MessageCircle className="w-3 h-3 text-emerald-500 ml-auto" />}
+                  {contact.lastMessage?.type === 'SMS' && <MessageSquare className="w-3 h-3 text-blue-500 ml-auto" />}
+                  {contact.lastMessage?.type === 'INSTAGRAM' && <Camera className="w-3 h-3 text-pink-500 ml-auto" />}
+                  {contact.lastMessage?.type === 'FACEBOOK' && <Monitor className="w-3 h-3 text-blue-500 ml-auto" />}
+                  {contact.lastMessage?.type === 'CALL' && <PhoneCall className="w-3 h-3 text-rose-500 ml-auto" />}
                 </div>
               </div>
             </button>
@@ -220,17 +238,61 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
               ) : (
                 messages.map(msg => {
                   const isOutbound = msg.direction === 'OUTBOUND';
+                  
+                  if (msg.type === 'CALL') {
+                    return (
+                      <div key={msg.id} className={`flex flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-[85%] rounded-2xl p-4 border border-white/10 ${isOutbound ? 'bg-slate-800/80 rounded-br-none' : 'glass-panel-premium rounded-bl-none'}`}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="p-2 bg-rose-500/20 rounded-full">
+                              <PhoneCall className="w-4 h-4 text-rose-500" />
+                            </div>
+                            <span className="font-bold text-sm text-[var(--text-primary)]">
+                              Appel Vocal {msg.duration ? `(${msg.duration}s)` : ''}
+                            </span>
+                          </div>
+                          {msg.recordingUrl && (
+                            <audio src={msg.recordingUrl} controls className="w-full h-10 mb-3" />
+                          )}
+                          <p className="text-sm italic text-[var(--text-secondary)] bg-black/20 p-3 rounded-lg border border-white/5">
+                            {msg.body}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-[var(--text-tertiary)] mt-1 px-1">
+                          {new Date(msg.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  const getChannelColor = (type: string, isOutbound: boolean) => {
+                    if (!isOutbound) return 'glass-panel-premium text-[var(--text-primary)] rounded-bl-none';
+                    switch(type) {
+                      case 'WHATSAPP': return 'bg-emerald-600 text-white rounded-br-none';
+                      case 'INSTAGRAM': return 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white rounded-br-none';
+                      case 'FACEBOOK': return 'bg-blue-600 text-white rounded-br-none';
+                      default: return 'n8n-gradient-bg text-white rounded-br-none';
+                    }
+                  };
+
+                  const getChannelIcon = (type: string) => {
+                    switch(type) {
+                      case 'WHATSAPP': return <MessageCircle className="w-3 h-3" />;
+                      case 'INSTAGRAM': return <Camera className="w-3 h-3" />;
+                      case 'FACEBOOK': return <Monitor className="w-3 h-3" />;
+                      default: return <MessageSquare className="w-3 h-3" />;
+                    }
+                  };
+
                   return (
                     <div key={msg.id} className={`flex flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${
-                        isOutbound 
-                          ? 'n8n-gradient-bg rounded-br-none' 
-                          : 'glass-panel-premium text-[var(--text-primary)] rounded-bl-none'
-                      }`}>
+                      <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${getChannelColor(msg.type, isOutbound)}`}>
                         <p className="whitespace-pre-wrap leading-relaxed">{msg.body}</p>
                       </div>
-                      <span className="text-[10px] text-[var(--text-tertiary)] mt-1 px-1">
+                      <span className="text-[10px] text-[var(--text-tertiary)] mt-1 px-1 flex items-center gap-1">
+                        {isOutbound && getChannelIcon(msg.type)}
                         {new Date(msg.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {!isOutbound && getChannelIcon(msg.type)}
                       </span>
                     </div>
                   );
@@ -248,7 +310,14 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                   </p>
                 </div>
               ) : (
-                <div className="flex items-center gap-2 relative">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <button onClick={() => setSelectedChannel('WHATSAPP')} className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${selectedChannel === 'WHATSAPP' ? 'bg-emerald-500/20 text-emerald-500' : 'text-gray-500 hover:bg-white/5'}`}><MessageCircle className="w-3 h-3" /> WhatsApp</button>
+                    <button onClick={() => setSelectedChannel('SMS')} className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${selectedChannel === 'SMS' ? 'bg-blue-500/20 text-blue-500' : 'text-gray-500 hover:bg-white/5'}`}><MessageSquare className="w-3 h-3" /> SMS</button>
+                    <button onClick={() => setSelectedChannel('INSTAGRAM')} className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${selectedChannel === 'INSTAGRAM' ? 'bg-pink-500/20 text-pink-500' : 'text-gray-500 hover:bg-white/5'}`}><Camera className="w-3 h-3" /> Instagram</button>
+                    <button onClick={() => setSelectedChannel('FACEBOOK')} className={`text-xs px-2 py-1 rounded flex items-center gap-1 transition-colors ${selectedChannel === 'FACEBOOK' ? 'bg-blue-500/20 text-blue-500' : 'text-gray-500 hover:bg-white/5'}`}><Monitor className="w-3 h-3" /> Facebook</button>
+                  </div>
+                  <div className="flex items-center gap-2 relative">
                   <textarea 
                     value={inputText}
                     onChange={e => setInputText(e.target.value)}
@@ -269,6 +338,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                     <Send className="w-4 h-4" />
                   </button>
                 </div>
+              </div>
               )}
             </div>
           </>

@@ -32,13 +32,12 @@ export async function POST(req: Request) {
           const mid = messagingEvent.message?.mid;
 
           if (text && senderId && mid) {
-            // 1. Trouver l'organisation liée à ce compte Instagram
-            // Pour l'instant, on suppose qu'il y a une config globale ou on cherche le compte WhatsApp associé 
-            // Dans une vraie implémentation, on aurait un modèle `InstagramAccount`
-            // Ici, on va attacher au premier compte WhatsApp trouvé (mock B2B)
-            const waAccount = await prisma.whatsAppAccount.findFirst();
+            // Trouver le SocialAccount lié à ce compte Instagram
+            const socialAccount = await prisma.socialAccount.findFirst({
+              where: { accountId: igAccountId, provider: "INSTAGRAM", status: "ACTIVE" }
+            });
 
-            if (waAccount) {
+            if (socialAccount) {
               // 2. Trouver ou créer le contact via instagramId
               const contact = await prisma.contact.upsert({
                 where: { 
@@ -48,7 +47,7 @@ export async function POST(req: Request) {
                 },
                 update: {},
                 create: {
-                  organizationId: waAccount.organizationId,
+                  organizationId: socialAccount.organizationId,
                   phone: `IG_${senderId}`, // Fallback car le tel est obligatoire
                   instagramId: senderId,
                   name: `Utilisateur Instagram (${senderId})`
@@ -56,12 +55,12 @@ export async function POST(req: Request) {
               }).catch(async () => {
                  // Fallback manuel si upsert fail à cause de la clé
                  let c = await prisma.contact.findFirst({
-                   where: { instagramId: senderId, organizationId: waAccount.organizationId }
+                   where: { instagramId: senderId, organizationId: socialAccount.organizationId }
                  });
                  if (!c) {
                    c = await prisma.contact.create({
                      data: {
-                       organizationId: waAccount.organizationId,
+                       organizationId: socialAccount.organizationId,
                        phone: `IG_${senderId}`,
                        instagramId: senderId,
                        name: `Utilisateur Instagram (${senderId})`
@@ -81,7 +80,7 @@ export async function POST(req: Request) {
                   type: "INSTAGRAM", // <-- Le canal
                   fromNumber: senderId, // On met l'ID Instagram
                   toNumber: igAccountId,
-                  organizationId: waAccount.organizationId,
+                  organizationId: socialAccount.organizationId,
                   contactId: contact.id,
                 }
               });

@@ -92,7 +92,7 @@ model Organization {
   webhookUrl                 String?
   webhookSecret              String?
   tenantSettings             Json?
-  automationRules            AutomationRule[]
+  automationWorkflows        AutomationWorkflow[]
   callLogs                   CallLog[]
   campaigns                  Campaign[]
   contacts                   Contact[]
@@ -125,6 +125,7 @@ model Organization {
   products                   Product[]
   socialAccounts             SocialAccount[]
   socialPosts                SocialPost[]
+  socialMessages             SocialMessage[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -209,6 +210,7 @@ model Contact {
   invoices                Invoice[]
   tickets                 Ticket[]
   smsMessages             SmsMessage[]
+  socialMessages          SocialMessage[]
   groups                  ContactGroup[]           @relation("ContactToContactGroup")
   assignedUserId          String?
   assignedUser            User?                    @relation("AssignedContactUser", fields: [assignedUserId], references: [id])
@@ -295,19 +297,34 @@ model SmsMessage {
   @@index([contactId])
 }
 
-model AutomationRule {
-  id             String       @id @default(cuid())
+model AutomationWorkflow {
+  id             String    @id @default(cuid())
   name           String
-  triggerType    String
-  actionType     String
-  actionPayload  String
-  isActive       Boolean      @default(true)
+  description    String?
+  nodes          Json      @default("[]")
+  edges          Json      @default("[]")
+  isActive       Boolean   @default(false)
+  triggerType    String    @default("MANUAL") // CALL_MISSED, TICKET_CREATED, SCHEDULED, MANUAL
   organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs           WorkflowRun[]
 
   @@index([organizationId])
+}
+
+model WorkflowRun {
+  id             String    @id @default(cuid())
+  workflowId     String
+  status         String    @default("RUNNING") // RUNNING, SUCCESS, FAILED
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  triggerData    Json?     // Payload received
+  runLogs        Json      @default("[]") // Detailed logs per node execution
+  workflow       AutomationWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
 }
 
 model PricingPlan {
@@ -363,9 +380,11 @@ model AIEmployee {
   selectedTone String?
 
   // Options
-  isActive        Boolean @default(true)
-  tacticalSilence Int     @default(4000)
-  greeting        String?
+  isActive                 Boolean @default(true)
+  tacticalSilence          Int     @default(4000)
+  greeting                 String?
+  replyToCommentsPublicly  Boolean @default(true)
+  replyToCommentsPrivately Boolean @default(false)
 
   organizationId  String
   knowledgeBaseId String?
@@ -377,6 +396,7 @@ model AIEmployee {
   knowledgeBase    KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id])
   socialAccount    SocialAccount?
   socialPosts      SocialPost[]
+  socialMessages   SocialMessage[]
   template         AgentTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   skills           AgentSkill[]
 
@@ -486,6 +506,7 @@ model WhatsAppAccount {
 model Campaign {
   id             String              @id @default(cuid())
   name           String
+  channel        String              @default("WHATSAPP") // VOICE, WHATSAPP, MESSENGER
   status         String              @default("DRAFT")
   scheduledAt    DateTime?
   sentCount      Int                 @default(0)
@@ -500,12 +521,15 @@ model Campaign {
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   phoneNumberId  String?
+  socialAccountId String?
   organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   phoneNumber    PhoneNumber?        @relation(fields: [phoneNumberId], references: [id])
+  socialAccount  SocialAccount?      @relation(fields: [socialAccountId], references: [id])
   template       WhatsAppTemplate?   @relation(fields: [templateId], references: [id])
   recipients     CampaignRecipient[]
 
   @@index([organizationId])
+  @@index([socialAccountId])
 }
 
 model CampaignRecipient {
@@ -738,16 +762,18 @@ model WhatsAppFlowEnrollment {
 // Models related to E-Commerce & Stores
 
 model EcommerceStore {
-  id             String       @id @default(cuid())
-  platform       String       @default("SHOPIFY") // SHOPIFY, WOOCOMMERCE, CUSTOM
-  storeUrl       String
-  accessToken    String?
-  webhookSecret  String?
-  isActive       Boolean      @default(true)
-  organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                String       @id @default(cuid())
+  platform          String       @default("SHOPIFY") // SHOPIFY, WOOCOMMERCE, CUSTOM
+  storeUrl          String
+  accessToken       String?
+  webhookSecret     String?
+  isActive          Boolean      @default(true)
+  aiDiscountEnabled Boolean      @default(false)
+  aiDiscountValue   String?
+  organizationId    String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
 }
@@ -896,6 +922,7 @@ model SocialAccount {
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   aiEmployee   AIEmployee?  @relation(fields: [aiEmployeeId], references: [id], onDelete: SetNull)
+  campaigns    Campaign[]
 
   @@index([organizationId])
 }
@@ -936,5 +963,30 @@ model AgentSkill {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  @@index([aiEmployeeId])
+}
+
+model SocialMessage {
+  id                String        @id @default(cuid())
+  provider          String        // "FACEBOOK", "INSTAGRAM", "WHATSAPP"
+  providerMessageId String?
+  direction         String        // "INBOUND" or "OUTBOUND"
+  content           String        @db.Text
+  senderId          String
+  recipientId       String
+  
+  contactId         String?
+  aiEmployeeId      String?
+  organizationId    String
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  contact           Contact?      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  aiEmployee        AIEmployee?   @relation(fields: [aiEmployeeId], references: [id], onDelete: SetNull)
+  organization      Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([contactId])
   @@index([aiEmployeeId])
 }

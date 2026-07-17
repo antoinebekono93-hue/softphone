@@ -22,24 +22,23 @@ export async function POST(req: Request) {
 
     const payload = await req.json();
 
-    // Payload de type "Product" Shopify
+    // Payload de type "Product" Shopify ou WooCommerce/Custom
     const productIdStr = payload.id?.toString();
     if (!productIdStr) {
       return NextResponse.json({ error: "No product ID in payload" }, { status: 400 });
     }
 
-    const name = payload.title || "Produit sans nom";
-    const description = payload.body_html || "";
+    const name = payload.title || payload.name || "Produit sans nom";
+    const description = payload.body_html || payload.description || "";
     
-    // Simplification MVP : on prend le premier variant pour le prix et SKU, 
-    // et on somme l'inventaire total de tous les variants.
-    let price = 0;
-    let sku = "";
-    let totalStock = 0;
+    let price = parseFloat(payload.price || "0");
+    let sku = payload.sku || "";
+    let totalStock = parseInt(payload.stock_quantity || payload.inventory_quantity || "0", 10);
 
+    // Shopify spécificités (Variants)
     if (payload.variants && Array.isArray(payload.variants) && payload.variants.length > 0) {
-      price = parseFloat(payload.variants[0].price || "0");
-      sku = payload.variants[0].sku || "";
+      price = parseFloat(payload.variants[0].price || price.toString());
+      sku = payload.variants[0].sku || sku;
       totalStock = payload.variants.reduce((acc: number, variant: any) => {
         return acc + (variant.inventory_quantity || 0);
       }, 0);

@@ -4,11 +4,14 @@ import { useState } from "react";
 import { Megaphone, Users, MessageSquare, Play, CalendarClock, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function CampaignsClient({ groups, templates, initialCampaigns }: any) {
+export default function CampaignsClient({ groups, templates, facebookAccounts, initialCampaigns }: any) {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [name, setName] = useState("");
+  const [channel, setChannel] = useState("WHATSAPP");
   const [templateId, setTemplateId] = useState("");
+  const [socialAccountId, setSocialAccountId] = useState("");
+  const [messageText, setMessageText] = useState("");
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [botEnabled, setBotEnabled] = useState(false);
   const [aiGoal, setAiGoal] = useState("");
@@ -21,16 +24,21 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!templateId || selectedGroups.length === 0) return alert("Sélectionnez un modèle et au moins un groupe de contacts.");
+    if (channel === 'WHATSAPP' && !templateId) return alert("Sélectionnez un modèle WhatsApp.");
+    if (channel === 'MESSENGER' && (!socialAccountId || !messageText)) return alert("Sélectionnez une Page Facebook et rédigez un message.");
+    if (selectedGroups.length === 0) return alert("Sélectionnez au moins un groupe de contacts.");
 
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/whatsapp/campaigns", {
+      const res = await fetch("/api/social-campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          templateId,
+          channel,
+          templateId: channel === 'WHATSAPP' ? templateId : undefined,
+          socialAccountId: channel === 'MESSENGER' ? socialAccountId : undefined,
+          messageText: channel === 'MESSENGER' ? messageText : undefined,
           groupIds: selectedGroups,
           botEnabled,
           aiGoal
@@ -47,6 +55,8 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
       setIsModalOpen(false);
       setName("");
       setTemplateId("");
+      setSocialAccountId("");
+      setMessageText("");
       setSelectedGroups([]);
       setBotEnabled(false);
       setAiGoal("");
@@ -64,9 +74,9 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-            <Megaphone className="text-emerald-500" /> Campagnes WhatsApp
+            <Megaphone className="text-emerald-500" /> Campagnes Sociales
           </h1>
-          <p className="text-[var(--text-secondary)] mt-2">Envoyez des messages groupés en utilisant vos modèles approuvés.</p>
+          <p className="text-[var(--text-secondary)] mt-2">Envoyez des messages groupés via WhatsApp ou Facebook Messenger.</p>
         </div>
         <button onClick={() => setIsModalOpen(true)} className="btn-primary-gradient px-6 py-3 flex items-center gap-2">
           <Play className="w-5 h-5" />
@@ -95,8 +105,9 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
             <thead>
               <tr className="border-b border-[var(--border-subtle)] text-sm text-[var(--text-secondary)]">
                 <th className="p-4 font-semibold">Nom de la campagne</th>
+                <th className="p-4 font-semibold">Canal</th>
                 <th className="p-4 font-semibold">Statut</th>
-                <th className="p-4 font-semibold">Modèle utilisé</th>
+                <th className="p-4 font-semibold">Contenu / Modèle</th>
                 <th className="p-4 font-semibold">Cibles</th>
                 <th className="p-4 font-semibold">Date</th>
               </tr>
@@ -112,9 +123,16 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
                     <div className="font-bold text-[var(--text-primary)]">{campaign.name}</div>
                   </td>
                   <td className="p-4">
-                    <span className="px-2 py-1 text-xs font-bold rounded-md bg-emerald-500/10 text-emerald-500">{campaign.status}</span>
+                    <span className={`px-2 py-1 text-xs font-bold rounded-md ${campaign.channel === 'WHATSAPP' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                      {campaign.channel}
+                    </span>
                   </td>
-                  <td className="p-4 text-[var(--text-secondary)]">{campaign.template?.name || "N/A"}</td>
+                  <td className="p-4">
+                    <span className="px-2 py-1 text-xs font-bold rounded-md bg-[var(--bg-surface-hover)] text-[var(--text-secondary)]">{campaign.status}</span>
+                  </td>
+                  <td className="p-4 text-[var(--text-secondary)]">
+                    {campaign.channel === 'WHATSAPP' ? campaign.template?.name : (campaign.body?.substring(0, 20) + "...")}
+                  </td>
                   <td className="p-4 text-[var(--text-secondary)]">{campaign.sentCount} contacts</td>
                   <td className="p-4 text-[var(--text-secondary)]">{new Date(campaign.createdAt).toLocaleDateString()}</td>
                 </tr>
@@ -139,19 +157,60 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Choisir un modèle WhatsApp</label>
-                <select 
-                  required value={templateId} onChange={e => setTemplateId(e.target.value)}
-                  className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
-                >
-                  <option value="" disabled>-- Sélectionnez un modèle approuvé --</option>
-                  {templates.map((t: any) => (
-                    <option key={t.id} value={t.id}>{t.name} ({t.language})</option>
-                  ))}
-                </select>
-                {templates.length === 0 && <p className="text-rose-500 text-xs mt-1">Vous n'avez aucun modèle approuvé.</p>}
+              <div className="grid grid-cols-2 gap-4">
+                <button type="button" onClick={() => setChannel("WHATSAPP")} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${channel === 'WHATSAPP' ? 'border-emerald-500 bg-emerald-500/5' : 'border-[var(--border-subtle)] hover:border-emerald-500/50'}`}>
+                  <div className={`p-3 rounded-full ${channel === 'WHATSAPP' ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)]'}`}>
+                    <MessageSquare className="w-6 h-6" />
+                  </div>
+                  <span className="font-bold">WhatsApp</span>
+                </button>
+                <button type="button" onClick={() => setChannel("MESSENGER")} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${channel === 'MESSENGER' ? 'border-blue-500 bg-blue-500/5' : 'border-[var(--border-subtle)] hover:border-blue-500/50'}`}>
+                  <div className={`p-3 rounded-full ${channel === 'MESSENGER' ? 'bg-blue-500 text-white' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)]'}`}>
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.14 2 11.25c0 2.91 1.5 5.51 3.86 7.19V22l3.5-1.92c.84.23 1.73.36 2.64.36 5.523 0 10-4.14 10-9.25S17.523 2 12 2zm1.09 12.35l-2.64-2.82-5.15 2.82 5.67-6.04 2.67 2.82 5.11-2.82-5.66 6.04z"/></svg>
+                  </div>
+                  <span className="font-bold">Messenger</span>
+                </button>
               </div>
+
+              {channel === 'WHATSAPP' ? (
+                <div>
+                  <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Choisir un modèle WhatsApp</label>
+                  <select 
+                    required value={templateId} onChange={e => setTemplateId(e.target.value)}
+                    className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+                  >
+                    <option value="" disabled>-- Sélectionnez un modèle approuvé --</option>
+                    {templates?.map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.name} ({t.language})</option>
+                    ))}
+                  </select>
+                  {templates?.length === 0 && <p className="text-rose-500 text-xs mt-1">Vous n'avez aucun modèle approuvé.</p>}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Page Facebook Expéditrice</label>
+                    <select 
+                      required value={socialAccountId} onChange={e => setSocialAccountId(e.target.value)}
+                      className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-blue-500 outline-none"
+                    >
+                      <option value="" disabled>-- Sélectionnez une Page Facebook --</option>
+                      {facebookAccounts?.map((acc: any) => (
+                        <option key={acc.id} value={acc.id}>{acc.accountName || acc.accountId}</option>
+                      ))}
+                    </select>
+                    {facebookAccounts?.length === 0 && <p className="text-rose-500 text-xs mt-1">Aucune page Facebook connectée (allez dans Équipe IA).</p>}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Message (Texte libre)</label>
+                    <textarea 
+                      required value={messageText} onChange={e => setMessageText(e.target.value)}
+                      placeholder="Bonjour, nous avons une offre spéciale..."
+                      className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none h-24 focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-bold text-[var(--text-secondary)] mb-2">Sélectionnez les groupes cibles ({selectedGroups.length} sélectionnés)</label>
@@ -207,7 +266,7 @@ export default function CampaignsClient({ groups, templates, initialCampaigns }:
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)]">
                   Annuler
                 </button>
-                <button type="submit" disabled={isSubmitting || templates.length === 0} className="btn-primary-gradient px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20">
+                <button type="submit" disabled={isSubmitting || (channel === 'WHATSAPP' && templates?.length === 0) || (channel === 'MESSENGER' && facebookAccounts?.length === 0)} className="btn-primary-gradient px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20">
                   {isSubmitting ? 'Envoi en cours...' : 'Envoyer la campagne'}
                 </button>
               </div>

@@ -20,8 +20,24 @@ async function processEvent(event: any) {
     }
 
     const call = new telnyx.Call({ call_control_id: payload.call_control_id });
-    const defaultOrg = await prisma.organization.findFirst();
-    const orgId = defaultOrg?.id;
+    
+    let orgId: string | undefined;
+    const ourNumber = payload.direction === "incoming" ? payload.to : payload.from;
+    
+    // Clean up SIP formatting if necessary
+    let cleanNumber = ourNumber;
+    if (cleanNumber && cleanNumber.startsWith('sip:')) {
+      cleanNumber = cleanNumber.replace('sip:', '').split('@')[0];
+    }
+
+    if (cleanNumber) {
+      const phone = await prisma.phoneNumber.findFirst({
+        where: { number: cleanNumber }
+      });
+      if (phone) {
+        orgId = phone.organizationId;
+      }
+    }
 
     switch (eventType) {
       case "call.initiated":
@@ -136,16 +152,16 @@ export async function POST(req: Request) {
     const timestamp = req.headers.get('telnyx-timestamp');
     const publicKey = process.env.TELNYX_PUBLIC_KEY;
 
-    if (signature && timestamp && publicKey) {
-      try {
-        event = telnyx.webhooks.constructEvent(rawBody, signature, timestamp, publicKey);
-      } catch (err: any) {
-        console.error('[Telnyx Webhook] Signature verification failed:', err.message);
-        return new NextResponse('Invalid signature', { status: 400 });
-      }
-    } else {
-      console.warn('[Telnyx Webhook] No signature verification performed (missing headers or PUBLIC_KEY)');
-      event = JSON.parse(rawBody);
+    if (!signature || !timestamp || !publicKey) {
+      console.error('[Telnyx Webhook] Missing signature headers or PUBLIC_KEY config');
+      return new NextResponse('Missing signature headers or configuration', { status: 400 });
+    }
+
+    try {
+      event = telnyx.webhooks.constructEvent(rawBody, signature, timestamp, publicKey);
+    } catch (err: any) {
+      console.error('[Telnyx Webhook] Signature verification failed:', err.message);
+      return new NextResponse('Invalid signature', { status: 400 });
     }
 
     // Run async to return 200 OK fast

@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function GET(request: Request) {
   try {
-    const org = await prisma.organization.findFirst();
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const org = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId }
+    });
     if (!org) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 });
     }
@@ -66,7 +74,14 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const org = await prisma.organization.findFirst();
+    const session = await auth();
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const org = await prisma.organization.findUnique({
+      where: { id: session.user.organizationId }
+    });
     if (!org) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 });
     }

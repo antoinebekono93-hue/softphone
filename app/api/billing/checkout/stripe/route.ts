@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 // Initialize Stripe. We use a dummy key if not present in env to allow build to pass
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_dummy", {
@@ -15,12 +16,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
     }
 
-    // In a real app, you would get the authenticated user and their organization ID.
-    // For this demo, we'll just pick the first organization as the mock user.
-    const org = await prisma.organization.findFirst();
+    const sessionAuth = await auth();
+    if (!sessionAuth?.user?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const org = await prisma.organization.findUnique({
+      where: { id: sessionAuth.user.organizationId }
+    });
 
     if (!org) {
-      return NextResponse.json({ error: "No organization found" }, { status: 404 });
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
     }
 
     const origin = request.headers.get("origin") || "http://localhost:3000";

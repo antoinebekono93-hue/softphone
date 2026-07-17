@@ -420,6 +420,9 @@ wss.on('connection', (telnyxWs, req) => {
       const fullTranscript = transcriptSegments.map(s => `${s.role}: ${s.text}`).join('\n');
       
       let aiSummary = null;
+      let leadScore = 50;
+      let sentiment = 'NEUTRAL';
+
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -429,10 +432,15 @@ wss.on('connection', (telnyxWs, req) => {
           },
           body: JSON.stringify({
             model: 'gpt-4o-mini',
+            response_format: { type: "json_object" },
             messages: [
               { 
                 role: 'system', 
-                content: 'You are an assistant that summarizes phone call transcripts. Provide a concise, professional summary of the conversation in 2-3 sentences. Identify the main purpose and any action items.' 
+                content: `You are an expert sales analyst. Analyze this phone transcript.
+Return a JSON object with:
+- "summary": a concise, professional summary of the conversation in 2-3 sentences. Identify the main purpose and any action items.
+- "leadScore": a number from 0 to 100 indicating how likely they are to buy (0=not interested, 100=ready to buy).
+- "sentiment": either "POSITIVE", "NEGATIVE", or "NEUTRAL".`
               },
               { role: 'user', content: fullTranscript }
             ]
@@ -441,10 +449,14 @@ wss.on('connection', (telnyxWs, req) => {
         
         const data = await response.json();
         if (data.choices && data.choices.length > 0) {
-          aiSummary = data.choices[0].message.content;
+          const resultStr = data.choices[0].message.content;
+          const result = JSON.parse(resultStr);
+          aiSummary = result.summary;
+          leadScore = result.leadScore || 50;
+          sentiment = result.sentiment || 'NEUTRAL';
         }
       } catch (e) {
-        console.error('[Transcript] Failed to generate AI summary:', e);
+        console.error('[Transcript] Failed to generate AI analysis:', e);
       }
 
       try {
@@ -458,6 +470,29 @@ wss.on('connection', (telnyxWs, req) => {
         });
         console.log(`[Transcript] Successfully saved transcript & summary for ${callControlId}`);
         
+        // Update Contact Lead Score and Sentiment
+        if (updatedCall.contactId) {
+           await prisma.contact.update({
+             where: { id: updatedCall.contactId },
+             data: {
+               leadScore,
+               sentiment
+             }
+           });
+           console.log(`[AI] Updated Contact ${updatedCall.contactId} - Score: ${leadScore}, Sentiment: ${sentiment}`);
+           
+           // Trigger Automation for Completed Call
+           try {
+             const contactInfo = await prisma.contact.findUnique({ where: { id: updatedCall.contactId } });
+             if (contactInfo) {
+               const { executeAutomation } = await import('../lib/automations.js');
+               await executeAutomation(updatedCall.organizationId, 'CALL_COMPLETED', { contact: contactInfo });
+             }
+           } catch (autoErr) {
+             console.error("[Automation Error in media-server]", autoErr);
+           }
+        }
+
         // Trigger QA Evaluation (Async, without waiting)
         const { evaluateCallQA } = await import('../lib/ai/qa-evaluator.js');
         evaluateCallQA(updatedCall.id).catch(console.error);
