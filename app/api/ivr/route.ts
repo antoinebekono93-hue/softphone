@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     // Look for an existing IVR rule for this org, or create one.
-    let ivrRule = await prisma.automationRule.findFirst({
+    let ivrRule = await prisma.automationWorkflow.findFirst({
       where: {
         organizationId: user.organizationId,
         triggerType: "INBOUND_CALL",
@@ -34,19 +34,18 @@ export async function POST(req: Request) {
     });
 
     if (ivrRule) {
-      ivrRule = await prisma.automationRule.update({
+      ivrRule = await prisma.automationWorkflow.update({
         where: { id: ivrRule.id },
         data: {
-          actionPayload: JSON.stringify(nodes)
+          nodes: JSON.stringify(nodes)
         }
       });
     } else {
-      ivrRule = await prisma.automationRule.create({
+      ivrRule = await prisma.automationWorkflow.create({
         data: {
           name: "Main IVR",
           triggerType: "INBOUND_CALL",
-          actionType: "EXECUTE_IVR",
-          actionPayload: JSON.stringify(nodes),
+          nodes: JSON.stringify(nodes),
           organizationId: user.organizationId
         }
       });

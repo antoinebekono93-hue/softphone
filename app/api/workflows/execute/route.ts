@@ -1,7 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { Twilio } from "twilio";
-
 // Helper for template replacement. e.g. "Hello {{triggerNode.data.name}}"
 function resolveTemplate(template: string, state: Record<string, any>) {
   if (!template) return "";

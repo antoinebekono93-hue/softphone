@@ -23,7 +23,7 @@ export default async function IvrPage() {
   }
 
   // Look for the main IVR rule
-  const ivrRule = await prisma.automationRule.findFirst({
+  const ivrRule = await prisma.automationWorkflow.findFirst({
     where: {
       organizationId: user.organizationId,
       triggerType: "INBOUND_CALL",
@@ -32,9 +32,9 @@ export default async function IvrPage() {
   });
 
   let initialNodes = null;
-  if (ivrRule && ivrRule.actionPayload) {
+  if (ivrRule && ivrRule.nodes) {
     try {
-      initialNodes = JSON.parse(ivrRule.actionPayload);
+      initialNodes = JSON.parse(ivrRule.nodes as string);
     } catch (e) {
       console.error("Failed to parse IVR nodes", e);
     }

@@ -80,7 +80,7 @@ export async function GET(req: Request) {
         type: msg.provider, // 'INSTAGRAM', 'MESSENGER', etc.
         direction: msg.direction,
         body: msg.content,
-        mediaUrls: msg.mediaUrls || [],
+        mediaUrls: [],
         timestamp: new Date(msg.createdAt).getTime(),
         status: "DELIVERED",
       });

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { syncAgentSkillsWithOpenAI } from "@/lib/openai-skills";
 import { handleRequiresAction } from "@/lib/ai/tool-runner";
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || "sk-dummy-key",
 });
 
 

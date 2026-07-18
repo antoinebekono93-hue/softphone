@@ -1,16 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth();
+    const { id } = await params;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { id: userId },
       include: { organization: true },
     });
 
@@ -20,7 +22,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
     const workflow = await prisma.automationWorkflow.findUnique({
       where: { 
-        id: params.id,
+        id,
         organizationId: user.organization.id 
       }
     });

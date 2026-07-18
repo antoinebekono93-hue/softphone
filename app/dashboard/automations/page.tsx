@@ -1,16 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Plus, Workflow, Zap, MoreVertical, Trash2 } from "lucide-react";
 import { revalidatePath } from "next/cache";
 
 export default async function AutomationsPage() {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) redirect("/login");
 
   const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
+    where: { id: userId },
     include: { organization: true },
   });
 
@@ -23,9 +24,10 @@ export default async function AutomationsPage() {
 
   async function createWorkflow() {
     "use server";
-    const { userId } = await auth();
+    const session = await auth();
+    const userId = session?.user?.id;
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId! },
+      where: { id: userId! },
       include: { organization: true },
     });
     

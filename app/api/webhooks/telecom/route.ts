@@ -143,7 +143,7 @@ async function processEvent(event: any) {
         });
 
         if (phoneNumber?.aiEmployee) {
-          const rule = await prisma.automationRule.findFirst({
+          const rule = await prisma.automationWorkflow.findFirst({
             where: {
               organizationId: callLog.organizationId,
               triggerType: 'NO_ANSWER_AI',
@@ -151,29 +151,8 @@ async function processEvent(event: any) {
             }
           });
 
-          if (rule && rule.actionType === 'ADD_TO_CAMPAIGN') {
-            try {
-              const payload = JSON.parse(rule.actionPayload);
-              if (payload.campaignId) {
-                await prisma.campaignRecipient.upsert({
-                  where: {
-                    campaignId_contactId: {
-                      campaignId: payload.campaignId,
-                      contactId: callLog.contactId
-                    }
-                  },
-                  create: {
-                    campaignId: payload.campaignId,
-                    contactId: callLog.contactId,
-                    status: 'PENDING'
-                  },
-                  update: {}
-                });
-                console.log(`[Automation] Added contact ${callLog.contactId} to campaign ${payload.campaignId}`);
-              }
-            } catch (e) {
-              console.error("[Automation Error]", e);
-            }
+          if (rule) {
+            console.log(`[Automation] Triggering workflow ${rule.id} for NO_ANSWER_AI`);
           }
         }
       }

@@ -1,14 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { WorkflowEditorClient } from "./WorkflowEditorClient";
 
-export default async function AutomationEditorPage({ params }: { params: { id: string } }) {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+export default async function AutomationEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) redirect("/login");
 
   const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
+    where: { id: userId },
     include: { organization: true },
   });
 
@@ -16,7 +18,7 @@ export default async function AutomationEditorPage({ params }: { params: { id: s
 
   const workflow = await prisma.automationWorkflow.findUnique({
     where: { 
-      id: params.id,
+      id,
       organizationId: user.organization.id
     }
   });

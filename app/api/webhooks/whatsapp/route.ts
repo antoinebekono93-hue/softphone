@@ -494,7 +494,7 @@ export async function POST(req: Request) {
                   }
                 }
               } else {
-                 console.log("[RAG] Run Failed/Requires Action:", run.status);
+                 console.log("[RAG] Run Failed/Requires Action:", currentRun.status);
               }
             } else {
                console.log("[RAG] Aucun assistant OpenAI configuré pour cette organisation.");

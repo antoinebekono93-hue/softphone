@@ -1,14 +1,16 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { userId } = await auth();
+    const { id } = await params;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
     const user = await prisma.user.findUnique({
-      where: { clerkId: userId },
+      where: { id: userId },
       include: { organization: true },
     });
 
@@ -18,13 +20,13 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const { name, isActive, nodes, edges } = body;
 
     const wf = await prisma.automationWorkflow.findUnique({
-      where: { id: params.id, organizationId: user.organization.id }
+      where: { id, organizationId: user.organization.id }
     });
 
     if (!wf) return new NextResponse("Not Found", { status: 404 });
 
     const updated = await prisma.automationWorkflow.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name,
         isActive,
