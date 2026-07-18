@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -31,11 +32,13 @@ export default async function AITeamPage() {
         <p className="text-[var(--text-secondary)] mt-2">Gérez vos employés virtuels. Assignez-leur des rôles (WhatsApp, Appels) pour automatiser votre support client et vos ventes.</p>
       </div>
 
-      <AITeamClient 
-        initialEmployees={employees} 
-        phoneNumbers={phoneNumbers}
-        whatsappAccounts={whatsappAccounts}
-      />
+      <Suspense fallback={<div className="flex justify-center p-12"><div className="w-8 h-8 rounded-full border-4 border-[var(--accent-primary)] border-t-transparent animate-spin"></div></div>}>
+        <AITeamClient 
+          initialEmployees={employees} 
+          phoneNumbers={phoneNumbers}
+          whatsappAccounts={whatsappAccounts}
+        />
+      </Suspense>
     </div>
   );
 }
