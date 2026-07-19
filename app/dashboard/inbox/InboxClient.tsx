@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { MessageSquare, Phone, Send, User, Bot, AlertTriangle, ShieldCheck, Sparkles, MessageCircle, Camera, Monitor, PhoneCall } from "lucide-react";
-import Pusher from "pusher-js";
 
 type ContactPreview = {
   id: string;
@@ -77,13 +76,18 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
     // Enable pusher logging - don't include this in production
     // Pusher.logToConsole = true;
     
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-    });
+    let pusher: any;
+    let channel: any;
 
-    const channel = pusher.subscribe(`org-${organizationId}`);
-    
-    channel.bind('new-message', (data: any) => {
+    import('pusher-js').then((PusherModule) => {
+      const Pusher = PusherModule.default || PusherModule;
+      pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+        cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      });
+
+      channel = pusher.subscribe(`org-${organizationId}`);
+      
+      channel.bind('new-message', (data: any) => {
       // If it's for the selected contact, add it to the messages
       if (data.contactId === selectedContactId) {
         setMessages(prev => [...prev, data]);
@@ -97,17 +101,23 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
         });
     });
 
-    channel.bind('contact-updated', (data: any) => {
-      setContacts(prev => prev.map(c => 
-        c.id === data.contactId 
-          ? { ...c, botMode: data.botMode, escalationStatus: data.escalationStatus } 
-          : c
-      ));
+      channel.bind('contact-updated', (data: any) => {
+        setContacts(prev => prev.map(c => 
+          c.id === data.contactId 
+            ? { ...c, botMode: data.botMode, escalationStatus: data.escalationStatus } 
+            : c
+        ));
+      });
     });
 
     return () => {
-      channel.unbind_all();
-      channel.unsubscribe();
+      if (channel) {
+        channel.unbind_all();
+        channel.unsubscribe();
+      }
+      if (pusher) {
+        pusher.disconnect();
+      }
     };
   }, [organizationId, selectedContactId]);
 
