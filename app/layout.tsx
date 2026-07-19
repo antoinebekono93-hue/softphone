@@ -3,15 +3,8 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { TelnyxProvider } from "@/contexts/TelnyxContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -70,7 +63,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={`${inter.variable} font-sans`}>
+      <body className={`font-sans`}>
         <ThemeProvider defaultTheme="light">
           <AuthProvider>
             <LanguageProvider>
