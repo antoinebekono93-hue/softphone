@@ -160,8 +160,8 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
     <div className="flex w-full h-full bg-[var(--bg-base)]">
       
       {/* LEFT PANE: Contacts List */}
-      <div className="w-full md:w-80 border-r border-white/10 flex flex-col h-full bg-slate-900/50 backdrop-blur-xl shrink-0">
-        <div className="p-4 border-b border-white/10">
+      <div className="w-full md:w-80 border-r border-[var(--border-subtle)] flex flex-col h-full bg-[var(--bg-surface)] shrink-0">
+        <div className="p-4 border-b border-[var(--border-subtle)]">
           <h2 className="text-xl font-bold text-[var(--text-primary)]">Discussions</h2>
         </div>
         <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -169,9 +169,9 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             <button
               key={contact.id}
               onClick={() => setSelectedContactId(contact.id)}
-              className={`w-full text-left p-4 border-b border-white/10 hover:bg-slate-800/50 transition-colors flex gap-3 ${selectedContactId === contact.id ? 'bg-slate-800/80 border-l-2 border-l-rose-500' : 'border-l-2 border-l-transparent'}`}
+              className={`w-full text-left p-4 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex gap-3 ${selectedContactId === contact.id ? 'bg-[var(--bg-surface-hover)] border-l-2 border-l-rose-500' : 'border-l-2 border-l-transparent'}`}
             >
-              <div className="mt-1 p-2 bg-slate-900 rounded-full shrink-0 relative">
+              <div className="mt-1 p-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-full shrink-0 relative">
                 <User className="w-5 h-5 text-gray-400" />
                 {contact.escalationStatus === 'REQUESTED' && (
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-[var(--bg-surface-solid)]" />
@@ -212,11 +212,11 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
       </div>
 
       {/* MIDDLE PANE: Chat */}
-      <div className="hidden md:flex flex-1 flex-col h-full bg-slate-950 relative">
+      <div className="hidden md:flex flex-1 flex-col h-full bg-[var(--bg-base)] relative">
         {selectedContact ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-white/10 bg-slate-900/50 backdrop-blur-lg flex items-center justify-between shadow-sm z-10">
+            <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-3">
                 <h3 className="font-bold text-lg text-[var(--text-primary)]">{selectedContact.name}</h3>
                 <span className="text-sm text-[var(--text-secondary)]">{selectedContact.phone}</span>
@@ -252,7 +252,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                   if (msg.type === 'CALL') {
                     return (
                       <div key={msg.id} className={`flex flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-[85%] rounded-2xl p-4 border border-white/10 ${isOutbound ? 'bg-slate-800/80 rounded-br-none' : 'glass-panel-premium rounded-bl-none'}`}>
+                        <div className={`max-w-[85%] rounded-2xl p-4 border border-[var(--border-subtle)] ${isOutbound ? 'bg-[var(--bg-surface)] rounded-br-none' : 'bg-[var(--bg-surface)]/60 rounded-bl-none'}`}>
                           <div className="flex items-center gap-3 mb-3">
                             <div className="p-2 bg-rose-500/20 rounded-full">
                               <PhoneCall className="w-4 h-4 text-rose-500" />
@@ -264,7 +264,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                           {msg.recordingUrl && (
                             <audio src={msg.recordingUrl} controls className="w-full h-10 mb-3" />
                           )}
-                          <p className="text-sm italic text-[var(--text-secondary)] bg-black/20 p-3 rounded-lg border border-white/5">
+                          <p className="text-sm italic text-[var(--text-secondary)] bg-[var(--bg-base)] p-3 rounded-lg border border-[var(--border-subtle)]">
                             {msg.body}
                           </p>
                         </div>
@@ -276,7 +276,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                   }
 
                   const getChannelColor = (type: string, isOutbound: boolean) => {
-                    if (!isOutbound) return 'glass-panel-premium text-[var(--text-primary)] rounded-bl-none';
+                    if (!isOutbound) return 'bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] rounded-bl-none';
                     switch(type) {
                       case 'WHATSAPP': return 'bg-emerald-600 text-white rounded-br-none';
                       case 'INSTAGRAM': return 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white rounded-br-none';
@@ -312,7 +312,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             </div>
 
             {/* Chat Input */}
-            <div className="p-4 border-t border-white/10 bg-slate-900/50 backdrop-blur-lg">
+            <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]">
               {selectedContact.botMode ? (
                 <div className="flex items-center justify-center p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
                   <p className="text-sm text-emerald-600 flex items-center gap-2">
@@ -338,7 +338,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                       }
                     }}
                     placeholder="Écrivez un message (Entrée pour envoyer)..."
-                    className="flex-1 bg-slate-950/50 border border-white/10 rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none h-14 focus:outline-none focus:border-rose-500/50 transition-colors"
+                    className="flex-1 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none h-14 focus:outline-none focus:border-rose-500/50 transition-colors"
                   />
                   <button 
                     onClick={handleSendMessage}
@@ -361,10 +361,10 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
       </div>
 
       {/* RIGHT PANE: Context & AI Summary */}
-      <div className="hidden lg:flex w-80 border-l border-white/10 bg-slate-900/50 backdrop-blur-xl flex-col h-full shrink-0">
+      <div className="hidden lg:flex w-80 border-l border-[var(--border-subtle)] bg-[var(--bg-surface)] flex-col h-full shrink-0">
         {selectedContact ? (
           <>
-            <div className="p-6 border-b border-white/10 text-center">
+            <div className="p-6 border-b border-[var(--border-subtle)] text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-rose-500/20 to-orange-500/20 rounded-full mx-auto flex items-center justify-center border border-rose-500/30 mb-4">
                 <User className="w-8 h-8 text-cyan-500" />
               </div>
@@ -376,7 +376,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
               <h4 className="font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-rose-400" /> Résumé de l'IA
               </h4>
-              <div className="glass-panel-premium p-4 text-sm text-[var(--text-secondary)] leading-relaxed">
+              <div className="glass-panel p-4 text-sm text-[var(--text-secondary)] leading-relaxed">
                 {selectedContact.aiSummary || "L'IA n'a pas encore généré de résumé pour ce client."}
               </div>
             </div>
