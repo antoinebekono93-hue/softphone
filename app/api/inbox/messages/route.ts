@@ -104,7 +104,7 @@ export async function GET(req: Request) {
     // Map timestamp back to ISO string for the frontend
     const formattedTimeline = timeline.map(item => ({
       ...item,
-      timestamp: new Date(item.timestamp).toISOString()
+      sentAt: new Date(item.timestamp).toISOString()
     }));
 
     return NextResponse.json({ messages: formattedTimeline, contact });
