@@ -33,28 +33,27 @@ export function TopNavbar({
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 h-16 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] z-40 flex items-center justify-between px-4 md:px-6">
-      <div className="flex items-center gap-8 h-full w-full max-w-full">
-        {/* Logo */}
+    <header className="fixed top-0 inset-x-0 h-16 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] z-40 flex items-center px-4 md:px-6">
+      {/* Left: Logo + Search */}
+      <div className="flex items-center gap-4 flex-1">
         <div className="flex items-center gap-3 font-bold text-[var(--text-primary)] shrink-0">
           <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-sm shadow-sm">
             {organizationName?.charAt(0) || "A"}
           </div>
           <span className="hidden md:inline-block">Antigravité</span>
         </div>
-
-        {/* Global Search */}
-        <div className="hidden md:flex relative max-w-md w-full">
+        <div className="hidden md:flex relative max-w-xs w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
           <input 
             type="text" 
             placeholder="Rechercher..." 
-            className="w-full pl-10 pr-4 py-2 bg-[var(--bg-surface-hover)] border-none rounded-xl text-sm focus:ring-1 focus:ring-[var(--border-glow)]"
+            className="w-full pl-10 pr-4 py-2 bg-[var(--bg-surface-hover)] border-none rounded-xl text-sm focus:ring-1 focus:ring-[var(--border-glow)] outline-none"
           />
         </div>
+      </div>
 
-        {/* Horizontal Navigation (Modules) */}
-        <nav className="hidden md:flex items-center gap-1 h-full mx-auto absolute left-1/2 -translate-x-1/2">
+      {/* Center: Navigation (Modules) — truly centered */}
+      <nav className="hidden md:flex items-center gap-1 h-full">
           {modules.map((m) => {
             const isActive = activeModule === m.id;
             const Icon = m.icon;
@@ -78,8 +77,8 @@ export function TopNavbar({
           })}
         </nav>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-4 ml-auto shrink-0">
+      {/* Right Actions */}
+      <div className="flex items-center gap-4 flex-1 justify-end shrink-0">
           {/* Wallet Balance (Moved from Sidebar) */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] shadow-sm">
             <span className="text-xs font-semibold text-[var(--text-secondary)]">Wallet</span>
@@ -102,7 +101,6 @@ export function TopNavbar({
           </button>
           
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-500 to-violet-500 shadow-sm cursor-pointer border-2 border-[var(--bg-base)]"></div>
-        </div>
       </div>
     </header>
   );
