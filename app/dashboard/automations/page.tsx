@@ -57,7 +57,7 @@ export default async function AutomationsPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-full overflow-y-auto">
+    <div className="p-8 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 mb-2">Workflows Visuels</h1>

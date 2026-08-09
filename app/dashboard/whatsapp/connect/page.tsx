@@ -26,7 +26,7 @@ export default async function WhatsAppConnectPage() {
   const whatsappAccount = account ? JSON.parse(JSON.stringify(account)) : null;
 
   return (
-    <div className="h-full w-full bg-[var(--bg-base)] overflow-y-auto">
+    <div className="w-full bg-[var(--bg-base)]">
       <ConnectClient 
         phoneNumbers={phoneNumbers} 
         existingAccount={whatsappAccount} 
