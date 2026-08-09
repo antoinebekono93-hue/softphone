@@ -6,13 +6,23 @@ const globalForPrisma = globalThis as unknown as {
 
 let prismaUrl = process.env.DATABASE_URL || "";
 
-// Vercel / Neon Free Tier Postgres fixes
+// Nhost uses PgBouncer for connection pooling
+// Nhost direct: postgresql://user:pass@<host>.nhost.run/db
+// Nhost PgBouncer: postgresql://user:pass@<host>.nhost.run:5432/db?pgbouncer=true
+// Or use the pooler endpoint if available
+if (prismaUrl && prismaUrl.includes('nhost.run') && !prismaUrl.includes('pgbouncer')) {
+  // Add pgbouncer parameter for Nhost
+  const separator = prismaUrl.includes("?") ? "&" : "?";
+  prismaUrl += `${separator}pgbouncer=true`;
+  console.log('[Prisma] Using Nhost PgBouncer connection pooler');
+}
+
+// Connection pool settings for serverless
 if (prismaUrl) {
-  // Use connection limit 3 per serverless instance to allow some concurrency,
-  // but wait up to 30 seconds for a connection if the pool is full.
   const separator = prismaUrl.includes("?") ? "&" : "?";
   if (!prismaUrl.includes("connection_limit=")) {
-    prismaUrl += `${separator}connection_limit=3&pool_timeout=30`;
+    // Nhost PgBouncer handles pooling, but we set a reasonable limit
+    prismaUrl += `${separator}connection_limit=20&pool_timeout=30`;
   }
 }
 

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 if (!process.env.AUTH_SECRET) {
-  process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET || "f62a4b8cd9a714e897b2354c86e0fc21568b209a3c94d12b";
+  process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET!;
 }
 
 async function hashPassword(password: string): Promise<string> {
@@ -30,7 +30,7 @@ async function verifyPassword(
 }
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "f62a4b8cd9a714e897b2354c86e0fc21568b209a3c94d12b",
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET!,
   trustHost: true,
   // NOTE: PrismaAdapter removed - incompatible with CredentialsProvider + JWT strategy
   session: {

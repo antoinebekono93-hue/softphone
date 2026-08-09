@@ -6,6 +6,9 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { validateEnv } from "@/lib/env-validation";
+
+validateEnv();
 
 export const metadata: Metadata = {
   title: {

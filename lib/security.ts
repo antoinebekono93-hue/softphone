@@ -1,17 +1,23 @@
 import CryptoJS from 'crypto-js';
 
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'default-fallback-key-change-in-production-123!';
+function getEncryptionKey(): string {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('ENCRYPTION_KEY is not defined in environment variables');
+  }
+  return key;
+}
 
 /**
  * Security as a Feature: Chiffrement AES-256
  * Utilisé pour chiffrer les faits extraits et les logs sensibles avant insertion en DB.
  */
 export function encryptData(text: string): string {
-  return CryptoJS.AES.encrypt(text, ENCRYPTION_KEY).toString();
+  return CryptoJS.AES.encrypt(text, getEncryptionKey()).toString();
 }
 
 export function decryptData(cipherText: string): string {
-  const bytes = CryptoJS.AES.decrypt(cipherText, ENCRYPTION_KEY);
+  const bytes = CryptoJS.AES.decrypt(cipherText, getEncryptionKey());
   return bytes.toString(CryptoJS.enc.Utf8);
 }
 

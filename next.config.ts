@@ -1,10 +1,9 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
-  // Enable React strict mode for better development experience
   reactStrictMode: true,
-
-  // Security and performance headers
+  turbopack: {},
   async headers() {
     return [
       {
@@ -32,7 +31,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Allow Telnyx webhook routes to be called externally
       {
         source: "/api/voice/:path*",
         headers: [
@@ -55,4 +53,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  reactComponentAnnotation: {
+    enabled: true,
+  },
+  hideSourceMaps: true,
+  disableLogger: true,
+  automaticVercelMonitors: true,
+});

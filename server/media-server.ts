@@ -1,25 +1,49 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import dotenv from 'dotenv';
+import { createServer } from 'http';
 import { PrismaClient } from '@prisma/client';
-
-dotenv.config({ path: '.env.local' });
 
 const prisma = new PrismaClient();
 
-const PORT = process.env.WS_PORT ? parseInt(process.env.WS_PORT) : 8080;
+const WS_PORT = process.env.WS_PORT ? parseInt(process.env.WS_PORT) : 8080;
+const HTTP_PORT = process.env.HTTP_PORT ? parseInt(process.env.HTTP_PORT) : 3001;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-// NOTE: using dynamic import for lib/billing.js in runtime if needed, 
-// but since this is TS compiled via tsc, we can just import directly or dynamically inside the handlers.
-
 if (!OPENAI_API_KEY) {
-  console.error("Missing OPENAI_API_KEY in .env.local");
+  console.error("Missing OPENAI_API_KEY in environment variables");
   process.exit(1);
 }
 
-const wss = new WebSocketServer({ port: PORT });
+// Structured logger
+const logger = {
+  info: (msg: string, meta?: Record<string, unknown>) => console.log(JSON.stringify({ level: 'info', message: msg, timestamp: new Date().toISOString(), ...meta })),
+  error: (msg: string, meta?: Record<string, unknown>) => console.error(JSON.stringify({ level: 'error', message: msg, timestamp: new Date().toISOString(), ...meta })),
+  warn: (msg: string, meta?: Record<string, unknown>) => console.warn(JSON.stringify({ level: 'warn', message: msg, timestamp: new Date().toISOString(), ...meta })),
+};
 
-console.log(`🚀 Media WebSocket Server listening on ws://localhost:${PORT}/media`);
+// HTTP server for health checks
+const httpServer = createServer((req, res) => {
+  if (req.url === '/health' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() }));
+    return;
+  }
+  if (req.url === '/ready' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ready', timestamp: new Date().toISOString() }));
+    return;
+  }
+  res.writeHead(404);
+  res.end();
+});
+
+httpServer.listen(HTTP_PORT, () => {
+  logger.info(`🏥 Health check server listening on http://localhost:${HTTP_PORT}`);
+});
+
+// WebSocket server for Telnyx media
+const wss = new WebSocketServer({ server: httpServer, path: '/media' });
+
+logger.info(`🚀 Media WebSocket Server listening on ws://localhost:${WS_PORT}/media (HTTP on ${HTTP_PORT})`);
 
 wss.on('connection', (telnyxWs, req) => {
   console.log(`[☎️ Telnyx connected] ${req.url}`);
@@ -504,10 +528,46 @@ Return a JSON object with:
   };
 
   telnyxWs.on('close', async () => {
-    console.log('[☎️ Telnyx disconnected]');
+    logger.info('[☎️ Telnyx disconnected]');
     if (openAiWs.readyState === WebSocket.OPEN) {
       openAiWs.close();
     }
     await handleCallEnd();
   });
+});
+
+// Graceful shutdown
+const shutdown = async (signal: string) => {
+  logger.info(`${signal} received, starting graceful shutdown...`);
+  
+  // Stop accepting new connections
+  wss.close(() => {
+    logger.info('WebSocket server closed');
+  });
+  
+  httpServer.close(() => {
+    logger.info('HTTP server closed');
+  });
+  
+  // Close Prisma connection
+  await prisma.$disconnect();
+  logger.info('Prisma disconnected');
+  
+  // Force exit after 30 seconds
+  setTimeout(() => {
+    logger.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Rejection', { reason: String(reason) });
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception', { error: error.message, stack: error.stack });
+  shutdown('uncaughtException');
 });

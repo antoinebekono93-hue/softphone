@@ -1,9 +1,22 @@
 // @ts-ignore
 import Telnyx from 'telnyx';
 
-const telnyxApiKey = process.env.TELNYX_API_KEY;
-if (!telnyxApiKey) {
-  console.warn('WARNING: TELNYX_API_KEY is not defined in environment variables');
+let telnyxInstance: any = null;
+
+export function getTelnyxClient() {
+  if (!telnyxInstance) {
+    const telnyxApiKey = process.env.TELNYX_API_KEY;
+    if (!telnyxApiKey) {
+      throw new Error('TELNYX_API_KEY is not defined in environment variables');
+    }
+    telnyxInstance = new (Telnyx as any)(telnyxApiKey);
+  }
+  return telnyxInstance;
 }
 
-export const telnyx = new (Telnyx as any)(telnyxApiKey || 'dummy_key_for_build');
+// For backward compatibility - lazily evaluated
+export const telnyx = new Proxy({} as any, {
+  get(_, prop) {
+    return getTelnyxClient()[prop];
+  },
+});

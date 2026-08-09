@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { getStripeClient } from '@/lib/stripe';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy', {
-  apiVersion: '2026-06-24.dahlia' as any,
-});
-
 export async function POST(request: Request) {
   try {
+    const stripe = getStripeClient();
     const session = await auth();
     if (!session?.user?.organizationId) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
