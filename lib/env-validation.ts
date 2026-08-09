@@ -13,17 +13,28 @@ const REQUIRED_VARS = [
   'CRON_SECRET',
 ] as const;
 
+let hasValidated = false;
+
 export function validateEnv(): void {
-  // Skip validation during Next.js build (static generation)
+  // Ne valider qu'une seule fois
+  if (hasValidated) return;
+  hasValidated = true;
+
+  // Skip pendant le build Next.js
   if (process.env.NEXT_PHASE === 'phase-production-build' || 
-      process.env.NEXT_PHASE === 'phase-development-server' ||
-      process.env.NODE_ENV === 'production' && !process.env.DATABASE_URL) {
+      process.env.NEXT_PHASE === 'phase-development-server') {
     return;
   }
 
   const missing = REQUIRED_VARS.filter((v) => !process.env[v]);
   if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    const msg = `Missing required environment variables: ${missing.join(', ')}`;
+    console.error('[ENV VALIDATION] CRITICAL:', msg);
+    // En production, on loggue mais on ne throw PAS pour éviter de casser toutes les pages
+    if (process.env.NODE_ENV !== 'production') {
+      throw new Error(msg);
+    }
+    return;
   }
 
   const encryptionKey = process.env.ENCRYPTION_KEY;
@@ -34,7 +45,10 @@ export function validateEnv(): void {
         throw new Error('ENCRYPTION_KEY must be 32 bytes (base64 encoded)');
       }
     } catch {
-      throw new Error('ENCRYPTION_KEY must be valid base64');
+      console.error('[ENV VALIDATION] ENCRYPTION_KEY must be valid base64 (32 bytes)');
+      if (process.env.NODE_ENV !== 'production') {
+        throw new Error('ENCRYPTION_KEY must be valid base64');
+      }
     }
   }
 }

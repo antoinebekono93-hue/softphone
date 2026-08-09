@@ -3,10 +3,17 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { Redis } from "@upstash/redis";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+let redis: Redis | null = null;
+
+function getRedis(): Redis | null {
+  if (!redis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  }
+  return redis;
+}
 
 const publicPaths = [
   "/",
@@ -42,12 +49,18 @@ async function checkRateLimit(pathname: string, identifier: string): Promise<Nex
   const config = rateLimitConfig[pathname];
   if (!config) return null;
 
+  const redisClient = getRedis();
+  if (!redisClient) {
+    // Fail open if Redis not configured
+    return null;
+  }
+
   const key = `ratelimit:${pathname}:${identifier}`;
   const now = Math.floor(Date.now() / 1000);
   const windowStart = now - config.window;
 
   try {
-    const pipeline = redis.pipeline();
+    const pipeline = redisClient.pipeline();
     pipeline.zremrangebyscore(key, 0, windowStart);
     pipeline.zadd(key, { score: now, member: `${now}-${Math.random()}` });
     pipeline.zcard(key);
