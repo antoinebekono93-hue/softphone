@@ -15,7 +15,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@prisma/client": "6.19.3",
     "@redis-iris/agent-memory": "^0.1.1",
-    "@sentry/nextjs": "^8.55.2",
+    "@sentry/nextjs": "^10.69.0",
     "@stripe/stripe-js": "^9.8.0",
     "@tailwindcss/postcss": "^4.3.1",
     "@telnyx/video": "^1.0.2",
