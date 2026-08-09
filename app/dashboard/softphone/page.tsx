@@ -1,5 +1,4 @@
 import { SoftphoneWorkspace } from "@/components/softphone/SoftphoneWorkspace";
-import { TelnyxProvider } from "@/contexts/TelnyxContext";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
@@ -17,9 +16,7 @@ export default async function SoftphonePage() {
       </div>
 
       <div className="flex-1 flex">
-        <TelnyxProvider>
-          <SoftphoneWorkspace />
-        </TelnyxProvider>
+        <SoftphoneWorkspace />
       </div>
     </div>
   );

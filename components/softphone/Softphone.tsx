@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useTelnyx } from "@/contexts/TelnyxContext";
 import { Dialpad } from "./Dialpad";
 import { CallControls } from "./CallControls";
-import { IncomingCall } from "./IncomingCall";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { formatPhoneNumber } from "@/lib/utils";
 
@@ -13,16 +12,12 @@ export function Softphone() {
     isRegistered,
     registrationError,
     callState,
-    callDirection,
     incomingCallerId,
     remoteStream,
     makeCall,
-    answerCall,
-    rejectCall,
     hangupCall,
     muteMicrophone,
     sendDTMF,
-    debugLog,
   } = useTelnyx();
 
   const [showKeypad, setShowKeypad] = useState(false);
@@ -160,16 +155,6 @@ export function Softphone() {
           </div>
         )}
       </div>
-
-      {/* Overlays */}
-      {callState === "ringing" && incomingCallerId && callDirection === "inbound" && (
-        <IncomingCall
-          callerNumber={incomingCallerId}
-          onAccept={answerCall}
-          onReject={rejectCall}
-        />
-      )}
-
     </div>
   );
 }

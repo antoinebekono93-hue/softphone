@@ -49,6 +49,8 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   const [debugLog, setDebugLog] = useState<string>("");
 
   useEffect(() => {
+    let disposed = false;
+
     const initTelnyx = async () => {
       try {
         // Demander d'abord la permission microphone (important pour Chrome)
@@ -58,9 +60,12 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
            console.warn("Microphone permission not granted yet or denied", e);
         }
 
+        if (disposed) return;
+
         // Fetch token from our new secure backend route
         const response = await fetch('/api/telnyx/token');
         if (!response.ok) {
+           if (disposed) return;
            try {
              const errData = await response.json();
              setRegistrationError(errData.error || "Erreur serveur (Token)");
@@ -73,22 +78,28 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await response.json();
         const token = data.token;
         
-        // Initialize Telnyx WebRTC Client
-        clientRef.current = new TelnyxRTC({
+        if (disposed) return;
+
+        // Initialize Telnyx WebRTC Client (un seul client à la fois)
+        const client = new TelnyxRTC({
           login_token: token,
           remoteElement: "telnyx-remote-audio", // The ID of our <audio> element
         } as any);
 
-        clientRef.current.on("telnyx.ready", () => {
+        clientRef.current = client;
+
+        client.on("telnyx.ready", () => {
+          if (disposed) return;
           setIsRegistered(true);
           console.log("Telnyx WebRTC Ready");
         });
 
-        clientRef.current.on("telnyx.error", (err: any) => {
+        client.on("telnyx.error", (err: any) => {
+          if (disposed) return;
           setRegistrationError(err.message || "Connection failed");
         });
 
-        clientRef.current.on("telnyx.notification", (notification: any) => {
+        client.on("telnyx.notification", (notification: any) => {
           const call = notification.call;
           const logMsg = `${notification.type} -> ${call?.state}`;
           console.log("[Telnyx Notification]", logMsg);
@@ -99,28 +110,38 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
           switch (notification.type) {
             case "callUpdate":
               if (call.state === "ringing") {
-                setCallState("ringing");
-                setIncomingCallerId(call.options.remoteCallerName || call.options.remoteCallerNumber);
-                // If we didn't initiate it, it's inbound
-                // We know it's not our outbound call if currentCallRef doesn't match
-                if (!currentCallRef.current || (currentCallRef.current.id !== call.id && currentCallRef.current.callId !== call.callId)) {
+                const isOurCall = !!currentCallRef.current && (currentCallRef.current.id === call.id || currentCallRef.current.callId === call.callId);
+                if (!isOurCall) {
+                  // Appel entrant : on met toujours à jour l'UI pour afficher "Décrocher / Refuser"
+                  currentCallRef.current = call;
+                  setCallState("ringing");
                   setCallDirection("inbound");
+                  setIncomingCallerId(call.options?.remoteCallerName || call.options?.remoteCallerNumber || "Appel entrant");
                 }
-                currentCallRef.current = call;
               } else if (call.state === "active") {
-                setCallState("active");
-                setActiveCallId(call.id);
-                // Set the remote stream so AudioVisualizer can use it
-                if (call.remoteStream) {
-                   setRemoteStream(call.remoteStream);
+                if (currentCallRef.current && (currentCallRef.current.id === call.id || currentCallRef.current.callId === call.callId)) {
+                  setCallState("active");
+                  setActiveCallId(call.id);
+                  // Set the remote stream so AudioVisualizer can use it
+                  if (call.remoteStream) {
+                     setRemoteStream(call.remoteStream);
+                  }
                 }
               } else if (call.state === "destroy" || call.state === "hangup") {
-                setCallState("idle");
-                setCallDirection(null);
-                setActiveCallId(null);
-                setIncomingCallerId(null);
-                setRemoteStream(null);
-                currentCallRef.current = null;
+                if (currentCallRef.current && (currentCallRef.current.id === call.id || currentCallRef.current.callId === call.callId)) {
+                  setCallState("idle");
+                  setCallDirection(null);
+                  setActiveCallId(null);
+                  setIncomingCallerId(null);
+                  setRemoteStream(null);
+                  currentCallRef.current = null;
+                }
+              }
+              break;
+            case "participantData":
+              // Événement Display : numéro / nom de l'appelant mis à jour par Telnyx
+              if (notification.displayNumber && call.direction === "inbound") {
+                setIncomingCallerId(notification.displayName || notification.displayNumber);
               }
               break;
             default:
@@ -128,11 +149,17 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
           }
         });
 
+        if (disposed) {
+          try { client.disconnect(); } catch (e) {}
+          clientRef.current = null;
+          return;
+        }
+
         // Connect to Telnyx WebRTC
-        clientRef.current.connect();
+        client.connect();
       } catch (err) {
         console.error("Failed to initialize Telnyx:", err);
-        setRegistrationError("Connection failed");
+        if (!disposed) setRegistrationError("Connection failed");
       }
     };
 
@@ -156,9 +183,11 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     }, 1000);
 
     return () => {
+      disposed = true;
       clearInterval(poller);
       if (clientRef.current) {
-        clientRef.current.disconnect();
+        try { clientRef.current.disconnect(); } catch (e) {}
+        clientRef.current = null;
       }
     };
   }, []);

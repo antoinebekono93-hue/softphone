@@ -1,5 +1,6 @@
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { GlobalIncomingCall } from "@/components/softphone/GlobalIncomingCall";
 import { TelnyxProvider } from "@/contexts/TelnyxContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Metadata, Viewport } from "next";
@@ -69,6 +70,7 @@ export default function RootLayout({
             <LanguageProvider>
               <TelnyxProvider>
                 {children}
+                <GlobalIncomingCall />
               </TelnyxProvider>
             </LanguageProvider>
           </AuthProvider>
