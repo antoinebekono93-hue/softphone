@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmbeddedSignupButton } from "@/components/whatsapp/EmbeddedSignupButton";
+import { WalletSection } from "./WalletSection";
 
 export const metadata = {
   title: "Settings | Antigravity",
@@ -36,6 +37,13 @@ export default async function SettingsPage() {
       )}
 
       <div className="space-y-8">
+        {/* Wallet & Billing Section */}
+        <WalletSection 
+          balance={org?.walletBalance ?? 0}
+          planName={session?.user?.plan}
+          planStatus={session?.user?.planStatus}
+        />
+
         {/* Profile Section */}
         <div className="glass-panel rounded-2xl p-6">
           <h2 className="text-xl font-medium mb-4">My Profile</h2>
