@@ -17,6 +17,7 @@ ADD COLUMN "callUsername" TEXT,
 ADD COLUMN "isCallable" BOOLEAN NOT NULL DEFAULT true;
 
 -- AlterTable : Organization — Float -> Decimal (USING pour cast explicit des données existantes)
+ALTER TABLE "Organization" ADD COLUMN "activeCallsCount" INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE "Organization" ALTER COLUMN "walletBalance" SET DATA TYPE DECIMAL(12,4) USING "walletBalance"::decimal(12,4);
 
 -- AlterTable : CallLog — facturation & snapshot du plan au moment de l'appel
