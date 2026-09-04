@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+import { getPusherServer } from "@/lib/pusher";
 import { appCallChannels } from "@/lib/app-call-channels";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +57,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const authResponse = pusherServer.authorizeChannel(socketId, channelName);
+  const server = getPusherServer();
+  if (!server) {
+    return NextResponse.json({ error: "Pusher not configured" }, { status: 500 });
+  }
+
+  const authResponse = server.authorizeChannel(socketId, channelName);
   return new NextResponse(JSON.stringify(authResponse), {
     status: 200,
     headers: { "Content-Type": "application/json" },

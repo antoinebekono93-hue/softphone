@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+import { getPusherServer } from "@/lib/pusher";
 import { appCallChannels, APP_CALL_EVENTS } from "@/lib/app-call-channels";
 import { expireStaleRingingSessions } from "@/lib/app-call-session";
 
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     // Notifie chaque peer (le sonneur) que l'appel a expiré.
     for (const s of expired) {
       try {
-        await pusherServer.trigger(appCallChannels.user(s.callerId), APP_CALL_EVENTS.ENDED, {
+        await getPusherServer()?.trigger(appCallChannels.user(s.callerId), APP_CALL_EVENTS.ENDED, {
           callId: s.sessionId,
           status: "MISSED",
           reason: "timeout",

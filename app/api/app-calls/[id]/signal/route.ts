@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+import { getPusherServer } from "@/lib/pusher";
 import { appCallChannels, APP_CALL_EVENTS } from "@/lib/app-call-channels";
 import {
   SignalPayload,
@@ -90,7 +90,7 @@ export async function POST(
   });
 
   try {
-    await pusherServer.trigger(appCallChannels.call(id), APP_CALL_EVENTS.SIGNAL, signal);
+    await getPusherServer()?.trigger(appCallChannels.call(id), APP_CALL_EVENTS.SIGNAL, signal);
   } catch (err) {
     console.error("[app-calls/signal] trigger failed", {
       sessionId: id,

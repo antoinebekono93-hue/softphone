@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+import { getPusherServer } from "@/lib/pusher";
 import { appCallChannels, APP_CALL_EVENTS } from "@/lib/app-call-channels";
 import {
   expireStaleRingingSessions,
@@ -156,7 +156,7 @@ export async function PATCH(
   const event = PEER_EVENT[body.status];
   if (event) {
     try {
-      await pusherServer.trigger(appCallChannels.user(peerId), event, {
+      await getPusherServer()?.trigger(appCallChannels.user(peerId), event, {
         callId: id,
         status: body.status,
         durationSeconds,

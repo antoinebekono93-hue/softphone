@@ -524,8 +524,8 @@ export async function POST(req: Request) {
 
         // Tenter d'envoyer l'événement Pusher si configuré
         try {
-          const { pusherServer } = await import('@/lib/pusher');
-          await pusherServer.trigger(
+          const { getPusherServer } = await import('@/lib/pusher');
+          await getPusherServer()?.trigger(
             `org-${message.organizationId}`, 
             'message-status', 
             { messageId: message.id, status: status.toUpperCase(), contactId: message.contactId }

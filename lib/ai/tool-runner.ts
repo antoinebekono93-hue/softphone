@@ -100,8 +100,8 @@ export async function handleRequiresAction(
               });
               
               // Notify organization
-              const pusher = (await import('@/lib/pusher')).pusherServer;
-              await pusher.trigger(`org-${organizationId}`, 'contact-escalated', { contactId: contactId, reason: args.title || args.reason });
+              const pusher = (await import('@/lib/pusher')).getPusherServer();
+              await pusher?.trigger(`org-${organizationId}`, 'contact-escalated', { contactId: contactId, reason: args.title || args.reason });
               
               const { dispatchOrganizationWebhook } = await import('@/lib/webhooks');
               dispatchOrganizationWebhook(organizationId, 'ticket.escalated', { contactId: contactId, reason: args.title || args.reason });

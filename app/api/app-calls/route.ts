@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+import { getPusherServer } from "@/lib/pusher";
 import { appCallChannels, APP_CALL_EVENTS } from "@/lib/app-call-channels";
 import { createAppCallSession } from "@/lib/app-call-session";
 import {
@@ -127,7 +127,7 @@ export async function POST(req: Request) {
 
   // 4) Sonnerie côté callee
   try {
-    await pusherServer.trigger(appCallChannels.user(callee.id), APP_CALL_EVENTS.INCOMING, {
+    await getPusherServer()?.trigger(appCallChannels.user(callee.id), APP_CALL_EVENTS.INCOMING, {
       callId: appCallId,
       caller: {
         id: callerId,
