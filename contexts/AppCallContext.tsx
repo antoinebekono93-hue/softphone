@@ -701,7 +701,13 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
     resetCall();
 
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY;
+    if (!pusherKey) {
+      console.warn("[AppCall] NEXT_PUBLIC_PUSHER_KEY not set — real-time call features disabled");
+      return;
+    }
+
+    const pusher = new Pusher(pusherKey, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "eu",
       channelAuthorization: {
         endpoint: "/api/pusher/auth",

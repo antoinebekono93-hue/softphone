@@ -11,6 +11,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    console.error("[GLOBAL-ERROR]", error?.message, error?.stack);
     Sentry.captureException(error);
   }, [error]);
 
@@ -32,6 +33,9 @@ export default function GlobalError({
           <p className="text-[var(--text-secondary)] mb-6">
             L'application a rencontré une erreur inattendue. Notre équipe a été notifiée.
           </p>
+          {error?.digest && (
+            <p className="text-xs text-[var(--text-secondary)] mb-4">Réf: {error.digest}</p>
+          )}
           <button
             onClick={reset}
             className="px-6 py-3 bg-cyan-600 text-white rounded-xl font-semibold hover:bg-cyan-700 transition-colors"
