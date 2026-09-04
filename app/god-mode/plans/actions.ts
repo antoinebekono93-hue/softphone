@@ -71,7 +71,7 @@ export async function syncPlanToStripe(planId: string) {
     // Create price
     const price = await stripe.prices.create({
       product: productId,
-      unit_amount: Math.round(plan.monthlyPrice * 100), // in cents
+      unit_amount: Math.round(plan.monthlyPrice.toNumber() * 100), // in cents
       currency: 'usd',
       recurring: { interval: 'month' },
     });
@@ -105,7 +105,7 @@ export async function syncPlanToFlutterwave(planId: string) {
   if (!flutterwavePlanId) {
     // Create plan on Flutterwave
     const fwPlan = await flutterwave.paymentPlans.create({
-      amount: plan.monthlyPrice,
+      amount: plan.monthlyPrice.toNumber(),
       name: `Antigravity ${plan.name}`,
       interval: 'monthly',
       currency: 'USD',

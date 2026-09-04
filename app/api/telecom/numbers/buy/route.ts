@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { debitWalletAtomically } from "@/lib/billing";
 
 const API_BASE = 'https://api.telnyx.com/v2';
 
@@ -25,8 +26,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 });
     }
 
-    // 2. Check wallet balance
-    if (org.walletBalance < cost) {
+    // 2. Early balance check (fast-fail before hitting the Telnyx API).
+    //    La garantie RÉELLE est le débit atomique gardé dans la transaction (§3).
+    if (org.walletBalance.toNumber() < cost) {
       return NextResponse.json({ error: "Solde insuffisant dans le Wallet. Veuillez recharger votre compte." }, { status: 402 });
     }
 
@@ -116,15 +118,12 @@ export async function POST(request: Request) {
 
     // 3. Database Transaction (Atomic)
     await prisma.$transaction(async (tx) => {
-      // 3a. Deduct cost from wallet
-      await tx.organization.update({
-        where: { id: org.id },
-        data: {
-          walletBalance: {
-            decrement: cost,
-          }
-        }
-      });
+      // 3a. Deduct cost from wallet — ATOMIQUE avec garde de solde (jamais négatif)
+      const debited = await debitWalletAtomically(tx, org.id, cost);
+      if (!debited) {
+        // Solde insuffisant : aucun débit, aucune transaction, aucun numéro créé.
+        throw new Error("INSUFFICIENT_FUNDS");
+      }
 
       // 3b. Log the transaction
       await tx.walletTransaction.create({
@@ -155,6 +154,9 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
+    if (error?.message === "INSUFFICIENT_FUNDS") {
+      return NextResponse.json({ error: "Solde insuffisant dans le Wallet." }, { status: 402 });
+    }
     console.error("[Telnyx Buy Error]", error);
     return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }

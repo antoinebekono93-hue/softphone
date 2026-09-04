@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
+import { debitWalletAtomically } from '@/lib/billing';
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +32,7 @@ export async function POST(req: Request) {
       where: { id: session.user.organizationId }
     });
 
-    if (!organization || organization.walletBalance <= 0) {
+    if (!organization || organization.walletBalance.toNumber() <= 0) {
       return NextResponse.json({ error: 'Fonds insuffisants. Veuillez recharger votre portefeuille pour envoyer des messages WhatsApp.' }, { status: 402 });
     }
 
@@ -109,11 +110,29 @@ export async function POST(req: Request) {
       }
     });
 
-    // Deduct cost (mock logic)
-    await prisma.organization.update({
-      where: { id: session.user.organizationId },
-      data: { walletBalance: { decrement: 0.05 } }
-    });
+    // Deduct cost (mock logic) — ATOMIQUE avec garde de solde (jamais négatif).
+    // Fast-fail déclenché plus haut si solde <= 0 ; la garantie réelle est ici.
+    try {
+      await prisma.$transaction(async (tx) => {
+        const debited = await debitWalletAtomically(tx, session.user.organizationId!, 0.05);
+        if (!debited) {
+          throw new Error("INSUFFICIENT_FUNDS");
+        }
+        await tx.walletTransaction.create({
+          data: {
+            organizationId: session.user.organizationId!,
+            amount: -0.05,
+            type: "WHATSAPP_SEND",
+            description: "Envoi de message WhatsApp (coût unitaire)",
+          },
+        });
+      });
+    } catch (debitErr: unknown) {
+      // Le message a déjà été délivré par Telnyx ; on ne peut pas le retirer.
+      // On journalise l'échec sans jamais laisser le wallet passer en négatif.
+      const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
+      console.error('[Send WhatsApp] Debit failed (message déjà envoyé)', msg);
+    }
 
     return NextResponse.json({ success: true, data: data.data }, { status: 201 });
   } catch (error: any) {

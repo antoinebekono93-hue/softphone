@@ -76,8 +76,8 @@ export async function GET(request: Request) {
     if (response.ok) {
       const data = await response.json();
       const settings = await getSystemSettings();
-      const multiplier = settings?.phoneNumberMarkupMultiplier || 2.5;
-      const fixedMarkup = settings?.phoneNumberMarkupFixed || 0.0;
+      const multiplier = settings?.phoneNumberMarkupMultiplier?.toNumber() || 2.5;
+      const fixedMarkup = settings?.phoneNumberMarkupFixed?.toNumber() || 0.0;
 
       const numbers = data.data.map((n: any) => {
         let baseCost = 2.00;

@@ -16,7 +16,7 @@ export default async function GodModeOverviewPage() {
   });
 
   const mrr = organizations.reduce((acc, org) => {
-    return acc + (org.pricingPlan?.monthlyPrice || 0);
+    return acc + (org.pricingPlan?.monthlyPrice?.toNumber() || 0);
   }, 0);
 
   // Diagnostics

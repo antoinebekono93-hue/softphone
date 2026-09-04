@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { debitWalletAtomically } from "@/lib/billing";
 
 // 1. Get or Create System Settings
 export async function getSystemSettings() {
@@ -223,7 +224,7 @@ export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: strin
     }
 
     const NUMBER_COST = 2.00; // Hardcoded markup cost for buying a number
-    if (org.walletBalance < NUMBER_COST) {
+    if (org.walletBalance.toNumber() < NUMBER_COST) {
       return { error: `Insufficient Funds. Wallet balance is $${org.walletBalance.toFixed(2)}, but number costs $${NUMBER_COST.toFixed(2)}.` };
     }
 
@@ -258,10 +259,10 @@ export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: strin
         }
       });
 
-      await tx.organization.update({
-        where: { id: organizationId },
-        data: { walletBalance: { decrement: NUMBER_COST } }
-      });
+      const debited = await debitWalletAtomically(tx, organizationId, NUMBER_COST);
+      if (!debited) {
+        throw new Error("INSUFFICIENT_FUNDS");
+      }
 
       await tx.walletTransaction.create({
         data: {

@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { debitWalletAtomically } from './billing';
 
 export const SOCIAL_RATES = {
   POST_PUBLISHED: 0.15,
@@ -14,18 +15,9 @@ export async function chargeSocialAction(
   const amount = SOCIAL_RATES[actionType];
 
   return await prisma.$transaction(async (tx) => {
-    const org = await tx.organization.findUnique({
-      where: { id: organizationId }
-    });
-
-    if (!org) throw new Error("Organization not found");
-    if (org.walletBalance < amount) throw new Error("Insufficient funds in wallet");
-
-    // Deduct from wallet
-    await tx.organization.update({
-      where: { id: organizationId },
-      data: { walletBalance: { decrement: amount } }
-    });
+    // Débit atomique avec garde de solde (jamais négatif).
+    const debited = await debitWalletAtomically(tx, organizationId, amount);
+    if (!debited) throw new Error("Insufficient funds in wallet");
 
     // Record the transaction
     await tx.walletTransaction.create({

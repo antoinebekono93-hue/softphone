@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useTelnyx } from "@/contexts/TelnyxContext";
+import { useAppCall } from "@/contexts/AppCallContext";
+import { useCallRouter } from "@/hooks/useCallRouter";
 import { Dialpad } from "./Dialpad";
 import { CallControls } from "./CallControls";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { AppCallPanel } from "./AppCallPanel";
 import { formatPhoneNumber } from "@/lib/utils";
 
 export function Softphone() {
@@ -14,18 +17,27 @@ export function Softphone() {
     callState,
     incomingCallerId,
     remoteStream,
-    makeCall,
     hangupCall,
     muteMicrophone,
     sendDTMF,
   } = useTelnyx();
 
+  const { appCallStatus } = useAppCall();
+  const { routeCall } = useCallRouter();
+
+  const [mode, setMode] = useState<"pstn" | "app">("pstn");
   const [showKeypad, setShowKeypad] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
   const [isLoadingNumbers, setIsLoadingNumbers] = useState(true);
   const [selectedCallerId, setSelectedCallerId] = useState<string>("");
+
+  const appCallActive =
+    appCallStatus === "OFFERING" ||
+    appCallStatus === "CONNECTING" ||
+    appCallStatus === "ACTIVE" ||
+    appCallStatus === "RINGING";
 
   // Fetch available numbers for caller ID
   useEffect(() => {
@@ -91,30 +103,56 @@ export function Softphone() {
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full px-6">
         {callState === "idle" || callState === "ringing" && !incomingCallerId ? (
           <div className="w-full flex flex-col items-center gap-4">
-            {(availableNumbers.length > 0 || isLoadingNumbers) && (
-              <div className="w-full max-w-[280px]">
-                <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider mb-1 block">Appeler depuis (Caller ID)</label>
-                {isLoadingNumbers ? (
-                  <div className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] animate-pulse">
-                    Chargement...
-                  </div>
-                ) : (
-                  <select 
-                    value={selectedCallerId}
-                    onChange={(e) => setSelectedCallerId(e.target.value)}
-                    className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 text-[var(--text-primary)]"
-                  >
-                    {availableNumbers.map(n => (
-                      <option key={n.id} value={n.number}>{formatPhoneNumber(n.number)}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+            {(mode === "pstn" || appCallActive) ? (
+              appCallActive ? (
+                <AppCallPanel />
+              ) : (
+                <>
+                  {(availableNumbers.length > 0 || isLoadingNumbers) && (
+                    <div className="w-full max-w-[280px]">
+                      <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider mb-1 block">Appeler depuis (Caller ID)</label>
+                      {isLoadingNumbers ? (
+                        <div className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] animate-pulse">
+                          Chargement...
+                        </div>
+                      ) : (
+                        <select 
+                          value={selectedCallerId}
+                          onChange={(e) => setSelectedCallerId(e.target.value)}
+                          className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 text-[var(--text-primary)]"
+                        >
+                          {availableNumbers.map(n => (
+                            <option key={n.id} value={n.number}>{formatPhoneNumber(n.number)}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                  <Dialpad
+                    onCall={(dest) => routeCall(dest, selectedCallerId)}
+                    disabled={!isRegistered || callState === "ringing"}
+                  />
+                </>
+              )
+            ) : (
+              <AppCallPanel />
             )}
-            <Dialpad
-              onCall={(dest) => makeCall(dest, selectedCallerId)}
-              disabled={!isRegistered || callState === "ringing"}
-            />
+
+            {/* Mode toggle PSTN / Interne */}
+            <div className="flex items-center gap-1 mt-2 rounded-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] p-1 text-xs font-semibold">
+              <button
+                onClick={() => setMode("pstn")}
+                className={`px-3 py-1.5 rounded-full transition-colors ${mode === "pstn" && !appCallActive ? "bg-cyan-500 text-white" : "text-[var(--text-secondary)]"}`}
+              >
+                PSTN
+              </button>
+              <button
+                onClick={() => setMode("app")}
+                className={`px-3 py-1.5 rounded-full transition-colors ${mode === "app" || appCallActive ? "bg-emerald-500 text-white" : "text-[var(--text-secondary)]"}`}
+              >
+                Interne
+              </button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center w-full h-full justify-between py-8">

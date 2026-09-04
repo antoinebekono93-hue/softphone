@@ -29,9 +29,10 @@ export async function GET() {
     let dataCost = 0;
 
     transactions.forEach(t => {
-      if (t.type === 'SMS') smsCost += Math.abs(t.amount);
-      if (t.type === 'CALL') callCost += Math.abs(t.amount);
-      if (t.type === 'DATA_ESIM') dataCost += Math.abs(t.amount);
+      const absAmount = Math.abs(t.amount.toNumber());
+      if (t.type === 'SMS') smsCost += absAmount;
+      if (t.type === 'CALL') callCost += absAmount;
+      if (t.type === 'DATA_ESIM') dataCost += absAmount;
     });
 
     // If perfectly empty (no real usage yet), we provide some mock data for the UI

@@ -17,7 +17,7 @@ export default async function DashboardLayout({
         where: { id: session.user.organizationId },
         select: { walletBalance: true }
       });
-      walletBalance = org?.walletBalance || 0;
+      walletBalance = org?.walletBalance?.toNumber() || 0;
     } catch (e) {
       console.warn("Could not fetch wallet balance from DB. Returning 0.00 mock.", e);
       walletBalance = 0;

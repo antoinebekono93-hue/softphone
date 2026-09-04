@@ -89,8 +89,8 @@ export default async function AdminDashboardPage() {
                         {tx.type}
                       </span>
                     </td>
-                    <td className={`px-4 py-4 text-right font-bold ${tx.amount > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {tx.amount > 0 ? '+' : ''}${Math.abs(tx.amount).toFixed(2)}
+                    <td className={`px-4 py-4 text-right font-bold ${tx.amount.toNumber() > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {tx.amount.toNumber() > 0 ? '+' : ''}${Math.abs(tx.amount.toNumber()).toFixed(2)}
                     </td>
                   </tr>
                 ))}

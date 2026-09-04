@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import OpenAI from 'openai';
+import { debitWalletAtomically } from '@/lib/billing';
 
 export async function POST(req: Request) {
   try {
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'WhatsApp account not fully connected' }, { status: 400 });
       }
 
-      if (account.organization.walletBalance <= 0) {
+      if (account.organization.walletBalance.toNumber() <= 0) {
         return NextResponse.json({ error: 'Fonds insuffisants.' }, { status: 402 });
       }
 
@@ -150,9 +151,21 @@ export async function POST(req: Request) {
         }
       }
 
-      await prisma.organization.update({
-        where: { id: organizationId },
-        data: { walletBalance: { decrement: sentCount * 0.05 } }
+      const whatsappCost = sentCount * 0.05;
+      await prisma.$transaction(async (tx) => {
+        // Débit atomique avec garde de solde (jamais négatif).
+        const debited = await debitWalletAtomically(tx, organizationId, whatsappCost);
+        if (!debited) {
+          throw new Error("INSUFFICIENT_FUNDS");
+        }
+        await tx.walletTransaction.create({
+          data: {
+            organizationId,
+            amount: -whatsappCost,
+            type: "WHATSAPP_CAMPAIGN",
+            description: `Campagne WhatsApp (${sentCount} messages)`,
+          },
+        });
       });
     } 
     // ----------------------------------------------------

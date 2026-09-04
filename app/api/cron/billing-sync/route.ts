@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const orgs = await prisma.organization.findMany();
     
     // Check if any org fell below $0 (meaning they bypassed real-time guards)
-    const defaultingOrgs = orgs.filter(o => o.walletBalance < 0);
+    const defaultingOrgs = orgs.filter(o => o.walletBalance.toNumber() < 0);
     
     if (defaultingOrgs.length > 0) {
       // Suspend their connections via Telnyx API or locally

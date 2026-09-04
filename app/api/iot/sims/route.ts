@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { debitWalletAtomically } from "@/lib/billing";
 
 export async function GET(request: Request) {
   try {
@@ -88,8 +89,8 @@ export async function POST(request: Request) {
 
     const { type, name, price } = await request.json();
 
-    // Verify balance
-    if (org.walletBalance < price) {
+    // Early balance check (fast-fail). La garantie réelle est le débit atomique gardé (§3).
+    if (org.walletBalance.toNumber() < price) {
       return NextResponse.json({ error: "Fonds insuffisants. Veuillez recharger votre portefeuille." }, { status: 400 });
     }
 
@@ -138,27 +139,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "La commande de SIM physiques via API n'est pas supportée. Veuillez utiliser des eSIMs." }, { status: 400 });
     }
 
-    // Deduct from wallet
-    await prisma.organization.update({
-      where: { id: org.id },
-      data: { walletBalance: org.walletBalance - price },
-    });
-
-    const sim = await prisma.simCard.create({
-      data: {
-        iccid: iccid,
-        telnyxSimId: telnyxSimId,
-        type: simType,
-        status: 'registered', // Initial status before enabling
-        name: name || "Nouvelle eSIM",
-        dataUsedMB: 0,
-        lpaCode: activationCode,
-        organizationId: org.id,
+    // Deduct from wallet (ATOMIQUE avec garde de solde) + création de la SIM en transaction.
+    let sim;
+    await prisma.$transaction(async (tx) => {
+      const debited = await debitWalletAtomically(tx, org.id, price);
+      if (!debited) {
+        throw new Error("INSUFFICIENT_FUNDS");
       }
+
+      sim = await tx.simCard.create({
+        data: {
+          iccid: iccid,
+          telnyxSimId: telnyxSimId,
+          type: simType,
+          status: 'registered', // Initial status before enabling
+          name: name || "Nouvelle eSIM",
+          dataUsedMB: 0,
+          lpaCode: activationCode,
+          organizationId: org.id,
+        }
+      });
     });
 
     return NextResponse.json(sim);
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_FUNDS") {
+      return NextResponse.json({ error: "Fonds insuffisants. Veuillez recharger votre portefeuille." }, { status: 400 });
+    }
     console.error("Error ordering SIM:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

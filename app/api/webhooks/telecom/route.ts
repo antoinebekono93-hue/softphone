@@ -3,6 +3,7 @@ import { telnyx } from '@/lib/telnyx';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { executeAutomation } from '@/lib/automations';
+import { preAuthorizeCall, settlePstnCall, releasePstnReservation } from '@/lib/pstn-billing';
 
 // We need the media server URL. Ideally, it's wss://our-domain/media
 const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'wss://your-ngrok-domain.ngrok-free.app/media';
@@ -30,7 +31,7 @@ async function processEvent(event: any) {
         });
 
         if (phoneNumber) {
-          await prisma.callLog.create({
+          const createdCallLog = await prisma.callLog.create({
             data: {
               telnyxCallControlId: callControlId,
               direction: 'INBOUND',
@@ -41,6 +42,19 @@ async function processEvent(event: any) {
               status: 'INITIATED'
             }
           });
+
+          // Phase 3 : pré-autorisation PSTN (réservation de solde estimé)
+          const rateProfile = phoneNumber.aiEmployee?.isActive ? 'AI_AGENT' : 'STANDARD';
+          try {
+            await preAuthorizeCall({
+              organizationId: phoneNumber.organizationId,
+              callControlId,
+              callLogId: createdCallLog.id,
+              rateProfile,
+            });
+          } catch (preAuthErr) {
+            console.error('[Telnyx Webhook] preAuthorizeCall failed', preAuthErr);
+          }
 
           // If there is an active AI Agent assigned to this number, take over the call
           if (phoneNumber.aiEmployee && phoneNumber.aiEmployee.isActive) {
@@ -163,6 +177,46 @@ async function processEvent(event: any) {
         const contactInfo = await prisma.contact.findUnique({ where: { id: callLog.contactId }});
         if (contactInfo) {
           await executeAutomation(callLog.organizationId, 'CALL_MISSED', { contact: contactInfo });
+        }
+      }
+
+      // --- PHASE 3 : FACTURATION PSTN (uniquement pour un appel réellement facturable) ---
+      // Un appel avec durée > 0 et un organization est facturé de façon idempotente.
+      if (finalStatus === 'COMPLETED' && duration > 0 && callLog?.organizationId) {
+        try {
+          // Détermine le profil tarifaire : AI_AGENT si un agent IA actif est assigné au numéro.
+          let rateProfile: 'STANDARD' | 'AI_AGENT' = 'STANDARD';
+          if (callLog.phoneNumberId) {
+            const pn = await prisma.phoneNumber.findUnique({
+              where: { id: callLog.phoneNumberId },
+              select: { aiEmployee: { select: { isActive: true } } },
+            });
+            if (pn?.aiEmployee?.isActive) rateProfile = 'AI_AGENT';
+          }
+
+          await settlePstnCall({
+            callControlId,
+            organizationId: callLog.organizationId,
+            callLogId: callLog.id,
+            durationSeconds: duration,
+            rateProfile,
+          });
+        } catch (billingErr) {
+          // La facturation ne doit pas casser le traitement du hangup.
+          console.error('[Telnyx Webhook] settlePstnCall failed', billingErr);
+        }
+      } else if (callLog?.organizationId && callLog?.id) {
+        // Appel non facturable (NO_ANSWER / BUSY / FAILED / CANCELLED / durée 0) :
+        // on libère la réservation (remboursement idempotent du hold, PENDING → RELEASED).
+        try {
+          await releasePstnReservation({
+            organizationId: callLog.organizationId,
+            callControlId,
+            callLogId: callLog.id,
+            reason: 'NO_ANSWER',
+          });
+        } catch (relErr) {
+          console.error('[Telnyx Webhook] releasePstnReservation failed', relErr);
         }
       }
     }

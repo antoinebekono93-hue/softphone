@@ -39,7 +39,7 @@ export default async function SettingsPage() {
       <div className="space-y-8">
         {/* Wallet & Billing Section */}
         <WalletSection 
-          balance={org?.walletBalance ?? 0}
+          balance={org?.walletBalance?.toNumber() ?? 0}
           planName={session?.user?.plan}
           planStatus={session?.user?.planStatus}
         />

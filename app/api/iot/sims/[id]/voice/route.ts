@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { debitWalletAtomically } from "@/lib/billing";
 
 export async function POST(
   request: Request,
@@ -25,7 +26,7 @@ export async function POST(
     if (!sim) return NextResponse.json({ error: "SIM not found" }, { status: 404 });
 
     // Deduct $1 for VoLTE 
-    if (org.walletBalance < 1) {
+    if (org.walletBalance.toNumber() < 1) {
       return NextResponse.json({ error: "Insufficient wallet balance (needs $1)" }, { status: 402 });
     }
 
@@ -47,21 +48,28 @@ export async function POST(
     // Mock an assigned phone number
     const mockPhoneNumber = `+1${Math.floor(2000000000 + Math.random() * 8000000000)}`;
 
-    await prisma.organization.update({
-      where: { id: org.id },
-      data: { walletBalance: { decrement: 1 } }
-    });
-
-    const updated = await prisma.simCard.update({
-      where: { id: sim.id },
-      data: { 
-        voiceEnabled: true,
-        voicePhoneNumber: mockPhoneNumber
+    let updated;
+    await prisma.$transaction(async (tx) => {
+      // Débit atomique avec garde de solde (jamais négatif).
+      const debited = await debitWalletAtomically(tx, org.id, 1);
+      if (!debited) {
+        throw new Error("INSUFFICIENT_FUNDS");
       }
+
+      updated = await tx.simCard.update({
+        where: { id: sim.id },
+        data: {
+          voiceEnabled: true,
+          voicePhoneNumber: mockPhoneNumber
+        }
+      });
     });
 
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_FUNDS") {
+      return NextResponse.json({ error: "Insufficient wallet balance (needs $1)" }, { status: 402 });
+    }
     console.error("Error enabling voice:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

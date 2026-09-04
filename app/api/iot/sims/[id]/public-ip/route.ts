@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { debitWalletAtomically } from "@/lib/billing";
 
 export async function POST(
   request: Request,
@@ -25,7 +26,7 @@ export async function POST(
     if (!sim) return NextResponse.json({ error: "SIM not found" }, { status: 404 });
 
     // Deduct $3 for Public IP
-    if (org.walletBalance < 3) {
+    if (org.walletBalance.toNumber() < 3) {
       return NextResponse.json({ error: "Insufficient wallet balance (needs $3)" }, { status: 402 });
     }
 
@@ -45,18 +46,25 @@ export async function POST(
       }
     }
 
-    await prisma.organization.update({
-      where: { id: org.id },
-      data: { walletBalance: { decrement: 3 } }
-    });
+    let updated;
+    await prisma.$transaction(async (tx) => {
+      // Débit atomique avec garde de solde (jamais négatif).
+      const debited = await debitWalletAtomically(tx, org.id, 3);
+      if (!debited) {
+        throw new Error("INSUFFICIENT_FUNDS");
+      }
 
-    const updated = await prisma.simCard.update({
-      where: { id: sim.id },
-      data: { publicIpEnabled: true }
+      updated = await tx.simCard.update({
+        where: { id: sim.id },
+        data: { publicIpEnabled: true }
+      });
     });
 
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "INSUFFICIENT_FUNDS") {
+      return NextResponse.json({ error: "Insufficient wallet balance (needs $3)" }, { status: 402 });
+    }
     console.error("Error setting public IP:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

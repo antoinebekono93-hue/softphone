@@ -28,9 +28,9 @@ export default async function BillingPage() {
       </div>
 
       <BillingClient 
-        initialBalance={org.walletBalance} 
+        initialBalance={org.walletBalance.toNumber()} 
         planName={org.pricingPlan?.name || "No Plan"}
-        planPrice={org.pricingPlan?.monthlyPrice || 0}
+        planPrice={org.pricingPlan?.monthlyPrice?.toNumber() || 0}
       />
     </div>
   );

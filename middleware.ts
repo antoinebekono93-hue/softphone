@@ -37,6 +37,9 @@ const rateLimitConfig: Record<string, { limit: number; window: number }> = {
   "/api/inbox/send": { limit: 30, window: 60 }, // 30 per minute
   "/api/sms/send": { limit: 20, window: 60 }, // 20 per minute
   "/api/calls": { limit: 10, window: 60 }, // 10 per minute
+  // POST /api/app-calls (initiation d'appel APP_TO_APP) — limite les créations
+  // de session ; le signaling WebRTC passe par Pusher, pas par ce REST.
+  "/api/app-calls": { limit: 10, window: 60 }, // 10 per minute
 };
 
 function isPublicPath(pathname: string): boolean {

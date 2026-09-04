@@ -1,7 +1,9 @@
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { GlobalIncomingCall } from "@/components/softphone/GlobalIncomingCall";
+import { GlobalAppIncomingCall } from "@/components/softphone/GlobalAppIncomingCall";
 import { TelnyxProvider } from "@/contexts/TelnyxContext";
+import { AppCallProvider } from "@/contexts/AppCallContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
@@ -71,10 +73,13 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="light">
           <AuthProvider>
             <LanguageProvider>
-              <TelnyxProvider>
-                {children}
-                <GlobalIncomingCall />
-              </TelnyxProvider>
+              <AppCallProvider>
+                <TelnyxProvider>
+                  {children}
+                  <GlobalIncomingCall />
+                  <GlobalAppIncomingCall />
+                </TelnyxProvider>
+              </AppCallProvider>
             </LanguageProvider>
           </AuthProvider>
           <Toaster position="top-center" theme="dark" />
