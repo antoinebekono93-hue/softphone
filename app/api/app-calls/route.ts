@@ -9,6 +9,7 @@ import {
   logAppCallDecision,
 } from "@/lib/app-call-policy";
 import { resolveCallDestination } from "@/lib/call-routing";
+import { logServerCallEvent, redactDestination } from "@/lib/app-call-observability";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,11 @@ type CallInitRequest = { target: string };
 export async function POST(req: Request) {
   const session = await auth();
   if (!session?.user?.id || !session.user.organizationId) {
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_UNAUTHORIZED",
+      details: { path: "/api/app-calls" },
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const callerId = session.user.id;
@@ -56,30 +62,45 @@ export async function POST(req: Request) {
   });
 
   if (route.type === "ERROR") {
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_DENIED",
+      details: { reason: route.reason },
+    });
     await logAppCallDecision(orgId, callerId, "CALL_DENIED", {
       reason: route.reason,
-      target,
+      target: redactDestination(target),
     });
     const status =
-      route.reason === "UNAUTHORIZED" ? 401 : route.reason === "EMPTY_TARGET" ? 400 : 403;
+      route.reason === "UNAUTHORIZED" ? 401 : route.reason === "EMPTY_TARGET" || route.reason === "INVALID_TARGET" ? 400 : 403;
     return NextResponse.json({ error: route.reason }, { status });
   }
 
   if (route.type !== "APP_TO_APP") {
     // Une cible externe ne doit JAMAIS passer par ce chemin : l'appel doit être
     // routé APP_TO_PSTN (Telnyx), hors de ce endpoint.
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_TARGET_NOT_INTERNAL",
+      details: { reason: "NOT_APP_TO_APP_DESTINATION" },
+    });
     await logAppCallDecision(orgId, callerId, "CALL_DENIED", {
       reason: "NOT_APP_TO_APP_DESTINATION",
-      target,
+      target: redactDestination(target),
     });
     return NextResponse.json({ error: "NOT_APP_TO_APP_DESTINATION" }, { status: 422 });
   }
 
   const callee = route.user;
   if (!callee) {
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_CALLEE_NOT_FOUND",
+      details: { target: redactDestination(target) },
+    });
     await logAppCallDecision(orgId, callerId, "CALL_DENIED", {
       reason: "CALLEE_NOT_FOUND",
-      target,
+      target: redactDestination(target),
     });
     return NextResponse.json({ error: "CALLEE_NOT_FOUND" }, { status: 404 });
   }
@@ -87,9 +108,14 @@ export async function POST(req: Request) {
   // 2) Politique / snapshot plan + fair-use
   const policy = await evaluateAppCallPolicy(orgId);
   if (!policy.authorized) {
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_DENIED",
+      details: { reason: policy.reason },
+    });
     await logAppCallDecision(orgId, callerId, "CALL_DENIED", {
       reason: policy.reason,
-      target,
+      target: redactDestination(target),
     });
     return NextResponse.json({ error: policy.reason }, { status: 403 });
   }
@@ -105,9 +131,18 @@ export async function POST(req: Request) {
   });
 
   if (created.status !== "CREATED") {
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_BUSY",
+      details: {
+        reason: created.reason,
+        calleeId: callee.id,
+        senderId: callerId,
+      },
+    });
     await logAppCallDecision(orgId, callerId, "CALL_DENIED", {
       reason: created.reason,
-      target,
+      target: redactDestination(target),
       calleeId: callee.id,
     });
     // Le destinataire est déjà occupé → BUSY (pas une simple erreur de création).
@@ -115,13 +150,23 @@ export async function POST(req: Request) {
   }
 
   const appCallId = created.sessionId;
+  logServerCallEvent({
+    level: "info",
+    event: "CALL_RINGING",
+    callId: appCallId,
+    details: {
+      senderId: callerId,
+      calleeId: callee.id,
+      maxCallDurationSeconds: policy.maxCallDurationSeconds,
+    },
+  });
   await logAppCallDecision(orgId, callerId, "CALL_AUTHORIZED", {
     callId: appCallId,
     calleeId: callee.id,
-    target,
+    target: redactDestination(target),
     planId: policy.planId,
     unlimitedCalls: policy.unlimitedCalls,
-    destination: target,
+    destination: redactDestination(target),
     callControlId: appCallId,
   });
 
@@ -140,6 +185,12 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
+    logServerCallEvent({
+      level: "error",
+      event: "RING_TRIGGER_FAILED",
+      callId: appCallId,
+      details: { senderId: callerId, calleeId: callee.id },
+    });
     console.error("[app-calls] ring trigger failed", err);
   }
 

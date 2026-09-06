@@ -24,6 +24,16 @@ import {
   decideIceFailure,
   ICE_RESTART_MAX_ATTEMPTS,
 } from "@/lib/webrtc-negotiation";
+import {
+  classifyGetUserMediaError,
+  mediaFailReason,
+  mediaErrorMessage,
+  shouldAddTrack,
+  setAudioTracksEnabled,
+  decideRemoteAudio,
+  MediaErrorKind,
+} from "@/lib/webrtc-media";
+import { PUBLIC_STUN_FALLBACK } from "@/lib/ice-config";
 
 /**
  * AppCallContext — Appels APP_TO_APP (WebRTC natif P2P, hors Telnyx/PSTN).
@@ -75,6 +85,8 @@ interface AppCallContextValue {
   } | null;
   outboundPeer: { name: string | null; username: string | null } | null;
   remoteStream: MediaStream | null;
+  audioPlayFailed: boolean;
+  retryRemoteAudio: () => void;
   appCallDuration: number;
   connected: boolean;
   error: string | null;
@@ -91,13 +103,11 @@ interface AppCallContextValue {
 const AppCallContext = createContext<AppCallContextValue | null>(null);
 
 function rtcConfiguration(): RTCConfiguration {
-  // Fallback minimal : STUN public Google. La configuration principale est
-  // servie par /api/app-calls/ice-config (qui inclut TURN si configuré).
+  // Fallback minimal : STUN public (liste UNIQUE définie dans lib/ice-config,
+  // partagée avec la route /api/app-calls/ice-config). La configuration
+  // TURN réelle est servie par le serveur — jamais dans le bundle frontend.
   return {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" },
-      { urls: "stun:stun1.l.google.com:19302" },
-    ],
+    iceServers: PUBLIC_STUN_FALLBACK,
   };
 }
 
@@ -120,6 +130,47 @@ function logIce(
   }
 }
 
+/**
+ * Log structuré MÉDIA/AUDIO — diagnostics production-safe.
+ * Ne log JAMAIS : données audio, SDP, tokens, credentials.
+ * Inclut uniquement callId, role, event, timestamp et infos techniques minimes.
+ */
+function logMedia(
+  callId: string | null,
+  role: "caller" | "callee",
+  event: string,
+  details?: Record<string, unknown>
+) {
+  const ts = new Date().toISOString();
+  const base = `[WebRTC][MEDIA] ${ts} callId=${callId ?? "?"} role=${role} event=${event}`;
+  if (details) {
+    console.log(base, JSON.stringify(details));
+  } else {
+    console.log(base);
+  }
+}
+
+/**
+ * Log structuré du CYCLE DE VIE d'appel (timeline d'état) — production-safe.
+ * Même format que logIce/logMedia ; séparé pour permettre un grepproperty
+ * `event=call*` (OFFERING → RINGING → ACCEPTING → CONNECTED → terminal).
+ * Ne log JAMAIS de secret (SDP, tokens, credentials).
+ */
+function logCallState(
+  callId: string | null,
+  role: "caller" | "callee",
+  event: string,
+  details?: Record<string, unknown>
+) {
+  const ts = new Date().toISOString();
+  const base = `[WebRTC][STATE] ${ts} callId=${callId ?? "?"} role=${role} event=${event}`;
+  if (details) {
+    console.log(base, JSON.stringify(details));
+  } else {
+    console.log(base);
+  }
+}
+
 export function AppCallProvider({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
   const userId = session?.user?.id ?? null;
@@ -131,13 +182,24 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
   const [appCallDuration, setAppCallDuration] = useState(0);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [audioPlayFailed, setAudioPlayFailed] = useState(false);
   const [directory, setDirectory] = useState<AppCallContextValue["directory"]>([]);
 
   const pusherRef = useRef<Pusher | null>(null);
   const callChannelRef = useRef<any>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  // Référence STABLE du flux distant : indépendante de l'état React.
+  // On évite de dépendre uniquement de la state pour des objets MediaStream.
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  // Élément audio distant stable (un seul par cycle de vie d'appel).
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Garde anti-concurrence : un seul getUserMedia en vol à la fois.
+  const getUserMediaInProgressRef = useRef(false);
   const activeCallIdRef = useRef<string | null>(null);
+  // Rôle du participant pour l'appel actif (référence stable pour les logs
+  // hors du scope de setupPeerAndChannel : retryRemoteAudio, finishCall, mute).
+  const activeCallRoleRef = useRef<"caller" | "callee" | null>(null);
   const maxDurationRef = useRef<number>(3600);
   const micMutedRef = useRef(false);
   const peerReadyRef = useRef(false);
@@ -170,8 +232,10 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     setRemoteStream(null);
     setConnected(false);
     setError(null);
+    setAudioPlayFailed(false);
     setAppCallDuration(0);
     activeCallIdRef.current = null;
+    activeCallRoleRef.current = null;
     peerReadyRef.current = false;
     pendingCandidatesRef.current = [];
     peerUserIdRef.current = null;
@@ -207,15 +271,124 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       }
       pcRef.current = null;
     }
-    // Arrête TOUTES les pistes (audio local, piste distante) pour libérer le micro.
+    // Arrête TOUTES les pistes locales (audio) pour libérer le micro.
     try {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
     } catch {
       // ignore
     }
     localStreamRef.current = null;
+    // Arrête les pistes distantes / détache l'audio distant pour ne plus
+    // jouer d'audio après une session terminale (privacy).
+    try {
+      remoteStreamRef.current?.getTracks().forEach((t) => t.stop());
+    } catch {
+      // ignore
+    }
+    remoteStreamRef.current = null;
+    // Détache et ferme l'élément audio distant stable.
+    try {
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.pause();
+        remoteAudioRef.current.removeAttribute("src");
+        remoteAudioRef.current.srcObject = null;
+        remoteAudioRef.current = null;
+      }
+    } catch {
+      // ignore
+    }
     micMutedRef.current = false;
+    getUserMediaInProgressRef.current = false;
   }, []);
+
+  // ── Lecture de l'audio distant (M6/M7) ───────────────────────
+  // Utilise un HTMLAudioElement STABLE (un seul par cycle de vie), attaché via
+  // srcObject. La décision de jouer/détacher est PURE (lib/webrtc-media).
+  // IMPORTANT : ne lit AUCUN state React (closure stale au moment de ontrack) —
+  // uniquement les refs. "Session active" = activeCallIdRef non nul (il est
+  // effacé par resetCall/finishCall → jamais d'audio après session terminale).
+  // L'autoplay est géré : si play() est rejeté (restriction navigateur), on
+  // expose audioPlayFailed → l'UI peut proposer une interaction utilisateur.
+  const attachRemoteAudio = useCallback((callId: string, role: "caller" | "callee") => {
+    const stream = remoteStreamRef.current;
+    if (!stream) return;
+    const decision = decideRemoteAudio({
+      streamPresent: true,
+      streamEnded: stream.getTracks().some((t) => t.readyState === "ended"),
+      sessionActive: activeCallIdRef.current !== null,
+    });
+    if (decision === "detach") {
+      logMedia(callId, role, "remoteAudioDetached", { reason: "session not active" });
+      return;
+    }
+    if (!remoteAudioRef.current) {
+      remoteAudioRef.current = new Audio();
+      remoteAudioRef.current.autoplay = true;
+      remoteAudioRef.current.setAttribute("playsinline", "true");
+    }
+    const audio = remoteAudioRef.current;
+    if (audio.srcObject !== stream) {
+      audio.srcObject = stream;
+      logMedia(callId, role, "remoteAudioAttached");
+    }
+    // play() peut être rejeté par autoplay restrictions → état exposé à l'UI.
+    audio
+      .play()
+      .then(() => {
+        setAudioPlayFailed(false);
+        logMedia(callId, role, "audioPlayStarted");
+      })
+      .catch(() => {
+        setAudioPlayFailed(true);
+        logMedia(callId, role, "audioPlayFailed");
+      });
+  }, []);
+
+  // Tente à nouveau de jouer l'audio distant (appelé depuis l'UI après une
+  // interaction utilisateur si l'autoplay a été bloqué). Pure retry : aucune
+  // re-création d'élément, aucune re-négociation.
+  const retryRemoteAudio = useCallback(() => {
+    const callId = activeCallIdRef.current;
+    const role = activeCallRoleRef.current ?? "caller";
+    const audio = remoteAudioRef.current;
+    if (!audio) return;
+    audio
+      .play()
+      .then(() => {
+        setAudioPlayFailed(false);
+        logMedia(callId, role, "audioPlayStarted");
+        logCallState(callId, role, "audioPlayRecovered");
+      })
+      .catch(() => {
+        setAudioPlayFailed(true);
+        logMedia(callId, role, "audioPlayFailed");
+      });
+  }, []);
+
+  // ── Fin d'appel (termine une session) ───────────────────────
+  const finishCall = useCallback(
+    async (status: "ENDED" | "FAILED" | "DECLINED" | "MISSED", reason?: string) => {
+      const callId = activeCallIdRef.current;
+      const role = activeCallRoleRef.current ?? "caller";
+      if (!callId) {
+        resetCall();
+        return;
+      }
+      logCallState(callId, role, "callEnded", { status, reason });
+      try {
+        await fetch(`/api/app-calls/${callId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status, reason }),
+        });
+      } catch {
+        // ignore
+      }
+      logMedia(callId, role, "mediaCleanup", { status });
+      resetCall();
+    },
+    [resetCall]
+  );
 
   // ── Publication d'un signal via le SERVEUR (M2 : jamais de trigger direct) ──
   // Le client POSTe un payload ; le serveur authentifie, valide l'état, puis
@@ -241,7 +414,45 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       isInitiator: boolean,
       peerUserId: string
     ) => {
+      const previousCallId = activeCallIdRef.current;
+      // M16 : protection multi-appel — ne crée PAS de nouvelle PeerConnection si
+      // une connexion valide existe DÉJÀ pour CE callId (comparé AVANT d'écraser
+      // activeCallIdRef). Une PC résiduelle d'un AUTRE callId = état incohérent :
+      // on n'empile jamais deux PeerConnections / deux flux micro.
+      {
+        const existingPc = pcRef.current;
+        if (
+          existingPc &&
+          existingPc.signalingState !== "closed" &&
+          existingPc.connectionState !== "closed" &&
+          existingPc.connectionState !== "failed" &&
+          previousCallId === callId
+        ) {
+          logMedia(callId, role, "duplicateSetupSkipped");
+          return;
+        }
+        if (existingPc && previousCallId !== callId) {
+          logMedia(callId, role, "stalePcTornDown", { previousCallId });
+          try {
+            existingPc.onicecandidate = null;
+            existingPc.ontrack = null;
+            existingPc.onconnectionstatechange = null;
+            existingPc.oniceconnectionstatechange = null;
+            existingPc.close();
+          } catch {
+            // ignore
+          }
+          try {
+            localStreamRef.current?.getTracks().forEach((t) => t.stop());
+          } catch {
+            // ignore
+          }
+          localStreamRef.current = null;
+          pcRef.current = null;
+        }
+      }
       activeCallIdRef.current = callId;
+      activeCallRoleRef.current = role;
       pendingCandidatesRef.current = [];
       peerUserIdRef.current = peerUserId;
       iceRestartCountRef.current = 0;
@@ -256,7 +467,40 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         });
       }
 
-      const localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // ── Microphone local (M2) ───────────────────────────────────────
+      // Réutilise le flux local DÉJÀ acquis s'il est stable (aucun nouveau
+      // getUserMedia inutile). Sinon, demande UNIQUEMENT l'audio, avec garde
+      // anti-concurrence et gestion propre des erreurs de permission.
+      let localStream = localStreamRef.current;
+      if (!localStream || localStream.getAudioTracks().some((t) => t.readyState === "ended")) {
+        if (getUserMediaInProgressRef.current) {
+          logMedia(callId, role, "getUserMediaBusy");
+          finishCall("FAILED", "microphone request already in progress");
+          const busyErr = new Error("microphone request already in progress");
+          (busyErr as Error & { isMediaError?: boolean }).isMediaError = true;
+          throw busyErr;
+        }
+        getUserMediaInProgressRef.current = true;
+        logMedia(callId, role, "microphoneRequested");
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          logMedia(callId, role, "microphoneGranted");
+        } catch (err) {
+          getUserMediaInProgressRef.current = false;
+          const kind: MediaErrorKind = classifyGetUserMediaError(err);
+          logMedia(callId, role, "microphone" + (kind === "permission-denied" ? "Denied" : "Failed"), {
+            errorKind: kind,
+            errorCode: (err as DOMException)?.name || undefined,
+          });
+          // Termine proprement la session — ne reste JAMAIS bloqué en CONNECTING.
+          finishCall("FAILED", mediaFailReason(kind));
+          const mediaErr = new Error(mediaFailReason(kind));
+          (mediaErr as Error & { isMediaError?: boolean }).isMediaError = true;
+          (mediaErr as Error & { mediaErrorKind?: MediaErrorKind }).mediaErrorKind = kind;
+          throw mediaErr;
+        }
+        getUserMediaInProgressRef.current = false;
+      }
       localStreamRef.current = localStream;
 
       // M10 : configuration ICE issue du serveur (STUN/TURN).
@@ -278,9 +522,23 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         iceConfigRef.current ?? rtcConfiguration()
       );
       pcRef.current = pc;
-      localStream.getTracks().forEach((t) => pc.addTrack(t, localStream));
+      // M4 : ajout des pistes locales — chaque track audio UNE seule fois,
+      // aucune après fermeture / état failed, et anti-doublon via getSenders().
+      const existingSenderKinds = new Set(
+        pc.getSenders().map((s) => s.track?.kind).filter(Boolean)
+      );
+      for (const track of localStream.getAudioTracks()) {
+        if (!shouldAddTrack({ pcState: pc.signalingState, alreadyHasAudioTrack: existingSenderKinds.has("audio") })) {
+          logMedia(callId, role, "localTrackSkipped", { reason: "duplicate-or-closed" });
+          continue;
+        }
+        pc.addTrack(track, localStream);
+        existingSenderKinds.add("audio");
+        logMedia(callId, role, "localTrackAdded");
+      }
       if (micMutedRef.current) {
-        localStream.getTracks().forEach((t) => (t.enabled = !micMutedRef.current));
+        // M8 : mute = track.enabled (audio uniquement), jamais re-négociation.
+        setAudioTracksEnabled(localStream.getTracks(), false);
       }
 
       pc.onicecandidate = (ev) => {
@@ -303,7 +561,26 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         });
       };
       pc.ontrack = (ev) => {
-        if (ev.streams?.[0]) setRemoteStream(ev.streams[0]);
+        // M5 : remote track. On réutilise la référence STABLE du flux distant
+        // quand il existe (ne pas recréer un MediaStream à chaque événement).
+        // Plusieurs événements `track` peuvent appartenir au même stream.
+        const incoming = ev.streams?.[0] ?? new MediaStream([ev.track]);
+        let stream = remoteStreamRef.current;
+        if (!stream || stream.getTracks().every((t) => t.readyState === "ended")) {
+          stream = incoming;
+          remoteStreamRef.current = stream;
+        }
+        // Ajoute la track manquante au stream existant (multi-track).
+        if (!stream.getTracks().includes(ev.track)) {
+          stream.addTrack(ev.track);
+        }
+        setRemoteStream(stream);
+        logMedia(callId, role, "remoteTrackReceived", {
+          trackKind: ev.track.kind,
+          trackCount: stream.getTracks().length,
+        });
+        // Jouer l'audio distant dès réception (M6/M7).
+        attachRemoteAudio(callId, role);
       };
       pc.onicegatheringstatechange = () => {
         logIce(callId, role, "iceGatheringState", {
@@ -334,6 +611,13 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
 
         if (pc.connectionState === "connected") {
           // Succès : réinitialiser les compteurs de restart.
+          if (iceRestartCountRef.current > 0) {
+            logIce(callId, role, "iceRestartSucceeded", {
+              attempts: iceRestartCountRef.current,
+              max: ICE_RESTART_MAX_ATTEMPTS,
+            });
+          }
+          logCallState(callId, role, "callConnected");
           iceRestartCountRef.current = 0;
           iceRestartInProgressRef.current = false;
           setConnected(true);
@@ -455,7 +739,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         publishSignal(callId, { type: "CALL_READY" });
       }
     },
-    [publishSignal]
+    [publishSignal, attachRemoteAudio, finishCall, resetCall]
   );
 
   // Fonction handleSignal référencée par le binding (définie plus loin par fermeture).
@@ -585,28 +869,6 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // ── Fin d'appel (termine une session) ───────────────────────
-  const finishCall = useCallback(
-    async (status: "ENDED" | "FAILED" | "DECLINED" | "MISSED", reason?: string) => {
-      const callId = activeCallIdRef.current;
-      if (!callId) {
-        resetCall();
-        return;
-      }
-      try {
-        await fetch(`/api/app-calls/${callId}/status`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status, reason }),
-        });
-      } catch {
-        // ignore
-      }
-      resetCall();
-    },
-    [resetCall]
-  );
-
   // ── makeAppCall ─────────────────────────────────────────────
   const makeAppCall = useCallback(
     async (target: string) => {
@@ -633,9 +895,17 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
           username: data.call.callee?.callUsername ?? null,
         });
         setAppCallStatus("OFFERING");
+        logCallState(data.call.id, "caller", "callOffering");
         await setupPeerAndChannel(data.call.id, "caller", true, data.call.callee?.id);
       } catch (err) {
         console.error(err);
+        // Erreur média (micro refusé/introuvable) : finishCall a DÉJÀ terminé la
+        // session en FAILED côté serveur — on ne réécrase pas avec "idle".
+        if ((err as Error & { isMediaError?: boolean })?.isMediaError) {
+          const kind = (err as Error & { mediaErrorKind?: MediaErrorKind }).mediaErrorKind;
+          toast.error(kind ? mediaErrorMessage(kind) : "Impossible d'accéder au microphone");
+          return;
+        }
         setError("Impossible de lancer l'appel");
         toast.error("Impossible de lancer l'appel");
         setAppCallStatus("idle");
@@ -649,6 +919,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     const incoming = incomingAppCall;
     if (!incoming) return;
     setAppCallStatus("CONNECTING");
+    logCallState(incoming.callId, "callee", "callAccepting");
     try {
       await fetch(`/api/app-calls/${incoming.callId}/status`, {
         method: "PATCH",
@@ -660,6 +931,12 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       setAppCallStatus("CONNECTING");
     } catch (err) {
       console.error(err);
+      // Erreur média : finishCall a déjà terminé la session — pas de "idle" écrasant.
+      if ((err as Error & { isMediaError?: boolean })?.isMediaError) {
+        const kind = (err as Error & { mediaErrorKind?: MediaErrorKind }).mediaErrorKind;
+        toast.error(kind ? mediaErrorMessage(kind) : "Impossible d'accéder au microphone");
+        return;
+      }
       setError("Impossible de répondre");
       setAppCallStatus("idle");
     }
@@ -680,7 +957,15 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
   // ── muteAppMic ──────────────────────────────────────────────
   const muteAppMic = useCallback((muted: boolean) => {
     micMutedRef.current = muted;
-    localStreamRef.current?.getTracks().forEach((t) => (t.enabled = !muted));
+    // M8 : mute = track.enabled sur les pistes AUDIO uniquement. Ne touche
+    // JAMAIS la PeerConnection, le signaling, ni l'état de session. La
+    // connexion WebRTC reste ACTIVE. Unmute réactive la MÊME track (aucun
+    // nouveau getUserMedia, aucun duplicate sender).
+    const tracks = localStreamRef.current?.getTracks() ?? [];
+    setAudioTracksEnabled(tracks, !muted);
+    logMedia(activeCallIdRef.current, activeCallRoleRef.current ?? "caller", muted ? "localMute" : "localUnmute", {
+      trackCount: tracks.filter((t) => t.kind === "audio").length,
+    });
   }, []);
 
   // ── refreshDirectory ────────────────────────────────────────
@@ -717,6 +1002,19 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     pusherRef.current = pusher;
     const userChannel = pusher.subscribe(appCallChannels.user(userId));
 
+    // Observabilité : succès / échec d'abonnement au canal utilisateur.
+    userChannel.bind("pusher:subscription_succeeded", () => {
+      logCallState(null, "caller", "pusherSubscriptionSucceeded", {
+        channel: appCallChannels.user(userId),
+      });
+    });
+    userChannel.bind("pusher:subscription_error", (status: any) => {
+      console.warn("[AppCall] Pusher subscription_error", status);
+      logCallState(null, "caller", "pusherSubscriptionError", {
+        status: String(status ?? ""),
+      });
+    });
+
     // M7 : reconnect Pusher — Pusher-js se reconnecte automatiquement, mais on
     // s'assure qu'un appel en cours restaure son abonnement au canal d'appel
     // après une reconnexion (les bindings du canal d'appel sont posés dans
@@ -736,6 +1034,12 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       }
     };
     pusher.connection.bind("connected", onConnectionAvailable);
+    pusher.connection.bind("connection:error", (data: any) => {
+      console.warn("[AppCall] Pusher connection error", data);
+      logCallState(null, "caller", "pusherConnectionError", {
+        error: String(data?.error?.message ?? data ?? ""),
+      });
+    });
     pusher.connection.bind("reconnecting", (data: any) => {
       console.warn("[AppCall] Pusher reconnecting", data);
     });
@@ -753,6 +1057,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       });
       maxDurationRef.current = data.fairUse?.maxCallDurationSeconds ?? 3600;
       setAppCallStatus("RINGING");
+      logCallState(data.callId, "callee", "callRinging");
     });
 
     userChannel.bind(APP_CALL_EVENTS.ACCEPTED, (data: any) => {
@@ -763,16 +1068,32 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     });
 
     userChannel.bind(APP_CALL_EVENTS.DECLINED, (data: any) => {
+      logCallState(
+        data?.callId ?? activeCallIdRef.current,
+        activeCallRoleRef.current ?? "caller",
+        "callDeclinedByPeer"
+      );
       setError("Destinataire a refusé");
       resetCall();
     });
 
     userChannel.bind(APP_CALL_EVENTS.CANCELLED, (data: any) => {
+      logCallState(
+        data?.callId ?? activeCallIdRef.current,
+        activeCallRoleRef.current ?? "caller",
+        "callCancelledByPeer"
+      );
       setError("Appel annulé");
       resetCall();
     });
 
     userChannel.bind(APP_CALL_EVENTS.ENDED, (data: any) => {
+      logCallState(
+        data?.callId ?? activeCallIdRef.current,
+        activeCallRoleRef.current ?? "caller",
+        "callEndedByPeer",
+        data?.reason ? { reason: data.reason } : undefined
+      );
       resetCall();
     });
 
@@ -781,6 +1102,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     return () => {
       try {
         pusher.connection.unbind("connected", onConnectionAvailable);
+        pusher.connection.unbind("connection:error");
         pusher.connection.unbind("reconnecting");
         pusher.connection.unbind("disconnected");
       } catch {
@@ -819,6 +1141,8 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       incomingAppCall,
       outboundPeer,
       remoteStream,
+      audioPlayFailed,
+      retryRemoteAudio,
       appCallDuration,
       connected,
       error,
@@ -835,6 +1159,8 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       incomingAppCall,
       outboundPeer,
       remoteStream,
+      audioPlayFailed,
+      retryRemoteAudio,
       appCallDuration,
       connected,
       error,

@@ -30,6 +30,102 @@ export const CALL_SIGNAL_TYPES = {
 export type CallSignalType =
   (typeof CALL_SIGNAL_TYPES)[keyof typeof CALL_SIGNAL_TYPES];
 
+// ── Bornes anti-abus (défense en profondeur) ────────────────────────────────
+// Le signaling est LÉGITIMEMENT verbeux (SDP ~2-5 Ko, candidats ICE) : ces
+// bornes sont très généreuses pour ne jamais casser un appel réel, mais
+// stoppent un client émetteur de payloads démesurés (coût Pusher/bande).
+export const MAX_SDP_CHARS = 64_000; // SDP par OFFER/ANSWER (~2-5 Ko en réel)
+export const MAX_CANDIDATE_CHARS = 8_000; // string candidate ICE (quadruple du max réel)
+export const MAX_REASON_CHARS = 500; // reason libre (REJECT/HANGUP/FAILED...)
+export const MAX_PAYLOAD_JSON_CHARS = 256_000; // payload JSON sérialisé total
+
+export type SignalValidation =
+  | { valid: true }
+  | { valid: false; reason: string };
+
+// Ensemble des VALEURS de CALL_SIGNAL_TYPES (ex : "CALL_READY") : le payload
+// transite par les valeurs, pas par les clés de l'objet.
+export const KNOWN_SIGNAL_TYPES: ReadonlySet<string> = new Set(
+  Object.values(CALL_SIGNAL_TYPES)
+);
+
+/**
+ * Valide un payload de signal reçu du navigateur AVANT relay (input validation).
+ *
+ * - Rejette les payloads non-objets, les types inconnus et les champs mal typés
+ *   (strönger que le seul cast TS, sans effet à l'exécution) ;
+ * - exige `sdp` (string) pour OFFER/ANSWER et `candidate.candidate` (string)
+ *   pour ICE_CANDIDATE — un voisin recevrait sinon un objet cassé qui fait
+ *   planter son handler (DoS par garbage) ;
+ * - borne la taille du SDP, des candidats, des `reason` et du payload total.
+ *
+ * PURE — testable sans dépendance.
+ */
+export function validateSignalPayload(payload: unknown): SignalValidation {
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    Array.isArray(payload)
+  ) {
+    return { valid: false, reason: "INVALID_PAYLOAD_TYPE" };
+  }
+  const p = payload as Record<string, unknown>;
+  const type = p.type;
+
+  if (typeof type !== "string" || !KNOWN_SIGNAL_TYPES.has(type)) {
+    return { valid: false, reason: "UNKNOWN_SIGNAL_TYPE" };
+  }
+
+  if (type === CALL_SIGNAL_TYPES.OFFER || type === CALL_SIGNAL_TYPES.ANSWER) {
+    if (typeof p.sdp !== "string") {
+      return { valid: false, reason: "SDP_REQUIRED" };
+    }
+    if (p.sdp.length > MAX_SDP_CHARS) {
+      return { valid: false, reason: "SDP_TOO_LARGE" };
+    }
+  }
+
+  if (type === CALL_SIGNAL_TYPES.ICE_CANDIDATE) {
+    const candidate = p.candidate;
+    if (typeof candidate !== "object" || candidate === null) {
+      return { valid: false, reason: "CANDIDATE_REQUIRED" };
+    }
+    const c = candidate as Record<string, unknown>;
+    if (typeof c.candidate !== "string") {
+      return { valid: false, reason: "CANDIDATE_FIELD_REQUIRED" };
+    }
+    if (c.candidate.length > MAX_CANDIDATE_CHARS) {
+      return { valid: false, reason: "CANDIDATE_TOO_LARGE" };
+    }
+  }
+
+  if (
+    type === CALL_SIGNAL_TYPES.REJECT ||
+    type === CALL_SIGNAL_TYPES.HANGUP ||
+    type === CALL_SIGNAL_TYPES.BUSY ||
+    type === CALL_SIGNAL_TYPES.TIMEOUT ||
+    type === CALL_SIGNAL_TYPES.FAILED
+  ) {
+    if (p.reason !== undefined && typeof p.reason !== "string") {
+      return { valid: false, reason: "REASON_TYPE" };
+    }
+    if (typeof p.reason === "string" && p.reason.length > MAX_REASON_CHARS) {
+      return { valid: false, reason: "REASON_TOO_LARGE" };
+    }
+  }
+
+  try {
+    const serialized = JSON.stringify(p);
+    if (serialized.length > MAX_PAYLOAD_JSON_CHARS) {
+      return { valid: false, reason: "PAYLOAD_TOO_LARGE" };
+    }
+  } catch {
+    return { valid: false, reason: "PAYLOAD_UNSERIALIZABLE" };
+  }
+
+  return { valid: true };
+}
+
 /**
  * Signal candidat reçu du navigateur (PAYLOAD seulement — jamais d'identité
  * de confiance). Champs d'identité (senderId/toId/sessionId) sont absents ici :

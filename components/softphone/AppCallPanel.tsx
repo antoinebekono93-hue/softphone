@@ -23,6 +23,8 @@ export function AppCallPanel() {
     makeAppCall,
     hangupAppCall,
     muteAppMic,
+    audioPlayFailed,
+    retryRemoteAudio,
   } = useAppCall();
 
   const { routeCall } = useCallRouter();
@@ -67,8 +69,16 @@ export function AppCallPanel() {
           <div className="text-3xl font-semibold text-[var(--text-primary)]">{displayName}</div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center w-full">
+        <div className="relative flex-1 flex items-center justify-center w-full">
           <AudioVisualizer isActive={connected} stream={remoteStream} />
+          {connected && audioPlayFailed && (
+            <button
+              onClick={retryRemoteAudio}
+              className="absolute z-20 px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold shadow-lg"
+            >
+              Activer le son
+            </button>
+          )}
         </div>
 
         <div className="flex items-center justify-center gap-6">

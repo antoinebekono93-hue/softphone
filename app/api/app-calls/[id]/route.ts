@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { logServerCallEvent } from "@/lib/app-call-observability";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,12 @@ export async function GET(
   const { id } = await context.params;
   const session = await auth();
   if (!session?.user?.id) {
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_UNAUTHORIZED",
+      callId: id,
+      details: { path: "/api/app-calls/[id]" },
+    });
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,10 +32,23 @@ export async function GET(
     },
   });
   if (!appCall) {
+    logServerCallEvent({
+      level: "debug",
+      event: "CALL_NOT_FOUND",
+      callId: id,
+      details: { path: "/api/app-calls/[id]" },
+    });
     return NextResponse.json({ error: "Call not found" }, { status: 404 });
   }
   if (appCall.callerId !== session.user.id && appCall.calleeId !== session.user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // 404 (pas 403) : anti-énumération — on ne révèle pas qu'un callId existe.
+    logServerCallEvent({
+      level: "warn",
+      event: "CALL_ACCESS_DENIED",
+      callId: id,
+      details: { userId: session.user.id, path: "/api/app-calls/[id]" },
+    });
+    return NextResponse.json({ error: "Call not found" }, { status: 404 });
   }
 
   return NextResponse.json({ call: appCall });

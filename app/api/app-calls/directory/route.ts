@@ -28,6 +28,7 @@ export async function GET() {
       callExtension: true,
     },
     orderBy: { name: "asc" },
+    take: 500, // anti-DoS : annuaire borné (MVP intra-org, jamais de pagination infinie)
   });
 
   return NextResponse.json({ users });

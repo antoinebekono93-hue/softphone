@@ -46,7 +46,8 @@ export type RouteFailure = {
     | "NO_ORGANIZATION"
     | "SELF_CALL"
     | "TARGET_NOT_CALLABLE"
-    | "EMPTY_TARGET";
+    | "EMPTY_TARGET"
+    | "INVALID_TARGET";
 };
 
 export type RouteResult = RouteDecision | RouteFailure;
@@ -69,6 +70,13 @@ type ClassifyInput = {
 };
 
 /**
+ * Longueur maximale d'une cible de saisie. Au-dessus, on refuse SANS interroger
+ * la DB (un username/ext ≤ 32, un email ≤ 254, un E.164 ≤ 16 : 300 est très
+ * au-dessus du légitime et bloque les payloads de plusieurs Ko).
+ */
+export const MAX_TARGET_LENGTH = 300;
+
+/**
  * Pure : classe une décision à partir de la cible brute et des candidats
  * pré-résolus. Ne fait AUCUNE requête DB.
  */
@@ -76,6 +84,9 @@ export function classifyCandidates(input: ClassifyInput): RouteDecision | RouteF
   const target = (input.target ?? "").trim();
   if (!target) {
     return { type: "ERROR", reason: "EMPTY_TARGET" };
+  }
+  if (target.length > MAX_TARGET_LENGTH) {
+    return { type: "ERROR", reason: "INVALID_TARGET" };
   }
 
   if (input.candidates.length > 0) {
@@ -138,6 +149,11 @@ export async function resolveCallDestination(params: {
   const lower = (target ?? "").trim().toLowerCase();
   if (!lower) {
     return { type: "ERROR", reason: "EMPTY_TARGET" };
+  }
+  if (lower.length > MAX_TARGET_LENGTH) {
+    // Refus AVANT toute requête DB (une cible de plusieurs Ko ne justifie pas
+    // un scan de l'annuaire).
+    return { type: "ERROR", reason: "INVALID_TARGET" };
   }
 
   const lookup = params.lookupUser ?? defaultLookup;

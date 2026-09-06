@@ -211,6 +211,170 @@ export async function expireStaleRingingSessions(args?: {
   return expired;
 }
 
+// ── Machine à états (source de vérité des transitions) ───────────────────────
+// Précédemment dupliquée DANS la route /api/app-calls/[id]/status. Centralisée
+// ici pour être testable et ne jamais diverger entre logique et route.
+//
+//   OFFERING -> CONNECTING/ENDED
+//   RINGING  -> CONNECTING/ACTIVE/DECLINED/MISSED/ENDED
+//   CONNECTING -> ACTIVE/FAILED/ENDED
+//   ACTIVE   -> ENDED/FAILED
+//   (terminal -> aucun)
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  OFFERING: ["CONNECTING", "ENDED"],
+  RINGING: ["CONNECTING", "ACTIVE", "DECLINED", "MISSED", "ENDED"],
+  CONNECTING: ["ACTIVE", "FAILED", "ENDED"],
+  ACTIVE: ["ENDED", "FAILED"],
+};
+
+export type TransitionCheck =
+  | { ok: true }
+  | { ok: false; reason: "INVALID_TRANSITION" | "FORBIDDEN_ROLE" };
+
+/**
+ * Vérifie PURE d'une transition de statut demandée vs la machine à états ET le
+ * rôle du demandeur. La route mappe FORBIDDEN_ROLE → 403, INVALID_TRANSITION → 409.
+ *
+ * Règles de rôle :
+ *  - CONNECTING / DECLINED / ACTIVE : seul le callee décide d'accepter/refuser.
+ *  - ENDED / MISSED / FAILED : tout participant met fin / constate un échec.
+ */
+export function canApplyStatusTransition(args: {
+  currentStatus: string;
+  nextStatus: string;
+  isCaller: boolean;
+  isCallee: boolean;
+}): TransitionCheck {
+  const { currentStatus, nextStatus, isCaller, isCallee } = args;
+  const allowed = STATUS_TRANSITIONS[currentStatus] ?? [];
+  if (!allowed.includes(nextStatus)) {
+    return { ok: false, reason: "INVALID_TRANSITION" };
+  }
+  const isParticipant = isCaller || isCallee;
+  if (
+    nextStatus === "CONNECTING" ||
+    nextStatus === "DECLINED" ||
+    nextStatus === "ACTIVE"
+  ) {
+    return isCallee
+      ? { ok: true }
+      : { ok: false, reason: "FORBIDDEN_ROLE" };
+  }
+  return isParticipant
+    ? { ok: true }
+    : { ok: false, reason: "FORBIDDEN_ROLE" };
+}
+
+// ── Durée maximale (fair-use) — force-end serveur ────────────────────────────
+const DEFAULT_MAX_DURATION_SECONDS = 3600; // cohérent avec lib/app-call-policy.ts
+
+/**
+ * PURE : une session ACTIVE doit-elle être forcée en ENDED par le serveur
+ * (fair-use maxCallDurationSeconds) ? La base de durée est `connectedAt`
+ * (début réel de la conversation) sinon `startedAt` (défensif).
+ */
+export function shouldForceEndActiveSession(args: {
+  now: Date;
+  connectedAt: Date | null;
+  startedAt: Date;
+  maxCallDurationSeconds: number;
+}): boolean {
+  const base = args.connectedAt ?? args.startedAt;
+  const elapsedMs = Math.max(0, args.now.getTime() - base.getTime());
+  return elapsedMs >= args.maxCallDurationSeconds * 1000;
+}
+
+/**
+ * Reaper des sessions ACTIVE qui dépassent la durée maximale du plan.
+ * Le maximum est lu sur le pricingPlan de l'organisation (défaut 3600 s).
+ * IDEMPOTENT (updateMany conditionnel) : une course ne déclenche qu'UN
+ * force-end + UNE décrémentation de activeCallsCount.
+ *
+ * Renvoie les sessions terminées (pour notifier les DEUX participants).
+ */
+export async function expireOverdueActiveSessions(args?: {
+  now?: Date;
+}): Promise<ExpiredSession[]> {
+  const now = args?.now ?? new Date();
+  const expired: ExpiredSession[] = [];
+  let cursor: string | null = null;
+  const page = 100;
+
+  type ActiveRow = {
+    id: string;
+    callerId: string;
+    calleeId: string;
+    organizationId: string;
+    connectedAt: Date | null;
+    startedAt: Date;
+    maxCallDurationSeconds: number | null;
+  };
+
+  for (;;) {
+    const rows = await prisma.appCallSession.findMany({
+      where: { status: "ACTIVE", ...(cursor ? { id: { gt: cursor } } : {}) },
+      select: {
+        id: true,
+        callerId: true,
+        calleeId: true,
+        organizationId: true,
+        connectedAt: true,
+        startedAt: true,
+        organization: {
+          select: { pricingPlan: { select: { maxCallDurationSeconds: true } } },
+        },
+      },
+      orderBy: { id: "asc" },
+      take: page,
+    });
+    if (rows.length === 0) break;
+
+    const sessions: ActiveRow[] = rows.map((r) => ({
+      id: r.id,
+      callerId: r.callerId,
+      calleeId: r.calleeId,
+      organizationId: r.organizationId,
+      connectedAt: r.connectedAt,
+      startedAt: r.startedAt,
+      maxCallDurationSeconds: r.organization.pricingPlan?.maxCallDurationSeconds ?? null,
+    }));
+
+    for (const s of sessions) {
+      const max = s.maxCallDurationSeconds ?? DEFAULT_MAX_DURATION_SECONDS;
+      if (!shouldForceEndActiveSession({ now, connectedAt: s.connectedAt, startedAt: s.startedAt, maxCallDurationSeconds: max })) {
+        continue;
+      }
+      const res = await prisma.appCallSession.updateMany({
+        where: { id: s.id, status: "ACTIVE" },
+        data: {
+          status: "ENDED",
+          endedAt: now,
+          durationSeconds: Math.max(
+            0,
+            Math.floor((now.getTime() - s.startedAt.getTime()) / 1000)
+          ),
+        },
+      });
+      if (res.count === 1) {
+        await prisma.organization.update({
+          where: { id: s.organizationId },
+          data: { activeCallsCount: { decrement: 1 } },
+        });
+        expired.push({
+          sessionId: s.id,
+          callerId: s.callerId,
+          calleeId: s.calleeId,
+          organizationId: s.organizationId,
+          status: "ACTIVE",
+        });
+      }
+    }
+    cursor = sessions[sessions.length - 1].id;
+  }
+
+  return expired;
+}
+
 export { BUSY_STATUSES as APP_CALL_BUSY_STATUSES };
 export { TERMINAL as APP_CALL_TERMINAL_STATUSES };
 export { RINGING_STATUSES as APP_CALL_RINGING_STATUSES };
