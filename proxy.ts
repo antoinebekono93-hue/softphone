@@ -28,6 +28,7 @@ const publicPaths = [
   "/api/stripe/webhook",
   "/api/webhooks",
   "/api/cron",
+  "/api/health",
 ];
 
 // Rate limit configuration per path
@@ -96,7 +97,7 @@ async function checkRateLimit(pathname: string, identifier: string): Promise<Nex
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (

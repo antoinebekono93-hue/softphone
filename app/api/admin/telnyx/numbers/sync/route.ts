@@ -1,25 +1,44 @@
 import { NextResponse } from "next/server";
 import { telnyx } from "@/lib/telnyx";
 import { prisma } from "@/lib/prisma";
+import { requireSuperAdminApi } from "@/lib/security";
 import { auth } from "@/auth";
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
+    const guard = await requireSuperAdminApi();
+    if (guard) return guard;
+
+    // Seul un super-admin (vérifié par la garde ci-dessus) peut déclencher
+    // cette opération Telnyx. Les numéros EXISTANTS conservent leur org ;
+    // les NOUVEAUX sont rattachés à l'org du super-admin (ou, à défaut, à la
+    // première org créée comme lot d'attente — l'attribution manuelle reste
+    // la norme via /api/admin/telnyx/numbers/assign).
     const session = await auth();
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let defaultOrgId = session?.user?.organizationId ?? null;
+    if (!defaultOrgId) {
+      const first = await prisma.organization.findFirst({ orderBy: { createdAt: "asc" } });
+      defaultOrgId = first?.id ?? null;
     }
 
-    const orgId = session.user.organizationId;
-
-    console.log("Fetching provisioned numbers from Telnyx...");
     const response = await telnyx.phoneNumbers.list();
     const telnyxNumbers = response.data || [];
+
+    if (!defaultOrgId) {
+      // organizationId est REQUIS dans le schéma : impossible de synchroniser un
+      // numéro hors organisation. Fail-closed plutôt qu'un INSERT en échec.
+      if (telnyxNumbers.length > 0) {
+        return NextResponse.json(
+          { error: "Aucune organisation hôte : créez une organisation ou assignez-vous à une org avant de synchroniser." },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ success: true, count: 0 });
+    }
 
     let syncedCount = 0;
 
     for (const num of telnyxNumbers) {
-      // Upsert the number into our database
       await prisma.phoneNumber.upsert({
         where: { telnyxId: num.id },
         update: {
@@ -28,20 +47,21 @@ export async function POST(req: Request) {
         create: {
           number: num.phone_number,
           telnyxId: num.id,
-          organizationId: orgId, // Assign to current admin org by default
+          organizationId: defaultOrgId,
           country: num.country_code || "US",
           status: "ACTIVE",
-        }
+        },
       });
       syncedCount++;
     }
 
     return NextResponse.json({ success: true, count: syncedCount });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Unknown error";
     console.error("Number sync error:", error);
     return NextResponse.json(
-      { error: "Failed to sync numbers", details: error?.message || String(error) },
+      { error: "Failed to sync numbers", details: message },
       { status: 500 }
     );
   }

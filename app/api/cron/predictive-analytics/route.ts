@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireCronSecret } from "@/lib/security";
 
 // Exécution via Vercel Cron ou Trigger manuel
 export async function GET(req: Request) {
   try {
-    // Dans une application de production, on sécurise cette route via un token Vercel Cron ou une clé secrète.
-    const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!requireCronSecret(req)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const contacts = await prisma.contact.findMany({

@@ -7,6 +7,7 @@ import {
   expireOverdueActiveSessions,
 } from "@/lib/app-call-session";
 import { logServerCallEvent } from "@/lib/app-call-observability";
+import { requireCronSecret } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,7 @@ export const dynamic = "force-dynamic";
  * Sécurisé par CRON_SECRET ; auto-excludé en dev.
  */
 export async function GET(req: Request) {
-  const authHeader = req.headers.get("authorization");
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!requireCronSecret(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

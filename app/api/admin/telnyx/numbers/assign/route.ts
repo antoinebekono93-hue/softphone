@@ -1,14 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireSuperAdminApi } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    // Only admins should be able to do this
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireSuperAdminApi();
+    if (guard) return guard;
 
     const { numberId, organizationId } = await req.json();
 
@@ -27,10 +24,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error("Number assignment error:", error);
     return NextResponse.json(
-      { error: "Failed to assign number", details: error?.message || String(error) },
+      { error: "Failed to assign number", details: message },
       { status: 500 }
     );
   }

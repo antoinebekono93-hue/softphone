@@ -1,3 +1,9 @@
 {
-  "regions": ["fra1"]
+  "regions": ["fra1"],
+  "crons": [
+    { "path": "/api/cron/app-calls-timeout", "schedule": "* * * * *" },
+    { "path": "/api/cron/flows", "schedule": "* * * * *" },
+    { "path": "/api/cron/campaign-worker", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/reset-included-minutes", "schedule": "0 0 1 * *" }
+  ]
 }

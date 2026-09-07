@@ -1,5 +1,5 @@
 {
-  "name": "2",
+  "name": "antigravity-saas",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,6 +8,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:minutes": "tsx scripts/test-included-minutes.ts",
+    "test:ledger": "tsx scripts/test-pstn-ledger.ts",
+    "test:admin-guard": "tsx scripts/test-admin-guard.ts",
+    "test:cron-guard": "tsx scripts/test-cron-guard.ts",
+    "test:webhook-idempotence": "tsx scripts/test-webhook-idempotence.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

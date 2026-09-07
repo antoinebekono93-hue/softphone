@@ -542,6 +542,18 @@ model WalletTransaction {
   @@index([callControlId])
 }
 
+model WebhookEvent {
+  id             String    @id @default(cuid())
+  provider       String
+  eventId        String
+  type           String
+  organizationId String?
+  processedAt    DateTime  @default(now())
+
+  @@unique([provider, eventId])
+  @@index([provider])
+}
+
 model WhatsAppAccount {
   id             String       @id @default(cuid())
   wabaId         String

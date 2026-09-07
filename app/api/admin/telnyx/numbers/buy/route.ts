@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { telnyx } from "@/lib/telnyx";
-import { auth } from "@/auth";
+import { requireSuperAdminApi } from "@/lib/security";
 
 export async function POST(req: Request) {
   try {
     // 1. Security Check: Only allow Super Admins
-    // const session = await auth();
-    // if (!session?.user || !session.user.isSuperAdmin) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
+    const guard = await requireSuperAdminApi();
+    if (guard) return guard;
 
     // 2. Extract phone number to purchase from the request body
     const body = await req.json();

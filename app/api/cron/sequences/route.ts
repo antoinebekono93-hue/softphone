@@ -1,15 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-// IMPORTANT: This route should be secured in production (e.g., matching a secret token)
-// Example: /api/cron/sequences?token=YOUR_CRON_SECRET
+import { requireCronSecret } from '@/lib/security';
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const token = searchParams.get('token');
-  
-  // Basic security check (uncomment and configure in production)
-  // if (token !== process.env.CRON_SECRET) return new NextResponse('Unauthorized', { status: 401 });
+  if (!requireCronSecret(req)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   console.log('[CRON] Starting Sequence Engine...');
 

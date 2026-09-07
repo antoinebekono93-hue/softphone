@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-// This route should ideally be protected by a cron secret in production
-// ex: if (req.headers.get("Authorization") !== `Bearer ${process.env.CRON_SECRET}`) ...
+import { requireCronSecret } from "@/lib/security";
 
 export async function GET(req: Request) {
   try {
+    if (!requireCronSecret(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     console.log("[Campaign Worker] Waking up to process pending messages...");
 
     // Find campaigns that are in SENDING status

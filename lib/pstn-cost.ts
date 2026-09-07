@@ -68,3 +68,21 @@ export function computeSettleAdjustment(args: {
   }
   return { extraDebit: 0, refund: 0 };
 }
+
+/**
+ * Début (UTC) de la période courante de minutes incluses.
+ * `usageResetDate` est la source de vérité : on considère qu'une organisation
+ * doit être réinitialisée dès que son `usageResetDate` est antérieur au début
+ * du mois UTC courant (le cron mensuel + une normalisation lazy en lecture).
+ */
+export function currentPeriodStartUtc(now: Date = new Date()): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+}
+
+/**
+ * Indique si la période de minutes incluses a basculé (reset requis).
+ * `true` si `usageResetDate < currentPeriodStartUtc(now)`.
+ */
+export function isUsagePeriodElapsed(usageResetDate: Date, now: Date = new Date()): boolean {
+  return usageResetDate < currentPeriodStartUtc(now);
+}

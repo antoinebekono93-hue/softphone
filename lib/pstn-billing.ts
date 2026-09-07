@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSystemRates, debitWalletAtomically, creditWalletAtomically } from "@/lib/billing";
 import { logAppCallDecision } from "@/lib/app-call-policy";
-import { computePstnCost, computeSettleAdjustment } from "@/lib/pstn-cost";
+import { computePstnCost, computeSettleAdjustment, currentPeriodStartUtc } from "@/lib/pstn-cost";
 
 const HOLD_TX_TYPE = "PSTN_CALL_HOLD"; // pré-déduction (initiated)
 const SETTLE_TX_TYPE = "PSTN_CALL"; // coût réel (hangup)
@@ -64,15 +64,35 @@ export async function estimatePstnCost(
 }
 
 /**
- * Minutes incluses déjà consommées (compteur atomique `minutesUsedThisMonth`).
- * NB : colonne Int → précision à la minute entière (voir rapport).
+ * Minutes incluses déjà consommées de la période COURANTE (DANS une transaction).
+ *
+ * `usageResetDate` est la source de vérité. Dès que la période a basculé
+ * (usageResetDate antérieur au début du mois UTC courant), on réinitialise de
+ * façon ATOMIQUE et CONDITIONNELLE (gardée par l'ancienne valeur) le compteur,
+ * de sorte que les minutes incluses redeviennent disponibles immédiatement,
+ * sans attendre le cron mensuel. Sûr en concurrence : le prédicat
+ * `usageResetDate = <valeur lue>` fait échouer le reset des autres appelants
+ * si quelqu'un l'a déjà fait entre-temps.
  */
-async function readIncludedUsed(orgId: string): Promise<number> {
-  const org = await prisma.organization.findUnique({
+async function readIncludedUsed(
+  tx: Prisma.TransactionClient,
+  orgId: string
+): Promise<number> {
+  const org = await tx.organization.findUnique({
     where: { id: orgId },
-    select: { minutesUsedThisMonth: true },
+    select: { minutesUsedThisMonth: true, usageResetDate: true },
   });
-  return org?.minutesUsedThisMonth ?? 0;
+  if (!org) return 0;
+
+  if (org.usageResetDate >= currentPeriodStartUtc()) {
+    return org.minutesUsedThisMonth ?? 0;
+  }
+
+  await tx.organization.updateMany({
+    where: { id: orgId, usageResetDate: org.usageResetDate },
+    data: { minutesUsedThisMonth: 0, usageResetDate: new Date() },
+  });
+  return 0;
 }
 
 /**
@@ -157,7 +177,7 @@ export async function preAuthorizeCall(params: {
   const { estimatedCost, costPerMinute, maxDurationSeconds } = await estimatePstnCost(organizationId, rateProfile);
   const preAuthRequired = plan.preAuthRequired ?? false;
 
-  const usedThisMonth = await readIncludedUsed(organizationId);
+  const usedThisMonth = await prisma.$transaction((tx) => readIncludedUsed(tx, organizationId));
   // Part wallet estimée = estimation totale non couverte par les minutes incluses.
   const estimateMinutes = maxDurationSeconds / MINUTES_DIVISOR;
   const remainingIncluded = Math.max((plan.includedMinutes ?? 0) - usedThisMonth, 0);
@@ -313,7 +333,10 @@ export async function releasePstnReservation(params: {
  * Débits/remboursements :
  *   - minutes incluses consommées atomiquement (compteur gardé) ;
  *   - wallet : réconciliation hold ↔ coût RÉEL via `computeSettleAdjustment` ;
- *     supplément débité avec garde `walletBalance >= amount`, surplus remboursé.
+ *     supplément débité avec garde `walletBalance >= amount`, surplus remboursé ;
+ *   - grand livre : SETTLE enregistre le DELTA par rapport au hold (jamais le coût
+ *     brut), pour que Σ(ledger) == Δ(walletBalance). (les HOLD/REFUND couvrent le
+ *     reste.)
  *
  * Idempotence :
  *   - une seule WalletTransaction `unique_billing_per_call` (SETTLE) par appel →
@@ -366,13 +389,12 @@ export async function settlePstnCall(params: {
   let includedMinutesUsed = 0;
   let walletCost = new Prisma.Decimal(0);
   let refunded = 0;
+  let reservationAlreadyReleased = false;
 
   await prisma.$transaction(async (tx) => {
-    // Source de concurrence n°2 : minutes incluses. On lit le compteur DANS la transaction.
-    const usedThisMonth = (await tx.organization.findUnique({
-      where: { id: organizationId },
-      select: { minutesUsedThisMonth: true },
-    }))?.minutesUsedThisMonth ?? 0;
+    // Source de concurrence n°2 : minutes incluses. On lit le compteur DANS la
+    // transaction, avec normalisation lazy du rollover de période.
+    const usedThisMonth = await readIncludedUsed(tx, organizationId);
 
     // 1. Répartition : minutes incluses d'abord (basée sur le compteur atomique).
     const calc = computePstnCost({ durationSeconds, costPerMinute, includedPerMinute, usedThisMonth });
@@ -388,6 +410,7 @@ export async function settlePstnCall(params: {
     if (!reservation) {
       // Réservation déjà libérée (RELEASED) → on ne débite PAS le wallet.
       // ou non-PENDING. On marque quand même le CallLog pour la restitution.
+      reservationAlreadyReleased = true;
       await tx.callLog.update({
         where: { id: callLogId },
         data: {
@@ -425,11 +448,17 @@ export async function settlePstnCall(params: {
       });
     }
 
-    // 6. Enregistrement du coût réel (SETTLE) — clé unique d'idempotence.
+    // 6. Enregistrement du mouvement NET (SETTLE) — clé unique d'idempotence.
+    // Cohérence grand livre : le HOLD (`-hold`, créé à la pré-autorisation) a
+    // déjà débité le wallet. On n'enregistre ici QUE le delta réel vs le hold :
+    //   - réel > hold → débit complémentaire (`-extraDebit`, wallet déjà débité).
+    //   - réel <= hold → aucun mouvement (le surplus part en REFUND ci-dessus).
+    // Ainsi Σ(ledger) correspond toujours à Δ(walletBalance).
+    const settleDeltaAmount = extraDebit > 0 ? -extraDebit : 0;
     const txRecord = await tx.walletTransaction.create({
       data: {
         organizationId,
-        amount: walletCost.neg().toDecimalPlaces(4),
+        amount: settleDeltaAmount,
         type: SETTLE_TX_TYPE,
         description: `Facturation appel PSTN (${durationSeconds}s, ${rateProfile})`,
         callControlId,
@@ -455,6 +484,19 @@ export async function settlePstnCall(params: {
       },
     });
   });
+
+  if (reservationAlreadyReleased) {
+    // Rien n'a été débité : réservation déjà libérée (release gagnant).
+    return {
+      billed: false,
+      includedMinutesUsed,
+      walletCost: 0,
+      totalCost: totalCost.toNumber(),
+      heldAmount: 0,
+      refunded: 0,
+      transactionIds: [],
+    };
+  }
 
   await logAppCallDecision(
     organizationId,

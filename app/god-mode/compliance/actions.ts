@@ -2,9 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireSuperAdmin } from "@/lib/security";
 
 // Get all orgs for compliance review
 export async function getComplianceRecords() {
+  await requireSuperAdmin();
   try {
     const orgs = await prisma.organization.findMany({
       select: {
@@ -26,6 +28,7 @@ export async function getComplianceRecords() {
 
 // Approve KYC
 export async function approveKYC(orgId: string) {
+  await requireSuperAdmin();
   try {
     await prisma.organization.update({
       where: { id: orgId },
@@ -40,6 +43,7 @@ export async function approveKYC(orgId: string) {
 
 // Reject KYC
 export async function rejectKYC(orgId: string) {
+  await requireSuperAdmin();
   try {
     await prisma.organization.update({
       where: { id: orgId },

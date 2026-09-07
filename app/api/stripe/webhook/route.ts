@@ -1,14 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { stripe, getPlanFromPriceId } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
-import { getPlanLimits } from "@/lib/utils";
+import { creditWalletAtomically } from "@/lib/billing";
 import type Stripe from "stripe";
+
+const STRIPE_PROVIDER = "STRIPE";
+
+function isUniqueConstraintError(err: unknown): boolean {
+  return (
+    err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002"
+  );
+}
 
 /**
  * POST /api/stripe/webhook
  *
- * Handles Stripe webhook events to keep our database in sync
- * with subscription status changes.
+ * Handles Stripe webhook events.
+ *
+ * Idempotence ATOMIQUE :
+ *  - La signature Stripe est vérifiée (constructEvent).
+ *  - L'`event.id` est revendiqué dans la MÊME transaction que les effets :
+ *    `INSERT INTO WebhookEvent (provider, eventId) VALUES ('STRIPE', ...)`.
+ *    Deux livraisons concurrentes du même event : le premier INSERT gagne,
+ *    le second échoue sur la contrainte unique (P2002) → toute sa transaction
+ *    est annulée (aucun crédit), on répond `received: true, duplicate: true`.
+ *  - Si les effets échouent, la transaction (claim inclus) est ROLLBACK →
+ *    le retry Stripe re-traitera l'event correctement.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -38,42 +56,65 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutCompleted(session);
-        break;
-      }
+    let duplicate = false;
 
-      case "invoice.paid": {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handleInvoicePaid(invoice);
-        break;
-      }
+    try {
+      await prisma.$transaction(async (tx) => {
+        // Claim atomique de l'événement (contrainte unique provider+eventId).
+        await tx.webhookEvent.create({
+          data: {
+            provider: STRIPE_PROVIDER,
+            eventId: event.id,
+            type: event.type,
+            organizationId: getEventOrganizationId(event),
+          },
+        });
 
-      case "invoice.payment_failed": {
-        const invoice = event.data.object as Stripe.Invoice;
-        await handlePaymentFailed(invoice);
-        break;
-      }
+        switch (event.type) {
+          case "checkout.session.completed": {
+            const session = event.data.object as Stripe.Checkout.Session;
+            await handleCheckoutCompleted(session, tx);
+            break;
+          }
 
-      case "customer.subscription.updated": {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdated(subscription);
-        break;
-      }
+          case "invoice.paid": {
+            const invoice = event.data.object as Stripe.Invoice;
+            await handleInvoicePaid(invoice, tx);
+            break;
+          }
 
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionDeleted(subscription);
-        break;
-      }
+          case "invoice.payment_failed": {
+            const invoice = event.data.object as Stripe.Invoice;
+            await handlePaymentFailed(invoice, tx);
+            break;
+          }
 
-      default:
-        console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+          case "customer.subscription.updated": {
+            const subscription = event.data.object as Stripe.Subscription;
+            await handleSubscriptionUpdated(subscription, tx);
+            break;
+          }
+
+          case "customer.subscription.deleted": {
+            const subscription = event.data.object as Stripe.Subscription;
+            await handleSubscriptionDeleted(subscription, tx);
+            break;
+          }
+
+          default:
+            console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+        }
+      });
+    } catch (err) {
+      if (isUniqueConstraintError(err)) {
+        // Déjà traité (event.id stocké). Aucun second crédit, réponse idempotente.
+        duplicate = true;
+      } else {
+        throw err;
+      }
     }
 
-    return NextResponse.json({ received: true });
+    return NextResponse.json({ received: true, duplicate });
   } catch (error) {
     console.error("[Stripe Webhook] Error:", error);
     return NextResponse.json(
@@ -83,10 +124,21 @@ export async function POST(request: NextRequest) {
   }
 }
 
+function getEventOrganizationId(event: Stripe.Event): string | null {
+  const object = event.data?.object as
+    | { metadata?: Record<string, string> }
+    | undefined;
+  return object?.metadata?.organizationId ?? null;
+}
+
 /**
  * After a successful checkout, activate the plan and provision Twilio, or top up wallet.
+ * Exécuté DANS la transaction d'idempotence (un seul crédit par event.id).
  */
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+  tx: Prisma.TransactionClient
+) {
   const organizationId = session.metadata?.organizationId;
   const plan = session.metadata?.plan as "STARTER" | "PRO" | "ENTERPRISE";
   const type = session.metadata?.type;
@@ -96,27 +148,35 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
-  const org = await prisma.organization.findUnique({
+  const org = await tx.organization.findUnique({
     where: { id: organizationId },
   });
 
   if (!org) return;
 
-  if (type === 'WALLET_TOPUP') {
+  if (type === "WALLET_TOPUP") {
     const amountStr = session.metadata?.amount;
-    const amount = parseFloat(amountStr || '0');
-    
+    const amount = parseFloat(amountStr || "0");
+
     if (amount > 0) {
-      const { creditWallet } = await import('@/lib/billing');
-      await creditWallet(organizationId, amount, `Recharge Wallet via Stripe (Session: ${session.id})`);
-      console.log(`[Stripe] Organization ${organizationId} wallet topped up by ${amount}€`);
+      await creditWalletAtomically(tx, organizationId, amount);
+      await tx.walletTransaction.create({
+        data: {
+          organizationId,
+          amount,
+          type: "CREDIT",
+          description: `Recharge Wallet via Stripe (Session: ${session.id})`,
+        },
+      });
+      console.log(
+        `[Stripe] Organization ${organizationId} wallet topped up by ${amount} (Session: ${session.id})`
+      );
     }
     return;
   }
 
   if (plan) {
-    // Update the organization for plan subscription
-    await prisma.organization.update({
+    await tx.organization.update({
       where: { id: organizationId },
       data: {
         planStatus: "ACTIVE",
@@ -133,7 +193,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 /**
  * Keep the plan active when invoices are paid.
  */
-async function handleInvoicePaid(invoice: Stripe.Invoice) {
+async function handleInvoicePaid(
+  invoice: Stripe.Invoice,
+  tx: Prisma.TransactionClient
+) {
   const invAny = invoice as any;
   const subscriptionId =
     typeof invAny.subscription === "string"
@@ -142,7 +205,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
   if (!subscriptionId) return;
 
-  await prisma.organization.updateMany({
+  await tx.organization.updateMany({
     where: { stripeSubscriptionId: subscriptionId },
     data: { planStatus: "ACTIVE" },
   });
@@ -151,7 +214,10 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 /**
  * Mark the plan as past_due when payment fails.
  */
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
+async function handlePaymentFailed(
+  invoice: Stripe.Invoice,
+  tx: Prisma.TransactionClient
+) {
   const invAny = invoice as any;
   const subscriptionId =
     typeof invAny.subscription === "string"
@@ -160,7 +226,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 
   if (!subscriptionId) return;
 
-  await prisma.organization.updateMany({
+  await tx.organization.updateMany({
     where: { stripeSubscriptionId: subscriptionId },
     data: { planStatus: "PAST_DUE" },
   });
@@ -169,14 +235,17 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 /**
  * Handle plan changes (upgrades/downgrades).
  */
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdated(
+  subscription: Stripe.Subscription,
+  tx: Prisma.TransactionClient
+) {
   const priceId = subscription.items.data[0]?.price?.id;
   if (!priceId) return;
 
   const newPlan = getPlanFromPriceId(priceId);
   if (!newPlan) return;
 
-  await prisma.organization.updateMany({
+  await tx.organization.updateMany({
     where: { stripeSubscriptionId: subscription.id },
     data: {
       planStatus: subscription.status === "active" ? "ACTIVE" : "PAST_DUE",
@@ -187,8 +256,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 /**
  * Cancel the subscription — mark plan as canceled.
  */
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  await prisma.organization.updateMany({
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  tx: Prisma.TransactionClient
+) {
+  await tx.organization.updateMany({
     where: { stripeSubscriptionId: subscription.id },
     data: { planStatus: "CANCELED" },
   });

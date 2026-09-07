@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { requireSuperAdminApi } from '@/lib/security';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const guard = await requireSuperAdminApi();
+    if (guard) return guard;
+
     const resolvedParams = await params;
     const template = await prisma.agentTemplate.findUnique({ where: { id: resolvedParams.id } });
     if (!template) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -15,8 +18,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const guard = await requireSuperAdminApi();
+    if (guard) return guard;
 
     const body = await req.json();
     const { name, jobTitle, roleType, description, systemPrompt, tones, skills, color, bgColor } = body;

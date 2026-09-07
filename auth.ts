@@ -113,7 +113,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (process.env.MOCK_AUTH === "true") {
+      // MOCK_AUTH est une backdoor d'admin (attribue isSuperAdmin=true à TOUS).
+      // Interdit en production : sinon n'importe quelle connexion passe en super-admin.
+      if (process.env.MOCK_AUTH === "true" && process.env.NODE_ENV !== "production") {
         session.user.id = "mock-id";
         session.user.role = "USER";
         session.user.organizationId = "cm1o6r8z00002131v3b9r9y2c"; // Wait, I need a REAL orgId from Nhost database! Let's just use a valid string and if the DB query fails, it's fine.

@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireSuperAdminApi } from "@/lib/security";
 
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireSuperAdminApi();
+    if (guard) return guard;
 
     let settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
     if (!settings) {
@@ -23,11 +21,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const session = await auth();
-    // Idéalement, vérifier session.user.role === 'ADMIN'
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireSuperAdminApi();
+    if (guard) return guard;
 
     const body = await req.json();
     const {

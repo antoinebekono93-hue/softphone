@@ -3,9 +3,11 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { debitWalletAtomically } from "@/lib/billing";
+import { requireSuperAdmin } from "@/lib/security";
 
 // 1. Get or Create System Settings
 export async function getSystemSettings() {
+  await requireSuperAdmin();
   let settings = await prisma.systemSettings.findUnique({
     where: { id: "default" }
   });
@@ -21,6 +23,7 @@ export async function getSystemSettings() {
 
 // 2. Save API Key
 export async function saveTelnyxApiKey(apiKey: string) {
+  await requireSuperAdmin();
   await prisma.systemSettings.upsert({
     where: { id: "default" },
     update: { telnyxApiKey: apiKey },
@@ -31,6 +34,7 @@ export async function saveTelnyxApiKey(apiKey: string) {
 
 // 3. Fetch Balance from Telnyx API
 export async function fetchTelnyxBalance(apiKey: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key configured" };
 
   try {
@@ -58,6 +62,7 @@ export async function fetchTelnyxBalance(apiKey: string) {
 // -----------------------------------------------------
 
 export async function fetchOutboundProfiles(apiKey: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key configured" };
   try {
     const res = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
@@ -72,6 +77,7 @@ export async function fetchOutboundProfiles(apiKey: string) {
 }
 
 export async function createOutboundProfile(apiKey: string, profileData: any) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key configured" };
   try {
     const res = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
@@ -92,6 +98,7 @@ export async function createOutboundProfile(apiKey: string, profileData: any) {
 }
 
 export async function updateOutboundProfile(apiKey: string, profileId: string, profileData: any) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key configured" };
   try {
     const res = await fetch(`https://api.telnyx.com/v2/outbound_voice_profiles/${profileId}`, {
@@ -112,6 +119,7 @@ export async function updateOutboundProfile(apiKey: string, profileId: string, p
 }
 
 export async function fetchCredentialConnections(apiKey: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key configured" };
   try {
     const res = await fetch("https://api.telnyx.com/v2/credential_connections", {
@@ -126,6 +134,7 @@ export async function fetchCredentialConnections(apiKey: string) {
 }
 
 export async function assignOutboundProfileToConnection(apiKey: string, connectionId: string, profileId: string | null) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key configured" };
   try {
     const res = await fetch(`https://api.telnyx.com/v2/credential_connections/${connectionId}`, {
@@ -150,6 +159,7 @@ export async function assignOutboundProfileToConnection(apiKey: string, connecti
 }
 // 4. Fetch Messaging Profiles
 export async function fetchMessagingProfiles(apiKey: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key" };
   
   try {
@@ -166,6 +176,7 @@ export async function fetchMessagingProfiles(apiKey: string) {
 
 // 5. Fetch Call Control Applications
 export async function fetchCallControlApps(apiKey: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key" };
   
   try {
@@ -182,6 +193,7 @@ export async function fetchCallControlApps(apiKey: string) {
 
 // 6. Fetch Organizations for dropdown
 export async function getOrganizationsList() {
+  await requireSuperAdmin();
   try {
     const orgs = await prisma.organization.findMany({
       select: { id: true, name: true, slug: true }
@@ -194,6 +206,7 @@ export async function getOrganizationsList() {
 
 // 7. Search Global Numbers
 export async function searchGlobalNumbers(apiKey: string, countryCode: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key" };
   try {
     const res = await fetch(`https://api.telnyx.com/v2/available_phone_numbers?filter[country_code]=${countryCode}&filter[limit]=10`, {
@@ -209,6 +222,7 @@ export async function searchGlobalNumbers(apiKey: string, countryCode: string) {
 
 // 8. Purchase and Assign Number
 export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: string, organizationId: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key" };
   try {
     // 1. Verify Wallet Balance & KYC (Zero-Trust Guard)
@@ -283,6 +297,7 @@ export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: strin
 
 // 9. Fetch Recent Messages (Diagnostics)
 export async function fetchRecentMessages(apiKey: string) {
+  await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key" };
   try {
     const res = await fetch("https://api.telnyx.com/v2/messages?page[size]=15", {

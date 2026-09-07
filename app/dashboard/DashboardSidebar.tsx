@@ -108,7 +108,7 @@ export function DashboardSidebar({
         title: "WhatsApp Business",
         items: [
           { name: t("dashboard.wa_crm") || "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
-          { name: "Flux Conversationnels", href: "/dashboard/whatsapp-flows", icon: Workflow },
+          { name: "Flux Conversationnels", href: "/dashboard/whatsapp/flows", icon: Workflow },
           { name: "Campagnes Sociales", href: "/dashboard/social-campaigns", icon: MessageSquare },
           { name: "Numéros & eSIM", href: "/dashboard/numbers", icon: Smartphone },
           { name: "Modèles (Templates)", href: "/dashboard/whatsapp/templates", icon: BookUser },
@@ -123,8 +123,8 @@ export function DashboardSidebar({
           { name: t("dashboard.ai_agents") || "Mon Équipe IA", href: "/dashboard/ai-team", icon: UsersRound },
           { name: t("dashboard.ai_tickets") || "Tickets Support", href: "/dashboard/tickets", icon: CreditCard },
           { name: t("dashboard.ai_automations") || "Automatisations", href: "/dashboard/automations", icon: Workflow },
-          { name: t("dashboard.ai_voices") || "Voix IA", href: "/dashboard/voice", icon: Mic2 },
-          { name: t("dashboard.ai_rag") || "Base de Connaissances", href: "/dashboard/rag", icon: BookUser },
+          { name: t("dashboard.ai_voices") || "Voix IA", href: "/dashboard/voice-lab", icon: Mic2 },
+          { name: t("dashboard.ai_rag") || "Base de Connaissances", href: "/dashboard/rag-memory", icon: BookUser },
         ]
       }
     ]

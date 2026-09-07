@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { executeFlow } from "@/lib/flow-engine";
+import { requireCronSecret } from "@/lib/security";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -9,13 +10,12 @@ export const revalidate = 0;
  * Endpoint appelé par Vercel Cron (ou manuellement via scheduler)
  * toutes les minutes pour reprendre l'exécution des scénarios en pause.
  * GET /api/cron/flows
+ * Sécurisé par CRON_SECRET (fail-closed en production).
  */
 export async function GET(req: Request) {
   try {
-    // Vérification de sécurité CRON (facultative en dev, recommandée en prod)
-    const authHeader = req.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      // return new NextResponse('Unauthorized', { status: 401 }); // Désactivé pour la démo
+    if (!requireCronSecret(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const now = new Date();

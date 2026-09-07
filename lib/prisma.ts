@@ -1,4 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { validateEnv } from "@/lib/env-validation";
+
+// Validation d'environnement au chargement du singleton Prisma (exécuté une
+// seule fois par process) : un déploiement dégradé échoue tôt en prod.
+validateEnv();
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;

@@ -2,8 +2,10 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requireSuperAdmin } from "@/lib/security";
 
 export async function getTenantsWallets() {
+  await requireSuperAdmin();
   try {
     const orgs = await prisma.organization.findMany({
       select: {
@@ -20,6 +22,7 @@ export async function getTenantsWallets() {
 }
 
 export async function getGlobalTransactions() {
+  await requireSuperAdmin();
   try {
     const tx = await prisma.walletTransaction.findMany({
       include: {
@@ -35,6 +38,7 @@ export async function getGlobalTransactions() {
 }
 
 export async function adjustTenantBalance(orgId: string, amount: number, description: string) {
+  await requireSuperAdmin();
   try {
     const result = await prisma.$transaction(async (tx) => {
       const org = await tx.organization.update({

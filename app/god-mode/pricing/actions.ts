@@ -1,11 +1,12 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
+import { requireSuperAdmin } from "@/lib/security";
 
 export async function updatePricingSettings(settings: any) {
-  const session = await auth();
-  if (session?.user?.role !== "SUPER_ADMIN") {
+  try {
+    await requireSuperAdmin();
+  } catch {
     return { error: "Non autorisé" };
   }
 

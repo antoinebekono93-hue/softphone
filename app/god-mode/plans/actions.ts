@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { revalidatePath } from "next/cache";
+import { requireSuperAdmin } from "@/lib/security";
 
 export async function createOrUpdatePlan(data: {
   id?: string;
@@ -12,6 +13,7 @@ export async function createOrUpdatePlan(data: {
   includedSms: number;
   features: string[];
 }) {
+  await requireSuperAdmin();
   const { id, name, monthlyPrice, includedMinutes, includedSms, features } = data;
 
   let plan;
@@ -51,6 +53,7 @@ export async function createOrUpdatePlan(data: {
 }
 
 export async function syncPlanToStripe(planId: string) {
+  await requireSuperAdmin();
   const plan = await prisma.pricingPlan.findUnique({
     where: { id: planId }
   });
@@ -93,6 +96,7 @@ export async function syncPlanToStripe(planId: string) {
 }
 
 export async function syncPlanToFlutterwave(planId: string) {
+  await requireSuperAdmin();
   const { flutterwave } = await import("@/lib/flutterwave");
   const plan = await prisma.pricingPlan.findUnique({
     where: { id: planId }

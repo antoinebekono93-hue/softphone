@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Loader2, MessageSquare, MapPin, DollarSign, Activity, BarChart2, Plus, X, Users, Send } from "lucide-react";
+import { Loader2, MessageSquare, MapPin, DollarSign, Activity, BarChart2, Plus, X, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type SmsMessage = {
@@ -78,7 +78,7 @@ export default function SmsDashboardClient({
 
     setIsSending(true);
     try {
-      const res = await fetch("/api/sms/campaign", {
+      const res = await fetch("/api/campaigns", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
