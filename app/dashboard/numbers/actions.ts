@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { telnyx } from "@/lib/telnyx";
+import { canonicalizePhoneNumber } from "@/lib/phone-number";
 import { revalidatePath } from "next/cache";
 
 export async function getNumbers() {
@@ -45,16 +46,47 @@ export async function getUsers() {
 
 export async function updateNumber(id: string, friendlyName: string, assignedUserId: string | null) {
   const session = await auth();
-  if (!session?.user?.organizationId) return { error: "Unauthorized" };
+  if (!session?.user?.id || !session.user.organizationId) return { error: "Unauthorized" };
 
   try {
+    const [number, actor] = await Promise.all([
+      prisma.phoneNumber.findFirst({
+        where: { id, organizationId: session.user.organizationId },
+        select: { id: true, assignedUserId: true },
+      }),
+      prisma.user.findFirst({
+        where: { id: session.user.id, organizationId: session.user.organizationId },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!number || !actor) return { error: "Phone number not found" };
+
+    // There is no tenant-admin authority model in the schema that is safe to
+    // trust here.  Until one exists, a regular member can only edit the number
+    // assigned to them; global God Mode remains explicitly authorized.
+    if (!session.user.isSuperAdmin && number.assignedUserId !== actor.id) {
+      return { error: "You are not allowed to manage this phone number" };
+    }
+
+    if (assignedUserId) {
+      const assignee = await prisma.user.findFirst({
+        where: {
+          id: assignedUserId,
+          organizationId: session.user.organizationId,
+        },
+        select: { id: true },
+      });
+      if (!assignee) {
+        // Never allow a cross-tenant user ID to become an owner of a number.
+        return { error: "Assigned user must belong to your organization" };
+      }
+    }
+
     await prisma.phoneNumber.update({
-      where: { 
-        id, 
-        organizationId: session.user.organizationId 
-      },
+      where: { id: number.id },
       data: {
-        friendlyName,
+        friendlyName: typeof friendlyName === "string" ? friendlyName.trim().slice(0, 120) || null : null,
         assignedUserId
       }
     });
@@ -89,6 +121,11 @@ export async function buyNumber(phoneNumber: string) {
     const session = await auth();
     if (!session?.user?.id) return { error: "Unauthorized" };
 
+    const canonicalPhoneNumber = canonicalizePhoneNumber(phoneNumber);
+    if (!canonicalPhoneNumber) {
+      return { error: "Le numéro doit être au format E.164 valide." };
+    }
+
     const user = await prisma.user.findUnique({ 
       where: { id: session.user.id },
       include: { organization: true }
@@ -96,16 +133,26 @@ export async function buyNumber(phoneNumber: string) {
 
     if (!user?.organizationId) return { error: "No organization found" };
 
+    const connectionId = process.env.TELNYX_SIP_CONNECTION_ID;
+    if (!connectionId) {
+      return { error: "La connexion vocale Telnyx n'est pas configurée." };
+    }
+
     const order = await telnyx.numberOrders.create({
-      phone_numbers: [{ phone_number: phoneNumber }]
+      phone_numbers: [{ phone_number: canonicalPhoneNumber }],
+      connection_id: connectionId,
+      ...(process.env.TELNYX_MESSAGING_PROFILE_ID
+        ? { messaging_profile_id: process.env.TELNYX_MESSAGING_PROFILE_ID }
+        : {}),
     });
 
     await prisma.phoneNumber.create({
       data: {
-        number: phoneNumber,
+        number: canonicalPhoneNumber,
         friendlyName: "New Number",
-        telnyxId: order.data.id || `pending_${Date.now()}`,
+        telnyxId: order.data?.phone_numbers?.[0]?.id || `pending_${Date.now()}`,
         organizationId: user.organizationId,
+        assignedUserId: user.id,
       }
     });
 

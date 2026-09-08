@@ -6,13 +6,15 @@ import { toast } from "sonner";
 import { updatePricingSettings } from "./actions";
 
 export function PricingSettingsClient({ initialSettings }: { initialSettings: any }) {
-  const [settings, setSettings] = useState(initialSettings || {
+  const [settings, setSettings] = useState({
     phoneNumberMarkupMultiplier: 2.5,
     phoneNumberMarkupFixed: 0.0,
     smsRate: 0.05,
-    callRatePerMinute: 0.02,
+    callBaseRatePerMinute: 0.02,
+    callMarkupPercent: 0,
     aiAgentRatePerMinute: 0.15,
-    whatsappRate: 0.02
+    whatsappRate: 0.02,
+    ...initialSettings,
   });
   
   const [loading, setLoading] = useState(false);
@@ -92,7 +94,7 @@ export function PricingSettingsClient({ initialSettings }: { initialSettings: an
       {/* Consumption Rates */}
       <div className="glass-panel p-6 rounded-2xl border border-[var(--border-subtle)]">
         <h2 className="text-xl font-bold mb-2">Tarification de consommation</h2>
-        <p className="text-sm text-[var(--text-secondary)] mb-6">Définissez vos prix de vente (Prix facturé aux clients via leur portefeuille)</p>
+        <p className="text-sm text-[var(--text-secondary)] mb-6">Le débit est appliqué côté serveur à chaque seconde terminée, après confirmation Telnyx de la fin d'appel.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
@@ -100,14 +102,11 @@ export function PricingSettingsClient({ initialSettings }: { initialSettings: an
             <div className="flex items-center gap-2 mb-4 text-[var(--text-secondary)]">
               <PhoneCall className="w-4 h-4" /> <span className="font-semibold text-sm">Appels Vocaux</span>
             </div>
-            <label className="block text-sm mb-2">Prix par minute ($)</label>
-            <input 
-              type="number" step="0.001" 
-              value={settings.callRatePerMinute}
-              onChange={(e) => handleChange("callRatePerMinute", e.target.value)}
-              className="w-full px-4 py-2 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg outline-none focus:border-cyan-500"
-            />
-            <p className="text-xs text-[var(--text-secondary)] mt-2">Coût Telnyx moyen : ~0.007$ (sortant)</p>
+            <label className="block text-sm mb-2">Coût Telnyx de base / minute ($)</label>
+            <input type="number" min="0" step="0.000001" value={settings.callBaseRatePerMinute} onChange={(e) => handleChange("callBaseRatePerMinute", e.target.value)} className="w-full px-4 py-2 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg outline-none focus:border-cyan-500" />
+            <label className="block text-sm mb-2 mt-3">Votre marge (%)</label>
+            <input type="number" min="0" step="0.01" value={settings.callMarkupPercent} onChange={(e) => handleChange("callMarkupPercent", e.target.value)} className="w-full px-4 py-2 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg outline-none focus:border-cyan-500" />
+            <p className="text-xs text-cyan-400 mt-2">Prix client : ${(Number(settings.callBaseRatePerMinute || 0) * (1 + Number(settings.callMarkupPercent || 0) / 100)).toFixed(6)} / min. Exemple : 5 × 2 % = 5.10.</p>
           </div>
 
           <div className="p-4 bg-[var(--bg-surface-hover)] rounded-xl border border-[var(--border-subtle)]">

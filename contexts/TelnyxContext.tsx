@@ -171,8 +171,9 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   const isMine = useCallback(
     (call: any): boolean => {
       const cc = getCallControlId(call as SdkCallLike);
-      if (cc) return cc === pstnCallControlIdRef.current;
-      // CC inconnu : seul un Call déjà lié via currentCallRef (ex. outbound) est nôtre.
+      if (cc && cc === pstnCallControlIdRef.current) return true;
+      // An outbound WebRTC call can receive a Call Control ID after creation.
+      // It is still ours, so its remote hangup must reset the local UI.
       return !!currentCallRef.current && sameSdkCall(call as SdkCallLike, currentCallRef.current as SdkCallLike);
     },
     [],

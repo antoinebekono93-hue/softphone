@@ -17,7 +17,11 @@ export async function updatePricingSettings(settings: any) {
         phoneNumberMarkupMultiplier: settings.phoneNumberMarkupMultiplier,
         phoneNumberMarkupFixed: settings.phoneNumberMarkupFixed,
         smsRate: settings.smsRate,
-        callRatePerMinute: settings.callRatePerMinute,
+        // Legacy rate remains in sync for older screens/API consumers. The
+        // billing engine reads base + markup below.
+        callRatePerMinute: Number(settings.callBaseRatePerMinute) * (1 + Number(settings.callMarkupPercent) / 100),
+        callBaseRatePerMinute: settings.callBaseRatePerMinute,
+        callMarkupPercent: settings.callMarkupPercent,
         aiAgentRatePerMinute: settings.aiAgentRatePerMinute,
         whatsappRate: settings.whatsappRate
       },
@@ -26,7 +30,9 @@ export async function updatePricingSettings(settings: any) {
         phoneNumberMarkupMultiplier: settings.phoneNumberMarkupMultiplier,
         phoneNumberMarkupFixed: settings.phoneNumberMarkupFixed,
         smsRate: settings.smsRate,
-        callRatePerMinute: settings.callRatePerMinute,
+        callRatePerMinute: Number(settings.callBaseRatePerMinute) * (1 + Number(settings.callMarkupPercent) / 100),
+        callBaseRatePerMinute: settings.callBaseRatePerMinute,
+        callMarkupPercent: settings.callMarkupPercent,
         aiAgentRatePerMinute: settings.aiAgentRatePerMinute,
         whatsappRate: settings.whatsappRate
       }

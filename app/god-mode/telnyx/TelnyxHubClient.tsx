@@ -14,7 +14,11 @@ import {
   createOutboundProfile,
   updateOutboundProfile,
   fetchCredentialConnections,
-  assignOutboundProfileToConnection
+  assignOutboundProfileToConnection,
+  saveTelnyxVoiceConnection,
+  updateCredentialConnection,
+  updateCallControlApplication,
+  repairApplicationNumberRouting,
 } from "./actions";
 
 export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
@@ -33,6 +37,12 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
   const [newProfileName, setNewProfileName] = useState("");
   const [newProfileLimit, setNewProfileLimit] = useState("10");
   const [error, setError] = useState<string | null>(null);
+  const [voiceConnectionId, setVoiceConnectionId] = useState(initialSettings?.telnyxConnectionId || "");
+  const [voiceWebhookUrl, setVoiceWebhookUrl] = useState("");
+  const [voiceFailoverUrl, setVoiceFailoverUrl] = useState("");
+  const [voiceWebhookVersion, setVoiceWebhookVersion] = useState<"1" | "2">("2");
+  const [voiceWebhookTimeout, setVoiceWebhookTimeout] = useState("10");
+  const [routingMessage, setRoutingMessage] = useState<string | null>(null);
 
   // Numbers State
   const [searchCountry, setSearchCountry] = useState("US");
@@ -134,6 +144,45 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
       loadTelnyxData(initialSettings.telnyxApiKey);
     }
   }, [initialSettings]);
+
+  useEffect(() => {
+    const connection = credentialConnections.find((item) => item.id === voiceConnectionId);
+    if (!connection) return;
+    setVoiceWebhookUrl(connection.webhook_event_url || "");
+    setVoiceFailoverUrl(connection.webhook_event_failover_url || "");
+    setVoiceWebhookVersion(connection.webhook_api_version === "1" ? "1" : "2");
+    setVoiceWebhookTimeout(String(connection.webhook_timeout_secs ?? 10));
+  }, [credentialConnections, voiceConnectionId]);
+
+  const saveVoiceRouting = () => {
+    if (!voiceConnectionId || !voiceWebhookUrl) {
+      setRoutingMessage("Choisissez une connexion et indiquez l'URL webhook primaire.");
+      return;
+    }
+    startTransition(async () => {
+      setRoutingMessage(null);
+      const connection = await saveTelnyxVoiceConnection(voiceConnectionId);
+      if (connection.error) return setRoutingMessage(connection.error);
+      const webhook = await updateCredentialConnection(apiKey, voiceConnectionId, {
+        webhook_event_url: voiceWebhookUrl,
+        webhook_event_failover_url: voiceFailoverUrl,
+        webhook_api_version: voiceWebhookVersion,
+        webhook_timeout_secs: Math.min(30, Math.max(0, Number(voiceWebhookTimeout) || 10)),
+      });
+      if (webhook.error) return setRoutingMessage(`Configuration enregistrée localement, mais Telnyx a refusé le webhook : ${webhook.error}`);
+      setRoutingMessage("Connexion vocale et webhooks enregistrés.");
+      await loadTelnyxData(apiKey);
+    });
+  };
+
+  const repairExistingNumbers = () => {
+    if (!voiceConnectionId) return setRoutingMessage("Choisissez une connexion vocale avant la synchronisation.");
+    startTransition(async () => {
+      const result = await repairApplicationNumberRouting(apiKey, voiceConnectionId);
+      if (result.error) return setRoutingMessage(result.error);
+      setRoutingMessage(`${result.repaired} numéro(s) rattaché(s) à la connexion vocale.${result.failures.length ? ` ${result.failures.length} échec(s).` : ""}`);
+    });
+  };
 
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -429,6 +478,56 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
 
       {activeTab === 'routing' && (
         <div className="space-y-6">
+          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-bold">Téléphonie WebRTC & routage entrant</h2>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">Connexion utilisée par les numéros achetés, le softphone et les événements d'appel.</p>
+              </div>
+              <button
+                onClick={repairExistingNumbers}
+                disabled={isPending || !voiceConnectionId}
+                className="px-4 py-2 border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                Rattacher les numéros existants
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label className="block text-sm text-[var(--text-secondary)]">
+                Connexion SIP / WebRTC active
+                <select value={voiceConnectionId} onChange={(e) => setVoiceConnectionId(e.target.value)} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]">
+                  <option value="">-- Sélectionner une connexion --</option>
+                  {credentialConnections.map((connection) => (
+                    <option key={connection.id} value={connection.id}>{connection.connection_name || connection.user_name || connection.id}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm text-[var(--text-secondary)]">
+                URL webhook primaire
+                <input value={voiceWebhookUrl} onChange={(e) => setVoiceWebhookUrl(e.target.value)} placeholder="https://votre-domaine/api/webhooks/telecom" className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
+              </label>
+              <label className="block text-sm text-[var(--text-secondary)]">
+                URL webhook de secours <span className="opacity-60">(optionnelle)</span>
+                <input value={voiceFailoverUrl} onChange={(e) => setVoiceFailoverUrl(e.target.value)} placeholder="https://.../api/webhooks/telecom" className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
+              </label>
+              <div className="grid grid-cols-2 gap-4">
+                <label className="block text-sm text-[var(--text-secondary)]">
+                  Version webhook
+                  <select value={voiceWebhookVersion} onChange={(e) => setVoiceWebhookVersion(e.target.value as "1" | "2")} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]"><option value="2">v2</option><option value="1">v1</option></select>
+                </label>
+                <label className="block text-sm text-[var(--text-secondary)]">
+                  Délai (0–30 s)
+                  <input type="number" min="0" max="30" value={voiceWebhookTimeout} onChange={(e) => setVoiceWebhookTimeout(e.target.value)} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
+                </label>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center gap-4">
+              <button onClick={saveVoiceRouting} disabled={isPending} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg disabled:opacity-50">Enregistrer le routage vocal</button>
+              {routingMessage && <span className="text-sm text-[var(--text-secondary)]">{routingMessage}</span>}
+            </div>
+          </div>
+
           <div className="glass-panel border-none rounded-2xl shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] flex justify-between items-center">
               <h2 className="text-xl font-bold">Messaging Profiles (SMS/MMS)</h2>
@@ -486,6 +585,24 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                           <span className="text-[var(--text-primary)]">{a.outbound_voice_profile_id ? "Linked" : "None"}</span>
                         </div>
                       </div>
+                      <button
+                        disabled={isPending || !voiceWebhookUrl}
+                        onClick={() => startTransition(async () => {
+                          const result = await updateCallControlApplication(apiKey, a.id, {
+                            application_name: a.application_name,
+                            webhook_event_url: voiceWebhookUrl,
+                            webhook_event_failover_url: voiceFailoverUrl,
+                            webhook_api_version: voiceWebhookVersion,
+                            webhook_timeout_secs: Math.min(30, Math.max(0, Number(voiceWebhookTimeout) || 10)),
+                            active: a.active !== false,
+                          });
+                          setRoutingMessage(result.error || `Application ${a.application_name} configurée.`);
+                          if (!result.error) await loadTelnyxData(apiKey);
+                        })}
+                        className="mt-4 w-full py-2 border border-purple-500/30 text-purple-300 hover:bg-purple-500/10 rounded-lg text-xs font-semibold disabled:opacity-50"
+                      >
+                        Appliquer ce webhook vocal
+                      </button>
                     </div>
                   ))}
                 </div>

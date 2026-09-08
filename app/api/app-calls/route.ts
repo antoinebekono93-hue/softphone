@@ -13,7 +13,7 @@ import { logServerCallEvent, redactDestination } from "@/lib/app-call-observabil
 
 export const dynamic = "force-dynamic";
 
-type CallInitRequest = { target: string };
+type CallInitRequest = { target?: unknown };
 
 /**
  * Initie un appel APP_TO_APP (WebRTC natif P2P, hors Telnyx/PSTN).
@@ -46,7 +46,10 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const target = (body.target ?? "").trim();
+  if (body.target !== undefined && typeof body.target !== "string") {
+    return NextResponse.json({ error: "INVALID_TARGET" }, { status: 400 });
+  }
+  const target = typeof body.target === "string" ? body.target.trim() : "";
   if (!target) {
     return NextResponse.json({ error: "Target required" }, { status: 400 });
   }
@@ -120,6 +123,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: policy.reason }, { status: 403 });
   }
 
+  // Une session APP_TO_APP ne peut pas aboutir sans le canal temps réel qui
+  // réveille le destinataire. Refuser AVANT la création évite une session
+  // OFFERING fantôme (et un slot fair-use occupé) quand Pusher est absent.
+  const pusher = getPusherServer();
+  if (!pusher) {
+    logServerCallEvent({
+      level: "error",
+      event: "RING_TRIGGER_FAILED",
+      details: { reason: "PUSHER_NOT_CONFIGURED", senderId: callerId, calleeId: callee.id },
+    });
+    return NextResponse.json({ error: "REALTIME_UNAVAILABLE" }, { status: 503 });
+  }
+
   // 3) Création de la session APP_TO_APP avec GARDE ATOMIQUE anti-occupation.
   //    Deux appels simultanés vers le même utilisateur : un seul obtient le slot,
   //    l'autre reçoit CALL_BUSY et sa tentative est terminée proprement.
@@ -172,7 +188,7 @@ export async function POST(req: Request) {
 
   // 4) Sonnerie côté callee
   try {
-    await getPusherServer()?.trigger(appCallChannels.user(callee.id), APP_CALL_EVENTS.INCOMING, {
+    await pusher.trigger(appCallChannels.user(callee.id), APP_CALL_EVENTS.INCOMING, {
       callId: appCallId,
       caller: {
         id: callerId,
@@ -192,6 +208,25 @@ export async function POST(req: Request) {
       details: { senderId: callerId, calleeId: callee.id },
     });
     console.error("[app-calls] ring trigger failed", err);
+    // Le caller ne recevra jamais de CALL_READY : on termine donc la session
+    // immédiatement et libère le slot qui vient d'être réservé. La garde sur
+    // l'état conserve l'opération idempotente si un futur worker intervient.
+    const failed = await prisma.appCallSession.updateMany({
+      where: { id: appCallId, status: "OFFERING" },
+      data: {
+        status: "FAILED",
+        endedAt: new Date(),
+        durationSeconds: 0,
+        failReason: "RING_TRIGGER_FAILED",
+      },
+    });
+    if (failed.count === 1) {
+      await prisma.organization.update({
+        where: { id: orgId },
+        data: { activeCallsCount: { decrement: 1 } },
+      });
+    }
+    return NextResponse.json({ error: "REALTIME_UNAVAILABLE" }, { status: 503 });
   }
 
   return NextResponse.json(

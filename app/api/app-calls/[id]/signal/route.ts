@@ -7,6 +7,7 @@ import {
   SignalPayload,
   buildServerSignal,
   isSignalAllowedForState,
+  normalizeSignalPayload,
   validateSignalPayload,
 } from "@/lib/app-call-signals";
 import { createSignalRateGuard } from "@/lib/rate-limiter";
@@ -88,7 +89,10 @@ export async function POST(
     });
     return NextResponse.json({ error: validation.reason }, { status: 400 });
   }
-  const payload = body.payload as SignalPayload;
+  // Le client WebRTC envoie une RTCSessionDescriptionInit. Une ancienne
+  // version pouvait envoyer le SDP sous forme de chaîne : après validation, on
+  // le canonicalise afin que le destinataire reçoive toujours la même forme.
+  const payload = normalizeSignalPayload(body.payload) as SignalPayload;
 
   const appCall = await prisma.appCallSession.findUnique({ where: { id } });
   if (!appCall) {

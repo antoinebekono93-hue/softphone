@@ -9,16 +9,25 @@ export async function POST(req: Request) {
 
     const { numberId, organizationId } = await req.json();
 
-    if (!numberId) {
-      return NextResponse.json({ error: "Number ID is required" }, { status: 400 });
+    if (typeof numberId !== "string" || typeof organizationId !== "string" || !organizationId) {
+      return NextResponse.json({ error: "Number ID and organization ID are required" }, { status: 400 });
     }
 
-    // Update the phone number to point to the new organization
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { id: true },
+    });
+    if (!organization) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
+    // Moving a provider DID is an ownership boundary.  Always detach the
+    // previous user first, so a user from the old tenant can never remain the
+    // apparent owner after an organization transfer.
     await prisma.phoneNumber.update({
       where: { id: numberId },
       data: {
-        organizationId: organizationId || null,
-        // Reset assigned user when changing organization
+        organizationId: organization.id,
         assignedUserId: null, 
       },
     });

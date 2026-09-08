@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
-const TELNYX_API_KEY = process.env.TELNYX_API_KEY;
-
 export async function GET(req: Request) {
   try {
-    if (!TELNYX_API_KEY) {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const settings = await prisma.systemSettings.findUnique({
+      where: { id: "default" },
+      select: { telnyxApiKey: true, telnyxConnectionId: true },
+    });
+    const telnyxApiKey = settings?.telnyxApiKey || process.env.TELNYX_API_KEY;
+    if (!telnyxApiKey) {
       throw new Error("Missing TELNYX_API_KEY environment variable");
     }
 
@@ -18,7 +26,7 @@ export async function GET(req: Request) {
     // we will automatically fetch the first credential from your Telnyx account using your API key.
     const listRes = await fetch("https://api.telnyx.com/v2/telephony_credentials", {
       headers: {
-        "Authorization": `Bearer ${TELNYX_API_KEY}`,
+        "Authorization": `Bearer ${telnyxApiKey}`,
         "Accept": "application/json"
       }
     });
@@ -33,13 +41,6 @@ export async function GET(req: Request) {
     
     let credentialId;
 
-    if (!credentials || credentials.length === 0) {
-      // Create a default credential automatically
-      console.log("No Telephony Credential found. Creating a default one...");
-    } else {
-      credentialId = credentials[0].id;
-    }
-
     // --- AUTOMATIC TELNYX CONFIGURATION ---
     // The user needs an Outbound Voice Profile attached to their SIP Connection to make outbound calls.
     // We will automatically configure this to provide a plug-and-play experience.
@@ -47,7 +48,7 @@ export async function GET(req: Request) {
     // 1. Fetch SIP Connections
     const connRes = await fetch("https://api.telnyx.com/v2/credential_connections", {
       headers: {
-        "Authorization": `Bearer ${TELNYX_API_KEY}`,
+        "Authorization": `Bearer ${telnyxApiKey}`,
         "Accept": "application/json"
       }
     });
@@ -58,15 +59,36 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "No SIP Connection found on Telnyx. Please create one first." }, { status: 500 });
     }
     
-    const sipConnection = connections[0];
+    // God Mode is the operational source of truth; the environment variable
+    // remains a safe deployment fallback.
+    const configuredConnectionId = settings?.telnyxConnectionId || process.env.TELNYX_SIP_CONNECTION_ID;
+    const sipConnection = configuredConnectionId
+      ? connections.find((connection: any) => connection.id === configuredConnectionId)
+      : connections[0];
+    if (!sipConnection) {
+      return NextResponse.json(
+        { error: "La connexion SIP configurée est introuvable sur ce compte Telnyx." },
+        { status: 503 },
+      );
+    }
     const sipConnectionId = sipConnection.id;
+
+    // Do not issue a token for an arbitrary credential. It has to belong to
+    // the connection where purchased numbers are provisioned, otherwise that
+    // browser will never receive its inbound call invitation.
+    credentialId = credentials?.find((credential: any) =>
+      credential.connection_id === sipConnectionId,
+    )?.id;
+    if (!credentialId) {
+      console.log("No Telephony Credential found for the configured SIP Connection. Creating one...");
+    }
 
     // 2. If we need to create a credential, do it now that we have the SIP Connection ID
     if (!credentialId) {
       const createRes = await fetch("https://api.telnyx.com/v2/telephony_credentials", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${TELNYX_API_KEY}`,
+          "Authorization": `Bearer ${telnyxApiKey}`,
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
@@ -92,7 +114,7 @@ export async function GET(req: Request) {
       // Fetch existing profiles
       const profRes = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
         headers: {
-          "Authorization": `Bearer ${TELNYX_API_KEY}`,
+          "Authorization": `Bearer ${telnyxApiKey}`,
           "Accept": "application/json"
         }
       });
@@ -108,7 +130,7 @@ export async function GET(req: Request) {
         const createProfRes = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${TELNYX_API_KEY}`,
+            "Authorization": `Bearer ${telnyxApiKey}`,
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
@@ -135,7 +157,7 @@ export async function GET(req: Request) {
         const patchRes = await fetch(`https://api.telnyx.com/v2/credential_connections/${sipConnectionId}`, {
           method: "PATCH",
           headers: {
-            "Authorization": `Bearer ${TELNYX_API_KEY}`,
+            "Authorization": `Bearer ${telnyxApiKey}`,
             "Content-Type": "application/json",
             "Accept": "application/json"
           },
@@ -158,7 +180,7 @@ export async function GET(req: Request) {
     const tokenRes = await fetch(`https://api.telnyx.com/v2/telephony_credentials/${credentialId}/token`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${TELNYX_API_KEY}`,
+        "Authorization": `Bearer ${telnyxApiKey}`,
         "Accept": "application/json"
       }
     });

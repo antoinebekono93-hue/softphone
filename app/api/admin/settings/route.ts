@@ -28,6 +28,8 @@ export async function POST(req: Request) {
     const {
       smsRate,
       callRatePerMinute,
+      callBaseRatePerMinute,
+      callMarkupPercent,
       aiAgentRatePerMinute,
       whatsappRate,
       phoneNumberRate,
@@ -36,11 +38,17 @@ export async function POST(req: Request) {
       telnyxConnectionId
     } = body;
 
+    // Backward compatibility for the legacy admin screen: its old single
+    // "callRatePerMinute" input becomes the provider base at 0% margin.
+    const baseRate = callBaseRatePerMinute ?? callRatePerMinute;
+    const markupPercent = callMarkupPercent ?? 0;
     const settings = await prisma.systemSettings.upsert({
       where: { id: "default" },
       update: {
         smsRate,
         callRatePerMinute,
+        callBaseRatePerMinute: baseRate,
+        callMarkupPercent: markupPercent,
         aiAgentRatePerMinute,
         whatsappRate,
         phoneNumberRate,
@@ -52,6 +60,8 @@ export async function POST(req: Request) {
         id: "default",
         smsRate,
         callRatePerMinute,
+        callBaseRatePerMinute: baseRate,
+        callMarkupPercent: markupPercent,
         aiAgentRatePerMinute,
         whatsappRate,
         phoneNumberRate,

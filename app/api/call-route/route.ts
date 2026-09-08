@@ -23,17 +23,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { target?: string };
+  let body: { target?: unknown };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  if (body.target !== undefined && typeof body.target !== "string") {
+    return NextResponse.json({ error: "INVALID_TARGET" }, { status: 400 });
+  }
+
   const result = await resolveCallDestination({
     callerId: session.user.id,
     organizationId: session.user.organizationId,
-    target: body.target ?? "",
+    target: typeof body.target === "string" ? body.target : "",
   });
 
   if (result.type === "ERROR") {
@@ -66,5 +70,16 @@ export async function POST(req: Request) {
     },
   });
 
-  return NextResponse.json({ route: result }, { status: 200 });
+  // Le navigateur n'a besoin ni de l'e-mail ni de l'identité complète du
+  // destinataire pour exécuter la décision. La création de session refait une
+  // résolution serveur, ce qui évite de transformer cet endpoint en annuaire.
+  return NextResponse.json(
+    {
+      route: {
+        type: result.type,
+        destination: result.destination,
+      },
+    },
+    { status: 200 }
+  );
 }

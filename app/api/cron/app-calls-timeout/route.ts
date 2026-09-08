@@ -29,7 +29,9 @@ export async function GET(req: Request) {
     const expired = await expireStaleRingingSessions();
     const forceEnded = await expireOverdueActiveSessions();
 
-    // Notifie chaque peer (le sonneur) que l'appel a expiré (MISSED).
+    // Une sonnerie expirée doit fermer l'UI du caller ET du callee. Le callee
+    // peut encore avoir la modal de sonnerie ouverte lorsqu'un autre nœud
+    // exécute le reaper.
     for (const s of expired) {
       logServerCallEvent({
         level: "info",
@@ -37,14 +39,16 @@ export async function GET(req: Request) {
         callId: s.sessionId,
         details: { callerId: s.callerId, calleeId: s.calleeId },
       });
-      try {
-        await getPusherServer()?.trigger(appCallChannels.user(s.callerId), APP_CALL_EVENTS.ENDED, {
-          callId: s.sessionId,
-          status: "MISSED",
-          reason: "timeout",
-        });
-      } catch (err) {
-        console.error("[cron/app-calls-timeout] notify failed", s.sessionId, err);
+      for (const participantId of [s.callerId, s.calleeId]) {
+        try {
+          await getPusherServer()?.trigger(appCallChannels.user(participantId), APP_CALL_EVENTS.ENDED, {
+            callId: s.sessionId,
+            status: "MISSED",
+            reason: "timeout",
+          });
+        } catch (err) {
+          console.error("[cron/app-calls-timeout] notify failed", s.sessionId, err);
+        }
       }
     }
 

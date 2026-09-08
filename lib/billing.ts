@@ -15,6 +15,17 @@ export async function getSystemRates() {
   return settings;
 }
 
+/** Selling rate for a standard PSTN minute. Kept server-side so a browser
+ * cannot forge a cheaper rate. */
+export function getStandardCallRate(rates: {
+  callBaseRatePerMinute: Prisma.Decimal;
+  callMarkupPercent: Prisma.Decimal;
+}): Prisma.Decimal {
+  return rates.callBaseRatePerMinute.mul(
+    new Prisma.Decimal(1).add(rates.callMarkupPercent.div(100)),
+  );
+}
+
 /**
  * Débit wallet ATOMIQUE avec garde de solde.
  *
@@ -150,7 +161,7 @@ export async function chargeForAiCall(organizationId: string, minutes: number) {
 
 export async function chargeForStandardCall(organizationId: string, minutes: number) {
   const rates = await getSystemRates();
-  const amount = rates.callRatePerMinute.toNumber() * minutes;
+  const amount = getStandardCallRate(rates).toNumber() * minutes;
   return await chargeWallet(organizationId, amount, `Facturation de ${minutes} min d'appel standard`);
 }
 

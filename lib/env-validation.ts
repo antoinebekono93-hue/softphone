@@ -8,7 +8,10 @@
  *                     DATABASE_URL, AUTH_SECRET, ENCRYPTION_KEY, CRON_SECRET.
  *
  *  2. TELNYX        — cœur téléphonique du produit : sans Telnyx, aucun appel/SMS.
- *                     Fail-fast en production, avertissement en dev.
+ *                     Avertissement (jamais un crash du layout entier) : les pages
+ *                     non-téléphoniques restent utilisables et les routes Telnyx
+ *                     dégradent proprement (500 "Missing TELNYX_API_KEY", états
+ *                     d'erreur dédiés côté client).
  *                     TELNYX_API_KEY, TELNYX_PUBLIC_KEY, TELNYX_SIP_CONNECTION_ID.
  *
  *  3. OPTIONNEL     — intégrations débranchables : la dégradation est fail-closed
@@ -88,14 +91,19 @@ export function validateEnv(): void {
   }
 
   // ── Palier 2 : TELNYX — cœur téléphonique ───────────────────────────────
+  // Ne JAMAIS faire tomber l'application entière : une organisation peut ne pas
+  // (encore) utiliser Telnyx, ou être en mode placeholder. Le softphone affiche
+  // l'état de registration lui-même, et les routes /api/telnyx/* renvoient des
+  // erreurs explicites. Un crash au boot prive l'utilisateur de TOUTES les pages.
   const telnyxProblems = bad(TELNYX);
   if (telnyxProblems.length > 0) {
     const msg = `[ENV TELNYX] Intégration téléphonie cible : ${telnyxProblems.join(", ")}`;
     if (isProd) {
-      console.error("CRITICAL:", msg, "— le produit est inutilisable sans Telnyx.");
-      throw new Error(msg);
+      // Signalé fortement mais non bloquant — l'app reste utilisable.
+      console.error("CRITICAL:", msg, "— appels/SMS Telnyx indisponibles, le reste fonctionne.");
+    } else {
+      console.warn("WARNING:", msg, "— démarrage toléré en dev.");
     }
-    console.warn("WARNING:", msg, "— démarrage toléré en dev.");
   }
 
   // ── Palier 3 : OPTIONNEL — dégradation fail-closed gérée par les routes ─

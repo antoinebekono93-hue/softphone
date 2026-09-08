@@ -54,9 +54,9 @@ export const KNOWN_SIGNAL_TYPES: ReadonlySet<string> = new Set(
  *
  * - Rejette les payloads non-objets, les types inconnus et les champs mal typés
  *   (strönger que le seul cast TS, sans effet à l'exécution) ;
- * - exige `sdp` (string) pour OFFER/ANSWER et `candidate.candidate` (string)
- *   pour ICE_CANDIDATE — un voisin recevrait sinon un objet cassé qui fait
- *   planter son handler (DoS par garbage) ;
+ * - exige une description SDP WebRTC pour OFFER/ANSWER et
+ *   `candidate.candidate` (string) pour ICE_CANDIDATE — un voisin recevrait
+ *   sinon un objet cassé qui fait planter son handler (DoS par garbage) ;
  * - borne la taille du SDP, des candidats, des `reason` et du payload total.
  *
  * PURE — testable sans dépendance.
@@ -77,11 +77,33 @@ export function validateSignalPayload(payload: unknown): SignalValidation {
   }
 
   if (type === CALL_SIGNAL_TYPES.OFFER || type === CALL_SIGNAL_TYPES.ANSWER) {
-    if (typeof p.sdp !== "string") {
+    // Le navigateur sérialise RTCSessionDescriptionInit sous la forme
+    // { type: "offer" | "answer", sdp: "..." }. Une ancienne version du
+    // client envoyait la chaîne SDP seule ; elle reste temporairement admise et
+    // est normalisée par `normalizeSignalPayload` avant d'être relayée.
+    if (typeof p.sdp === "string") {
+      if (p.sdp.length > MAX_SDP_CHARS) {
+        return { valid: false, reason: "SDP_TOO_LARGE" };
+      }
+    } else if (
+      typeof p.sdp !== "object" ||
+      p.sdp === null ||
+      Array.isArray(p.sdp)
+    ) {
       return { valid: false, reason: "SDP_REQUIRED" };
-    }
-    if (p.sdp.length > MAX_SDP_CHARS) {
-      return { valid: false, reason: "SDP_TOO_LARGE" };
+    } else {
+      const description = p.sdp as Record<string, unknown>;
+      const expectedType =
+        type === CALL_SIGNAL_TYPES.OFFER ? "offer" : "answer";
+      if (description.type !== expectedType) {
+        return { valid: false, reason: "SDP_TYPE_INVALID" };
+      }
+      if (typeof description.sdp !== "string") {
+        return { valid: false, reason: "SDP_REQUIRED" };
+      }
+      if (description.sdp.length > MAX_SDP_CHARS) {
+        return { valid: false, reason: "SDP_TOO_LARGE" };
+      }
     }
   }
 
@@ -144,6 +166,29 @@ export type SignalPayload =
   | { type: typeof CALL_SIGNAL_TYPES.FAILED; reason?: string };
 
 /**
+ * Canonicalise le SDP avant publication. Le serveur continue d'accepter le
+ * format historique `sdp: string` durant un déploiement progressif, mais le
+ * pair ne reçoit jamais que le format natif WebRTC `RTCSessionDescriptionInit`.
+ * Appeler cette fonction UNIQUEMENT après `validateSignalPayload`.
+ */
+export function normalizeSignalPayload(payload: unknown): SignalPayload {
+  const p = payload as Record<string, unknown>;
+  if (
+    (p.type === CALL_SIGNAL_TYPES.OFFER || p.type === CALL_SIGNAL_TYPES.ANSWER) &&
+    typeof p.sdp === "string"
+  ) {
+    return {
+      type: p.type,
+      sdp: {
+        type: p.type === CALL_SIGNAL_TYPES.OFFER ? "offer" : "answer",
+        sdp: p.sdp,
+      },
+    } as SignalPayload;
+  }
+  return payload as SignalPayload;
+}
+
+/**
  * Signal complet tel que publié par le serveur sur le canal d'appel.
  * senderId/toId/sessionId sont AUTHENTIFIÉS (posés par le serveur).
  */
@@ -198,8 +243,11 @@ export function isSignalAllowedForState(args: {
 
   switch (signalType) {
     case CALL_SIGNAL_TYPES.READY:
-      // Le callee signale qu'il a monté son PC (état OFFERING/RINGING/CONNECTING).
-      return !isCaller && ["OFFERING", "RINGING", "CONNECTING"].includes(sessionStatus);
+      // Handshake bidirectionnel. Les deux navigateurs annoncent leur abonnement
+      // Pusher/PeerConnection ; le callee ré-accuse réception au READY du caller.
+      // Cela évite de perdre le premier READY si l'autre canal privé termine son
+      // abonnement quelques millisecondes plus tard.
+      return ["OFFERING", "RINGING", "CONNECTING"].includes(sessionStatus);
     case CALL_SIGNAL_TYPES.OFFER:
       // Offer envoyé par le CALLER pendant le handshake. La session passe à
       // CONNECTING dès que le callee accepte (avant que le caller n'émette son

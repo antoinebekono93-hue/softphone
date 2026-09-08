@@ -42,8 +42,8 @@ async function processEvent(event: any) {
 
       console.log(`[Telnyx Webhook] Call Initiated from ${from} to ${to}`);
 
-      // Log the call in DB
-      // First, find the organization that owns the 'to' number (if incoming)
+      // Log both inbound and outbound calls. Outbound calls previously had no
+      // CallLog/reservation, so their completed duration could not be billed.
       if (direction === 'incoming') {
         const phoneNumber = await prisma.phoneNumber.findUnique({
           where: { number: to },
@@ -51,8 +51,10 @@ async function processEvent(event: any) {
         });
 
         if (phoneNumber) {
-          const createdCallLog = await prisma.callLog.create({
-            data: {
+          const createdCallLog = await prisma.callLog.upsert({
+            where: { telnyxCallControlId: callControlId },
+            update: {},
+            create: {
               telnyxCallControlId: callControlId,
               direction: 'INBOUND',
               fromNumber: from,
@@ -117,6 +119,38 @@ async function processEvent(event: any) {
             // Le SIP WebRTC natif (Telnyx SDK) reste le canal de média principal.
             // Pusher sert de notification fiable pour afficher l'UI d'appel entrant.
           }
+        }
+      } else if (direction === 'outgoing') {
+        // Only a known application caller ID may create a billable record.
+        const phoneNumber = await prisma.phoneNumber.findUnique({
+          where: { number: from },
+          include: { aiEmployee: true, assignedUser: { select: { id: true } } },
+        });
+
+        if (phoneNumber) {
+          const callLog = await prisma.callLog.upsert({
+            where: { telnyxCallControlId: callControlId },
+            update: {}, // Webhooks can be delivered more than once.
+            create: {
+              telnyxCallControlId: callControlId,
+              direction: 'OUTBOUND',
+              fromNumber: from,
+              toNumber: to,
+              organizationId: phoneNumber.organizationId,
+              phoneNumberId: phoneNumber.id,
+              userId: phoneNumber.assignedUserId,
+              status: 'INITIATED',
+            },
+          });
+          const rateProfile = phoneNumber.aiEmployee?.isActive ? 'AI_AGENT' : 'STANDARD';
+          try {
+            await preAuthorizeCall({ organizationId: phoneNumber.organizationId, callControlId, callLogId: callLog.id, rateProfile });
+          } catch (preAuthErr) {
+            console.error('[Telnyx Webhook] outbound preAuthorizeCall failed', preAuthErr);
+          }
+          console.log(`[CALL_OUTBOUND_BILLING_STARTED] ${callControlId} org=${phoneNumber.organizationId}`);
+        } else {
+          console.warn(`[CALL_OUTBOUND_BILLING_SKIPPED] ${callControlId} — caller ID non géré: ${from}`);
         }
       }
     }

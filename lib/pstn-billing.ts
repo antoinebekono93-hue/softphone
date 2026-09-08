@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getSystemRates, debitWalletAtomically, creditWalletAtomically } from "@/lib/billing";
+import { getSystemRates, getStandardCallRate, debitWalletAtomically, creditWalletAtomically } from "@/lib/billing";
 import { logAppCallDecision } from "@/lib/app-call-policy";
 import { computePstnCost, computeSettleAdjustment, currentPeriodStartUtc } from "@/lib/pstn-cost";
 
@@ -52,7 +52,7 @@ export async function estimatePstnCost(
   const costPerMinute =
     rateProfile === "AI_AGENT"
       ? rates.aiAgentRatePerMinute.toNumber()
-      : rates.callRatePerMinute.toNumber();
+      : getStandardCallRate(rates).toNumber();
 
   const maxDurationSeconds = Math.min(
     org?.pricingPlan?.maxCallDurationSeconds ?? 3600,
@@ -144,7 +144,7 @@ async function consumeIncludedMinutes(
 /**
  * Pré-autorisation d'un appel PSTN à `call.initiated`.
  *
- *  - Crée une CallReservation (trace d'audit) SI un plan existe.
+ *  - Crée toujours une CallReservation (trace d'audit), y compris sans plan.
  *  - SI `plan.preAuthRequired` : PRÉ-DÉDUIT atomiquement la part wallet estimée
  *    (hold) avec garde `walletBalance >= amount`. Deux appels simultanés
  *    entrent en concurrence sur CE débit conditionnel : le second est refusé
@@ -170,17 +170,14 @@ export async function preAuthorizeCall(params: {
 
   const walletBalance = org.walletBalance.toNumber();
   const plan = org.pricingPlan;
-  if (!plan) {
-    return { authorized: true, estimatedCost: 0, heldAmount: 0, planName: null, walletBalance };
-  }
 
   const { estimatedCost, costPerMinute, maxDurationSeconds } = await estimatePstnCost(organizationId, rateProfile);
-  const preAuthRequired = plan.preAuthRequired ?? false;
+  const preAuthRequired = plan?.preAuthRequired ?? false;
 
   const usedThisMonth = await prisma.$transaction((tx) => readIncludedUsed(tx, organizationId));
   // Part wallet estimée = estimation totale non couverte par les minutes incluses.
   const estimateMinutes = maxDurationSeconds / MINUTES_DIVISOR;
-  const remainingIncluded = Math.max((plan.includedMinutes ?? 0) - usedThisMonth, 0);
+  const remainingIncluded = Math.max((plan?.includedMinutes ?? 0) - usedThisMonth, 0);
   const walletEstimateMinutes = Math.max(estimateMinutes - remainingIncluded, 0);
   const holdAmount = walletEstimateMinutes * costPerMinute;
 
@@ -226,19 +223,19 @@ export async function preAuthorizeCall(params: {
       undefined,
       callControlId
     );
-    return { authorized: false, estimatedCost, heldAmount: 0, reason: "INSUFFICIENT_FUNDS", planName: plan.name, walletBalance };
+    return { authorized: false, estimatedCost, heldAmount: 0, reason: "INSUFFICIENT_FUNDS", planName: plan?.name ?? null, walletBalance };
   }
 
   await logAppCallDecision(
     organizationId,
     null,
     "CALL_RESERVED",
-    { callControlId, estimatedCost, holdAmount, planId: plan.id },
+    { callControlId, estimatedCost, holdAmount, planId: plan?.id ?? null },
     undefined,
     callControlId
   );
 
-  return { authorized: true, reservationId, estimatedCost, heldAmount: holdAmount, planName: plan.name, walletBalance };
+  return { authorized: true, reservationId, estimatedCost, heldAmount: holdAmount, planName: plan?.name ?? null, walletBalance };
 }
 
 /**
@@ -377,7 +374,7 @@ export async function settlePstnCall(params: {
   }
 
   const costPerMinute =
-    rateProfile === "AI_AGENT" ? rates.aiAgentRatePerMinute.toNumber() : rates.callRatePerMinute.toNumber();
+    rateProfile === "AI_AGENT" ? rates.aiAgentRatePerMinute.toNumber() : getStandardCallRate(rates).toNumber();
   const plan = org.pricingPlan;
   const planIdAtCallTime = plan?.id ?? null;
   const includedPerMinute = plan?.includedMinutes ?? 0;

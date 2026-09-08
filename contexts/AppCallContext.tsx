@@ -112,6 +112,41 @@ function rtcConfiguration(): RTCConfiguration {
 }
 
 /**
+ * Attend l'autorisation effective du canal privé avant d'émettre le handshake
+ * WebRTC. `subscribe()` est asynchrone : publier CALL_READY juste après lui
+ * pouvait faire perdre le message si le pair terminait son abonnement après.
+ */
+function waitForPusherSubscription(channel: any, timeoutMs = 10_000): Promise<void> {
+  if (channel?.subscribed === true) return Promise.resolve();
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (err?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      channel.unbind("pusher:subscription_succeeded", onSucceeded);
+      channel.unbind("pusher:subscription_error", onError);
+      if (err) reject(err);
+      else resolve();
+    };
+    const onSucceeded = () => finish();
+    const onError = (status: unknown) =>
+      finish(new Error(`Pusher call-channel subscription failed (${String(status ?? "unknown")})`));
+    const timer = setTimeout(
+      () => finish(new Error("Pusher call-channel subscription timed out")),
+      timeoutMs
+    );
+
+    channel.bind("pusher:subscription_succeeded", onSucceeded);
+    channel.bind("pusher:subscription_error", onError);
+
+    // Évite la fenêtre entre le test initial et l'installation des handlers.
+    if (channel?.subscribed === true) onSucceeded();
+  });
+}
+
+/**
  * Log structuré WebRTC — diagnostics production-safe.
  * Ne log JAMAIS : TURN credentials, SDP, tokens, candidates en clair.
  */
@@ -197,9 +232,11 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
   // Garde anti-concurrence : un seul getUserMedia en vol à la fois.
   const getUserMediaInProgressRef = useRef(false);
   const activeCallIdRef = useRef<string | null>(null);
+  const incomingCallIdRef = useRef<string | null>(null);
   // Rôle du participant pour l'appel actif (référence stable pour les logs
   // hors du scope de setupPeerAndChannel : retryRemoteAudio, finishCall, mute).
   const activeCallRoleRef = useRef<"caller" | "callee" | null>(null);
+  const activeCallIsInitiatorRef = useRef(false);
   const maxDurationRef = useRef<number>(3600);
   const micMutedRef = useRef(false);
   const peerReadyRef = useRef(false);
@@ -235,12 +272,14 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     setAudioPlayFailed(false);
     setAppCallDuration(0);
     activeCallIdRef.current = null;
+    incomingCallIdRef.current = null;
     activeCallRoleRef.current = null;
+    activeCallIsInitiatorRef.current = false;
     peerReadyRef.current = false;
     pendingCandidatesRef.current = [];
     peerUserIdRef.current = null;
     politeRef.current = false;
-      makingOfferRef.current = false;
+    makingOfferRef.current = false;
     ignoreOfferRef.current = false;
     isSettingRemoteAnswerPendingRef.current = false;
     iceRestartCountRef.current = 0;
@@ -248,7 +287,11 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
 
     if (callChannelRef.current) {
       try {
+        const channelName = callChannelRef.current.name;
         callChannelRef.current.unbind_all();
+        if (channelName) {
+          pusherRef.current?.unsubscribe(channelName);
+        }
         callChannelRef.current = null;
       } catch {
         callChannelRef.current = null;
@@ -393,18 +436,82 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
   // ── Publication d'un signal via le SERVEUR (M2 : jamais de trigger direct) ──
   // Le client POSTe un payload ; le serveur authentifie, valide l'état, puis
   // publie sur le canal d'appel. `channel.trigger` direct est INTERDIT.
-  const publishSignal = useCallback(async (callId: string, payload: SignalMessage) => {
-    if (!callId) return;
+  const publishSignal = useCallback(async (callId: string, payload: SignalMessage): Promise<boolean> => {
+    if (!callId) return false;
     try {
-      await fetch(`/api/app-calls/${callId}/signal`, {
+      const response = await fetch(`/api/app-calls/${callId}/signal`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payload }),
       });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        console.error("publishSignal rejected", {
+          callId,
+          type: payload.type,
+          status: response.status,
+          error: typeof body?.error === "string" ? body.error : undefined,
+        });
+        return false;
+      }
+      return true;
     } catch (err) {
       console.error("publishSignal failed", err);
+      return false;
     }
   }, []);
+
+  /** Crée et relaie l'offre du caller seulement une fois le pair prêt. */
+  const sendOffer = useCallback(
+    async (callId: string, iceRestart = false): Promise<boolean> => {
+      const pc = pcRef.current;
+      if (
+        !pc ||
+        activeCallIdRef.current !== callId ||
+        activeCallRoleRef.current !== "caller" ||
+        pc.signalingState !== "stable" ||
+        !canMakeOffer({ makingOffer: makingOfferRef.current })
+      ) {
+        return false;
+      }
+
+      makingOfferRef.current = true;
+      try {
+        const offer = await pc.createOffer(iceRestart ? { iceRestart: true } : undefined);
+        await pc.setLocalDescription(offer);
+        const description = pc.localDescription;
+        if (!description?.type || !description.sdp) {
+          throw new Error("Local SDP description unavailable");
+        }
+        const published = await publishSignal(callId, {
+          type: "CALL_OFFER",
+          sdp: { type: description.type, sdp: description.sdp },
+        });
+        if (!published) {
+          await finishCall("FAILED", "signaling offer could not be delivered");
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error("createOffer failed", err);
+        makingOfferRef.current = false;
+        await finishCall("FAILED", "could not create WebRTC offer");
+        return false;
+      }
+    },
+    [finishCall, publishSignal]
+  );
+
+  // Le canal d'appel est partagé par les deux participants : le filtrage du
+  // destinataire injecté par le serveur est une défense supplémentaire.
+  function bindCallSignalHandler(channel: any) {
+    channel.unbind(APP_CALL_EVENTS.SIGNAL);
+    channel.bind(APP_CALL_EVENTS.SIGNAL, (message: ServerCallSignal) => {
+      const role = activeCallRoleRef.current;
+      if (!role) return;
+      void handleSignal(message, role, activeCallIsInitiatorRef.current);
+    });
+  }
 
   // ── Création du RTCPeerConnection + écoute du canal d'appel ──
   const setupPeerAndChannel = useCallback(

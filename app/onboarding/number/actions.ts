@@ -3,6 +3,7 @@
 import { telnyx } from "@/lib/telnyx";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { canonicalizePhoneNumber } from "@/lib/phone-number";
 
 export async function searchNumbers(countryCode: string = "US") {
   try {
@@ -27,6 +28,11 @@ export async function buyNumber(phoneNumber: string) {
     const session = await auth();
     if (!session?.user?.id) return { error: "Unauthorized" };
 
+    const canonicalPhoneNumber = canonicalizePhoneNumber(phoneNumber);
+    if (!canonicalPhoneNumber) {
+      return { error: "Le numéro doit être au format E.164 valide." };
+    }
+
     const user = await prisma.user.findUnique({ 
       where: { id: session.user.id },
       include: { organization: true }
@@ -45,7 +51,7 @@ export async function buyNumber(phoneNumber: string) {
 
     // Actually buy the number on Telnyx
     const order = await telnyx.numberOrders.create({
-      phone_numbers: [{ phone_number: phoneNumber }]
+      phone_numbers: [{ phone_number: canonicalPhoneNumber }]
     });
 
     // Wait for the order to process (In real prod we'd use Webhooks, but here we can poll or just assume success if API accepted it)
@@ -53,7 +59,7 @@ export async function buyNumber(phoneNumber: string) {
     // Save to database
     await prisma.phoneNumber.create({
       data: {
-        number: phoneNumber,
+        number: canonicalPhoneNumber,
         friendlyName: "Main Number",
         telnyxId: order.data.id || "pending_id", // Normally you'd get the actual phone_number id from Telnyx
         organizationId: user.organizationId,

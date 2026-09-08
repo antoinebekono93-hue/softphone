@@ -215,13 +215,16 @@ export async function expireStaleRingingSessions(args?: {
 // Précédemment dupliquée DANS la route /api/app-calls/[id]/status. Centralisée
 // ici pour être testable et ne jamais diverger entre logique et route.
 //
-//   OFFERING -> CONNECTING/ENDED
+//   OFFERING -> CONNECTING/DECLINED/MISSED/FAILED/ENDED
 //   RINGING  -> CONNECTING/ACTIVE/DECLINED/MISSED/ENDED
 //   CONNECTING -> ACTIVE/FAILED/ENDED
 //   ACTIVE   -> ENDED/FAILED
 //   (terminal -> aucun)
 const STATUS_TRANSITIONS: Record<string, string[]> = {
-  OFFERING: ["CONNECTING", "ENDED"],
+  // La base crée l'appel en OFFERING avant que le callee reçoive sa sonnerie.
+  // Il doit donc pouvoir le refuser (ou constater un échec micro) sans attendre
+  // une transition artificielle vers RINGING côté base.
+  OFFERING: ["CONNECTING", "DECLINED", "MISSED", "FAILED", "ENDED"],
   RINGING: ["CONNECTING", "ACTIVE", "DECLINED", "MISSED", "ENDED"],
   CONNECTING: ["ACTIVE", "FAILED", "ENDED"],
   ACTIVE: ["ENDED", "FAILED"],

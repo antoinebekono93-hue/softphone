@@ -3,6 +3,7 @@ import { telnyx } from "@/lib/telnyx";
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdminApi } from "@/lib/security";
 import { auth } from "@/auth";
+import { canonicalizePhoneNumber } from "@/lib/phone-number";
 
 export async function POST() {
   try {
@@ -37,15 +38,27 @@ export async function POST() {
     }
 
     let syncedCount = 0;
+    let skippedCount = 0;
 
     for (const num of telnyxNumbers) {
+      const canonicalPhoneNumber = canonicalizePhoneNumber(num.phone_number);
+      if (!canonicalPhoneNumber || !num.id) {
+        // Provider payloads are external input.  Do not create a record that
+        // can never be resolved as a safe platform telephone identity.
+        skippedCount++;
+        console.warn("[Telnyx Number Sync] Ignored invalid number payload", { id: num.id });
+        continue;
+      }
+
       await prisma.phoneNumber.upsert({
         where: { telnyxId: num.id },
         update: {
-          number: num.phone_number,
+          // Preserve organization and assigned user on existing rows.  A sync
+          // refreshes provider metadata only; it never transfers ownership.
+          number: canonicalPhoneNumber,
         },
         create: {
-          number: num.phone_number,
+          number: canonicalPhoneNumber,
           telnyxId: num.id,
           organizationId: defaultOrgId,
           country: num.country_code || "US",
@@ -55,7 +68,7 @@ export async function POST() {
       syncedCount++;
     }
 
-    return NextResponse.json({ success: true, count: syncedCount });
+    return NextResponse.json({ success: true, count: syncedCount, skipped: skippedCount });
 
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";

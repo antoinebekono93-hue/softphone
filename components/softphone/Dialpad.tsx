@@ -113,9 +113,17 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
     // Auto-prefix with country code if user didn't type '+'
     let finalNumber = number;
     if (!finalNumber.startsWith("+")) {
-      // Clean leading zeros (common in international dialing)
-      if (finalNumber.startsWith("0")) finalNumber = finalNumber.substring(1);
-      finalNumber = countryCode + finalNumber;
+      const isExplicitInternational =
+        /^00\d+$/.test(finalNumber) || /^237\d{9}$/.test(finalNumber);
+
+      // Ne pas convertir `237…` ou `00237…` en `+1…` lorsque le sélecteur
+      // de pays est encore sur sa valeur par défaut. Le serveur les normalise
+      // ensuite en +237 et peut reconnaître l'identité APP_TO_APP.
+      if (!isExplicitInternational) {
+        // Clean leading zeros (common in national dialing)
+        if (finalNumber.startsWith("0")) finalNumber = finalNumber.substring(1);
+        finalNumber = countryCode + finalNumber;
+      }
     }
     
     onCall(finalNumber);
@@ -143,11 +151,11 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       {/* Display */}
-      <div className="w-full flex items-center justify-between mb-8 h-16 px-4 relative">
+      <div className="w-full flex items-center justify-between mb-6 sm:mb-8 h-14 sm:h-16 px-3 sm:px-4 relative">
         
         {/* Custom Country Selector */}
         {!number.startsWith("+") && (
-          <div className="absolute left-6 z-20" ref={dropdownRef}>
+          <div className="absolute left-2 sm:left-6 z-20" ref={dropdownRef}>
             <button
               onClick={() => !disabled && setIsDropdownOpen(!isDropdownOpen)}
               disabled={disabled || number.startsWith("+")}
@@ -189,8 +197,8 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
           }}
           placeholder=""
           disabled={disabled}
-          className="w-full bg-transparent border-none shadow-none text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none focus:ring-0 min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
-          style={{ paddingLeft: !number.startsWith("+") ? "5rem" : "0", transition: "padding 0.2s" }}
+          className="w-full bg-transparent border-none shadow-none text-3xl sm:text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none focus:ring-0 min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
+          style={{ paddingLeft: !number.startsWith("+") ? "4.25rem" : "0", transition: "padding 0.2s" }}
         />
         {number && (
           <button
@@ -208,7 +216,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-3 gap-6 mb-8 w-full px-6">
+      <div className="grid grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8 w-full px-3 sm:px-6">
         {KEYS.map((key) => (
           <button
             key={key.digit}
@@ -217,10 +225,10 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
             onPointerLeave={handlePointerLeave}
             onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
             disabled={disabled}
-            className="bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border-none text-[var(--text-primary)] relative flex flex-col items-center justify-center w-20 h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-[0_2px_10px_rgba(0,0,0,0.05)] active:scale-95"
+            className="bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border-none text-[var(--text-primary)] relative flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-[0_2px_10px_rgba(0,0,0,0.05)] active:scale-95"
             style={{ WebkitUserSelect: 'none', touchAction: 'manipulation' }}
           >
-            <span className="text-3xl font-medium">
+            <span className="text-2xl sm:text-3xl font-medium">
               {key.digit}
             </span>
             <span className="text-[10px] font-medium tracking-[0.1em] mt-0.5 min-h-[15px] opacity-70">
@@ -234,7 +242,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
       <button
         onClick={handleCall}
         disabled={disabled || !number}
-        className="bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 text-white w-20 h-20 rounded-full flex items-center justify-center transition-all disabled:bg-[var(--text-secondary)] disabled:opacity-50"
+        className="bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 text-white w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all disabled:bg-[var(--text-secondary)] disabled:opacity-50"
         aria-label="Call"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

@@ -670,6 +670,10 @@ model SystemSettings {
   id                          String   @id @default("default")
   smsRate                     Decimal  @default(0.05) @db.Decimal(12, 6)
   callRatePerMinute           Decimal  @default(0.02) @db.Decimal(12, 6)
+  // Telnyx base rate + operator margin. The charged rate is calculated on the
+  // server as base × (1 + percentage / 100), never in the browser.
+  callBaseRatePerMinute       Decimal  @default(0.02) @db.Decimal(12, 6)
+  callMarkupPercent           Decimal  @default(0.0) @db.Decimal(8, 4)
   aiAgentRatePerMinute        Decimal  @default(0.15) @db.Decimal(12, 6)
   whatsappRate                Decimal  @default(0.02) @db.Decimal(12, 6)
   phoneNumberRate             Decimal  @default(1.00) @db.Decimal(12, 4)

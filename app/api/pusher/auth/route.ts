@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       if (
         sessionRow &&
         (sessionRow.callerId === userId || sessionRow.calleeId === userId) &&
-        !["MISSED", "DECLINED", "FAILED"].includes(sessionRow.status)
+        !["ENDED", "MISSED", "DECLINED", "FAILED"].includes(sessionRow.status)
       ) {
         authorized = true;
       }

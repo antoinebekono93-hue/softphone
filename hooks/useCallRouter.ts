@@ -5,9 +5,10 @@ import { useAppCall } from "@/contexts/AppCallContext";
 import { useTelnyx } from "@/contexts/TelnyxContext";
 import { toast } from "sonner";
 
-type RouteResult =
-  | { type: "APP_TO_APP"; targetUserId: string; target: string }
-  | { type: "APP_TO_PSTN"; destination: string };
+type RouteResult = {
+  type: "APP_TO_APP" | "APP_TO_PSTN";
+  destination: string;
+};
 
 /**
  * Hook UNIQUE de routage des appels sortants.
@@ -61,9 +62,10 @@ export function useCallRouter() {
 
       if (route.type === "APP_TO_APP") {
         // L'appel interne passe par le chemin WebRTC (aucun Telnyx, aucun wallet).
-        // On renvoie la saisie originale : /api/app-calls re-résout côté serveur
-        // via la MÊME fonction (resolveCallDestination) → cohérent.
-        await makeAppCall(route.target);
+        // La destination vient de la résolution serveur et /api/app-calls la
+        // résout une seconde fois : le navigateur ne transmet jamais un userId
+        // arbitraire et ne choisit jamais seul le type d'appel.
+        await makeAppCall(route.destination);
       } else {
         // Décision serveur explicite : destination externe → Telnyx.
         makeCall(route.destination, callerId || undefined);
@@ -81,6 +83,7 @@ function bodyMessage(code: string | undefined): string {
     NO_ORGANIZATION: "Organisation introuvable",
     SELF_CALL: "Impossible de s'appeler soi-même",
     TARGET_NOT_CALLABLE: "Cette personne n'est pas joignable par appel",
+    AMBIGUOUS_INTERNAL_TARGET: "Cette identité interne est ambiguë. Contactez un administrateur.",
     EMPTY_TARGET: "Destination vide",
     NOT_APP_TO_APP_DESTINATION: "Destination externe (Telnyx)",
     CALLEE_NOT_FOUND: "Utilisateur introuvable",

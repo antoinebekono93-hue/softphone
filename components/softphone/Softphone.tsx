@@ -10,6 +10,12 @@ import { AudioVisualizer } from "./AudioVisualizer";
 import { AppCallPanel } from "./AppCallPanel";
 import { formatPhoneNumber } from "@/lib/utils";
 
+type CallerIdNumber = {
+  id: string;
+  number: string;
+  telnyxId: string;
+};
+
 export function Softphone() {
   const {
     isRegistered,
@@ -30,7 +36,7 @@ export function Softphone() {
   const [showKeypad, setShowKeypad] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [availableNumbers, setAvailableNumbers] = useState<any[]>([]);
+  const [availableNumbers, setAvailableNumbers] = useState<CallerIdNumber[]>([]);
   const [isLoadingNumbers, setIsLoadingNumbers] = useState(true);
   const [selectedCallerId, setSelectedCallerId] = useState<string>("");
 
@@ -46,8 +52,8 @@ export function Softphone() {
     fetch('/api/telecom/numbers')
       .then(res => res.json())
       .then(data => {
-        if (data.data) {
-          setAvailableNumbers(data.data);
+        if (Array.isArray(data.data)) {
+          setAvailableNumbers(data.data as CallerIdNumber[]);
           if (data.data.length > 0) {
             setSelectedCallerId(data.data[0].number);
           }
@@ -77,7 +83,7 @@ export function Softphone() {
   const isCallActive = callState === "active";
 
   return (
-    <div className="relative w-full max-w-md mx-auto h-[750px] max-h-[90vh] glass-panel bg-[var(--bg-surface-solid)] overflow-hidden flex flex-col">
+    <div className="relative w-full max-w-md mx-auto h-[min(90vh,750px)] supports-[height:100dvh]:h-[min(92dvh,750px)] glass-panel bg-[var(--bg-surface-solid)] overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex flex-col items-center justify-center p-6 pb-2 relative z-10">
         <div className="flex items-center gap-2 mb-2">
@@ -131,7 +137,10 @@ export function Softphone() {
                   )}
                   <Dialpad
                     onCall={(dest) => routeCall(dest, selectedCallerId)}
-                    disabled={!isRegistered || callState === "ringing"}
+                    // The server resolves APP_TO_APP before Telnyx is used;
+                    // an unavailable PSTN registration must not block an
+                    // internal WebRTC call from the same dialpad.
+                    disabled={callState === "ringing"}
                   />
                 </>
               )
@@ -156,7 +165,7 @@ export function Softphone() {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center w-full h-full justify-between py-8">
+          <div className="flex flex-col items-center w-full h-full justify-between py-4 sm:py-8 min-h-0">
             {/* Call Info Header */}
             <div className="text-center w-full mb-8">
               <div className="text-sm font-medium text-[var(--text-secondary)] mb-2 tracking-widest uppercase animate-pulse">
@@ -172,9 +181,9 @@ export function Softphone() {
             </div>
 
             {/* Central Area: Visualizer or Keypad */}
-            <div className="relative flex-1 flex items-center justify-center w-full mb-8">
+            <div className="relative flex-1 flex items-center justify-center w-full mb-4 sm:mb-8 min-h-0">
               {showKeypad ? (
-                <div className="scale-90 origin-center w-full">
+                <div className="scale-[0.88] sm:scale-95 origin-center w-full">
                   <Dialpad
                     onDigitPress={sendDTMF}
                     onCall={() => {}} // Disabled during call

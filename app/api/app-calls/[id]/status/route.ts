@@ -49,6 +49,42 @@ const isTerminal = (status: string) =>
     status as (typeof APP_CALL_TERMINAL_STATUSES)[number]
   );
 
+/**
+ * Le reaper peut être exécuté par cette route (self-healing) et pas seulement
+ * par le cron. Dans les deux cas, les DEUX participants doivent apprendre
+ * qu'une sonnerie a expiré ; sinon un écran reste bloqué sur "appel en cours".
+ */
+async function notifyStaleSessions(
+  expired: Awaited<ReturnType<typeof expireStaleRingingSessions>>
+) {
+  const server = getPusherServer();
+  if (!server) return;
+
+  for (const appCall of expired) {
+    for (const participantId of [appCall.callerId, appCall.calleeId]) {
+      try {
+        await server.trigger(
+          appCallChannels.user(participantId),
+          APP_CALL_EVENTS.ENDED,
+          {
+            callId: appCall.sessionId,
+            status: "MISSED",
+            reason: "timeout",
+          }
+        );
+      } catch (err) {
+        logServerCallEvent({
+          level: "error",
+          event: "STATUS_TRIGGER_FAILED",
+          callId: appCall.sessionId,
+          details: { participantId, status: "MISSED", reason: "timeout" },
+        });
+        console.error("[app-calls/status] stale-call notify failed", appCall.sessionId, err);
+      }
+    }
+  }
+}
+
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -76,7 +112,8 @@ export async function PATCH(
   // Self-healing du timeout (M4) : avant tout, on expire les sons obsolètes.
   // Idempotent — n'affecte pas ce traitement si cette session est encore jeune.
   try {
-    await expireStaleRingingSessions();
+    const expired = await expireStaleRingingSessions();
+    await notifyStaleSessions(expired);
   } catch (err) {
     console.error("[app-calls/status] expireStaleRingingSessions failed", err);
   }

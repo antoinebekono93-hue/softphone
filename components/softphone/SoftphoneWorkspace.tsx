@@ -49,9 +49,9 @@ export function SoftphoneWorkspace() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full h-[calc(100vh-5rem)] rounded-2xl overflow-hidden glass-panel border border-[var(--border-subtle)]">
+    <div className="flex flex-col-reverse lg:flex-row w-full h-auto lg:h-[calc(100vh-5rem)] gap-4 lg:gap-0 rounded-2xl overflow-hidden glass-panel border border-[var(--border-subtle)]">
       {/* Left Panel: Sidebar */}
-      <div className="w-full lg:w-[400px] flex flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/50">
+      <div className="w-full lg:w-[400px] flex flex-col lg:max-h-none border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/50 max-h-[70vh] overflow-hidden">
         {/* Header & Search */}
         <div className="p-4 border-b border-[var(--border-subtle)]">
           <div className="relative">

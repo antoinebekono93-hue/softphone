@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { debitWalletAtomically } from "@/lib/billing";
 import { requireSuperAdmin } from "@/lib/security";
+import { canonicalizePhoneNumber } from "@/lib/phone-number";
 
 // 1. Get or Create System Settings
 export async function getSystemSettings() {
@@ -30,6 +31,99 @@ export async function saveTelnyxApiKey(apiKey: string) {
     create: { id: "default", telnyxApiKey: apiKey }
   });
   revalidatePath("/god-mode/telnyx");
+}
+
+/** Connection used by both number provisioning and WebRTC token issuance. */
+export async function saveTelnyxVoiceConnection(connectionId: string) {
+  await requireSuperAdmin();
+  if (!connectionId.trim()) return { error: "Sélectionnez une connexion SIP." };
+  await prisma.systemSettings.upsert({
+    where: { id: "default" },
+    update: { telnyxConnectionId: connectionId },
+    create: { id: "default", telnyxConnectionId: connectionId },
+  });
+  revalidatePath("/god-mode/telnyx");
+  return { success: true };
+}
+
+async function telnyxPatch(apiKey: string, path: string, body: Record<string, unknown>) {
+  const response = await fetch(`https://api.telnyx.com/v2${path}`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(await response.text());
+  return response.json();
+}
+
+export async function updateCredentialConnection(apiKey: string, connectionId: string, settings: {
+  webhook_event_url: string;
+  webhook_event_failover_url?: string;
+  webhook_api_version: "1" | "2";
+  webhook_timeout_secs: number;
+}) {
+  await requireSuperAdmin();
+  try {
+    const data = await telnyxPatch(apiKey, `/credential_connections/${connectionId}`, {
+      webhook_event_url: settings.webhook_event_url,
+      webhook_event_failover_url: settings.webhook_event_failover_url || null,
+      webhook_api_version: settings.webhook_api_version,
+      webhook_timeout_secs: settings.webhook_timeout_secs,
+      // Telnyx includes provider usage cost in the call lifecycle webhook,
+      // making reconciliation visible in our audit trail.
+      call_cost_in_webhooks: true,
+    });
+    return { data: data.data };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+export async function updateCallControlApplication(apiKey: string, applicationId: string, settings: {
+  application_name: string;
+  webhook_event_url: string;
+  webhook_event_failover_url?: string;
+  webhook_api_version: "1" | "2";
+  webhook_timeout_secs: number;
+  active: boolean;
+}) {
+  await requireSuperAdmin();
+  try {
+    const data = await telnyxPatch(apiKey, `/call_control_applications/${applicationId}`, {
+      ...settings,
+      webhook_event_failover_url: settings.webhook_event_failover_url || null,
+      call_cost_in_webhooks: true,
+    });
+    return { data: data.data };
+  } catch (error: any) {
+    return { error: error.message };
+  }
+}
+
+/** Explicit admin operation: reattach existing application numbers to the
+ * selected voice connection. No number is changed until God Mode triggers it. */
+export async function repairApplicationNumberRouting(apiKey: string, connectionId: string) {
+  await requireSuperAdmin();
+  if (!connectionId) return { error: "Sélectionnez d'abord une connexion vocale." };
+  const numbers = await prisma.phoneNumber.findMany({
+    where: { telnyxId: { not: { startsWith: "mock-" } } },
+    select: { id: true, telnyxId: true },
+  });
+  let repaired = 0;
+  const failures: string[] = [];
+  for (const number of numbers) {
+    try {
+      await telnyxPatch(apiKey, `/phone_numbers/${number.telnyxId}`, { connection_id: connectionId });
+      repaired++;
+    } catch {
+      failures.push(number.id);
+    }
+  }
+  return { success: true, repaired, failures };
 }
 
 // 3. Fetch Balance from Telnyx API
@@ -224,6 +318,8 @@ export async function searchGlobalNumbers(apiKey: string, countryCode: string) {
 export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: string, organizationId: string) {
   await requireSuperAdmin();
   if (!apiKey) return { error: "No API Key" };
+  const canonicalPhoneNumber = canonicalizePhoneNumber(phoneNumber);
+  if (!canonicalPhoneNumber) return { error: "Le numéro doit être au format E.164 valide." };
   try {
     // 1. Verify Wallet Balance & KYC (Zero-Trust Guard)
     const org = await prisma.organization.findUnique({
@@ -251,7 +347,7 @@ export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: strin
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        phone_numbers: [{ phone_number: phoneNumber }]
+        phone_numbers: [{ phone_number: canonicalPhoneNumber }]
       })
     });
     
@@ -266,7 +362,7 @@ export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: strin
     await prisma.$transaction(async (tx) => {
       await tx.phoneNumber.create({
         data: {
-          number: phoneNumber,
+          number: canonicalPhoneNumber,
           telnyxId: orderData.data?.id || `manual-${Date.now()}`,
           status: "ACTIVE",
           organizationId: organizationId,
@@ -283,7 +379,7 @@ export async function purchaseAndAssignNumber(apiKey: string, phoneNumber: strin
           organizationId: organizationId,
           amount: -NUMBER_COST,
           type: "DEBIT",
-          description: `Purchase of Global Number ${phoneNumber}`
+          description: `Purchase of Global Number ${canonicalPhoneNumber}`
         }
       });
     });

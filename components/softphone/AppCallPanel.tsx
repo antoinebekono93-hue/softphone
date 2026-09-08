@@ -20,7 +20,6 @@ export function AppCallPanel() {
     appCallDuration,
     directory,
     refreshDirectory,
-    makeAppCall,
     hangupAppCall,
     muteAppMic,
     audioPlayFailed,
@@ -164,7 +163,7 @@ export function AppCallPanel() {
               <button
                 onClick={() => {
                   const dial = u.callUsername || u.callExtension || u.email || "";
-                  if (dial) makeAppCall(dial);
+                  if (dial) void routeCall(dial);
                   else toast.error("Ce collègue n'a pas d'identifiant d'appel");
                 }}
                 className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors"
