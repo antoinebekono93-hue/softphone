@@ -1,0 +1,51 @@
+name: Cron Jobs Scheduler
+
+on:
+  schedule:
+    # Lancer toutes les minutes pour app-calls-timeout et flows
+    - cron: '* * * * *'
+  workflow_dispatch: # Permet de lancer manuellement depuis l'interface GitHub
+
+jobs:
+  run-minutely-crons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping app-calls-timeout
+        run: |
+          curl -X GET "${{ secrets.PROD_URL }}/api/cron/app-calls-timeout" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+      - name: Ping flows
+        run: |
+          curl -X GET "${{ secrets.PROD_URL }}/api/cron/flows" \
+          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  run-5min-crons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping campaign-worker
+        # S'exécute uniquement si les minutes actuelles sont un multiple de 5
+        run: |
+          MINUTE=$(date +%M)
+          if [ $((MINUTE % 5)) -eq 0 ]; then
+            curl -X GET "${{ secrets.PROD_URL }}/api/cron/campaign-worker" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          else
+            echo "Skipping 5-min cron for minute $MINUTE"
+          fi
+
+  run-monthly-crons:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping reset-included-minutes
+        # S'exécute uniquement si on est le 1er du mois à 00:00 UTC
+        run: |
+          DAY=$(date +%d)
+          HOUR=$(date +%H)
+          MINUTE=$(date +%M)
+          if [ "$DAY" -eq "01" ] && [ "$HOUR" -eq "00" ] && [ "$MINUTE" -eq "00" ]; then
+            curl -X GET "${{ secrets.PROD_URL }}/api/cron/reset-included-minutes" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          else
+            echo "Skipping monthly cron"
+          fi
