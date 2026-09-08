@@ -550,6 +550,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     const generation = waitGenerationRef.current;
     try {
       const cc = pstnCallControlIdRef.current;
+      if (!cc) return;
 
       const { action } = decideAcceptAction({
         callState: callStateRef.current,
