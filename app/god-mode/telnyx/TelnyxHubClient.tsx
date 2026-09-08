@@ -179,7 +179,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     if (!voiceConnectionId) return setRoutingMessage("Choisissez une connexion vocale avant la synchronisation.");
     startTransition(async () => {
       const result = await repairApplicationNumberRouting(apiKey, voiceConnectionId);
-      if (result.error) return setRoutingMessage(result.error);
+      if (result.error !== undefined) return setRoutingMessage(result.error);
       setRoutingMessage(`${result.repaired} numéro(s) rattaché(s) à la connexion vocale.${result.failures.length ? ` ${result.failures.length} échec(s).` : ""}`);
     });
   };
