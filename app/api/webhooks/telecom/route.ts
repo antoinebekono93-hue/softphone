@@ -4,9 +4,29 @@ import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { executeAutomation } from '@/lib/automations';
 import { preAuthorizeCall, settlePstnCall, releasePstnReservation } from '@/lib/pstn-billing';
+import { getPusherServer } from '@/lib/pusher';
+import { appCallChannels, PSTN_EVENTS } from '@/lib/app-call-channels';
 
 // We need the media server URL. Ideally, it's wss://our-domain/media
 const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'wss://your-ngrok-domain.ngrok-free.app/media';
+
+/**
+ * Destinataire humain d'un appel PSTN entrant sur un numéro :
+ *  - assignedUser si le numéro en a un ;
+ *  - sinon le premier utilisateur de l'organisation.
+ * Utilisé à la fois pour `pstn:incoming` (call.initiated) et `pstn:ended`
+ * (call.hangup) afin de toujours notifier le MÊME destinataire.
+ */
+async function resolveNotifyUser(phoneNumber: {
+  assignedUser?: { id: string; name?: string | null } | null;
+  organizationId: string;
+}) {
+  if (phoneNumber.assignedUser) return phoneNumber.assignedUser;
+  return prisma.user.findFirst({
+    where: { organizationId: phoneNumber.organizationId },
+    select: { id: true, name: true },
+  });
+}
 
 async function processEvent(event: any) {
   try {
@@ -27,7 +47,7 @@ async function processEvent(event: any) {
       if (direction === 'incoming') {
         const phoneNumber = await prisma.phoneNumber.findUnique({
           where: { number: to },
-          include: { aiEmployee: true }
+          include: { aiEmployee: true, assignedUser: { select: { id: true, name: true } } }
         });
 
         if (phoneNumber) {
@@ -60,9 +80,43 @@ async function processEvent(event: any) {
           if (phoneNumber.aiEmployee && phoneNumber.aiEmployee.isActive) {
             const call = new telnyx.Call({ call_control_id: callControlId });
             await call.answer({ command_id: crypto.randomUUID() });
+            console.log(`[CALL_INCOMING_RECEIVED] ${callControlId} org=${phoneNumber.organizationId} direction=${direction} target=AI_AGENT`);
+          } else {
+            // ── Appel PSTN entrant vers un utilisateur humain ──────────────
+            // Le serveur notifie l'utilisateur via Pusher pour afficher l'UI
+            // d'appel entrant, même si le SIP WebRTC natif fonctionne aussi.
+            const notifyUser = await resolveNotifyUser(phoneNumber);
+
+            if (notifyUser) {
+              console.log(`[CALL_INCOMING_ROUTED] ${callControlId} org=${phoneNumber.organizationId} recipient=${notifyUser.id}`);
+              try {
+                const pusher = getPusherServer();
+                if (pusher) {
+                  await pusher.trigger(
+                    appCallChannels.user(notifyUser.id),
+                    PSTN_EVENTS.INCOMING,
+                    {
+                      callControlId,
+                      from: from,
+                      to: to,
+                      phoneNumberId: phoneNumber.id,
+                      organizationId: phoneNumber.organizationId,
+                      callerName: null,
+                    },
+                  );
+                  console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id}`);
+                } else {
+                  console.warn(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} — Pusher non configuré, fallback SIP natif`);
+                }
+              } catch (pusherErr) {
+                console.error(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} ERREUR`, pusherErr);
+              }
+            } else {
+              console.warn(`[CALL_INCOMING_ROUTED] ${callControlId} org=${phoneNumber.organizationId} — aucun utilisateur trouvé, fallback SIP natif`);
+            }
+            // Le SIP WebRTC natif (Telnyx SDK) reste le canal de média principal.
+            // Pusher sert de notification fiable pour afficher l'UI d'appel entrant.
           }
-          // If no AI agent, do nothing here. Telnyx will natively ring the SIP connection 
-          // associated with this number (WebRTC softphone).
         }
       }
     }
@@ -120,7 +174,17 @@ async function processEvent(event: any) {
       console.log(`[Telnyx Webhook] Call Hangup: ${callControlId}`);
 
       const ended = new Date();
-      const callLog = await prisma.callLog.findUnique({ where: { telnyxCallControlId: callControlId } });
+      const callLog = await prisma.callLog.findUnique({
+        where: { telnyxCallControlId: callControlId },
+        include: {
+          phoneNumber: {
+            include: {
+              aiEmployee: true,
+              assignedUser: { select: { id: true, name: true } },
+            },
+          },
+        },
+      });
       
       let duration = 0;
       if (callLog?.answeredAt) {
@@ -217,6 +281,31 @@ async function processEvent(event: any) {
           });
         } catch (relErr) {
           console.error('[Telnyx Webhook] releasePstnReservation failed', relErr);
+        }
+      }
+
+      // ── Fin d'appel humain → notifier pstn:ended ─────────────────────────
+      // Si `pstn:incoming` avait été envoyé à un utilisateur (pas d'agent IA),
+      // on ferme l'UI côté client (sonnerie infinie, ou état actif) dès que
+      // Telnyx confirme le hangup. Idempotent côté client (comparaison du
+      // callControlId). Les appels APP_TO_APP ne passent jamais ici.
+      const pn = callLog?.phoneNumber;
+      if (pn && !(pn.aiEmployee && pn.aiEmployee.isActive)) {
+        try {
+          const notifyUser = await resolveNotifyUser(pn);
+          if (notifyUser) {
+            const pusher = getPusherServer();
+            if (pusher) {
+              await pusher.trigger(
+                appCallChannels.user(notifyUser.id),
+                PSTN_EVENTS.ENDED,
+                { callControlId, status: finalStatus },
+              );
+              console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} event=${PSTN_EVENTS.ENDED}`);
+            }
+          }
+        } catch (notifyErr) {
+          console.error(`[Telnyx Webhook] pstn:ended failed for ${callControlId}`, notifyErr);
         }
       }
     }

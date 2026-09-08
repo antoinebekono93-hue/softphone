@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import withPWA from '@ducanh2912/next-pwa';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -53,7 +54,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withPWA({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+})(withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
@@ -61,4 +66,4 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: {
     disable: true,
   },
-});
+}));

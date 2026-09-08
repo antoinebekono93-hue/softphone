@@ -46,8 +46,8 @@ export const metadata: Metadata = {
       "Professional cloud-based softphone. Make and receive calls from your browser.",
   },
   icons: {
-    icon: "/icons/icon-192x192.png",
-    apple: "/icons/icon-512x512.png",
+    icon: "/icon-192x192.png",
+    apple: "/icon-180x180.png",
   },
 };
 
@@ -68,6 +68,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icon-180x180.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className={`font-sans`}>
         <ThemeProvider defaultTheme="light">

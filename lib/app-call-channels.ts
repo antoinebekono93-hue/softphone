@@ -24,3 +24,19 @@ export const APP_CALL_EVENTS = {
   SIGNAL: "app-call:signal", // signaling WebRTC (SDP / ICE)
   ENDED: "app-call:ended", // -> les deux : fin d'appel
 } as const;
+
+/**
+ * Events Pusher pour les appels PSTN entrants (via Telnyx SIP).
+ *
+ * Le webhook Telnyx publie `pstn:incoming` sur le canal privé de
+ * l'utilisateur destinataire. Le client TelnyxContext s'y abonne et
+ * affiche l'UI d'appel entrant, puis répond via l'API Telnyx.
+ *
+ * Canal utilisé : même `private-user-{userId}` que les appels APP_TO_APP.
+ */
+export const PSTN_EVENTS = {
+  INCOMING: "pstn:incoming", // -> user : appel PSTN entrant
+  ACCEPTED: "pstn:accepted", // -> user : appel accepté (mise à jour état)
+  REJECTED: "pstn:rejected", // -> user : appel refusé
+  ENDED: "pstn:ended", // -> user : appel terminé
+} as const;

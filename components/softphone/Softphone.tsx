@@ -20,6 +20,7 @@ export function Softphone() {
     hangupCall,
     muteMicrophone,
     sendDTMF,
+    requestAudioUnlock,
   } = useTelnyx();
 
   const { appCallStatus } = useAppCall();
@@ -159,7 +160,11 @@ export function Softphone() {
             {/* Call Info Header */}
             <div className="text-center w-full mb-8">
               <div className="text-sm font-medium text-[var(--text-secondary)] mb-2 tracking-widest uppercase animate-pulse">
-                {callState === "ringing" ? "Calling..." : "Active Call"}
+                {callState === "ringing"
+                  ? "Calling..."
+                  : callState === "connecting"
+                  ? "Connexion..."
+                  : "Active Call"}
               </div>
               <div className="text-3xl font-semibold text-[var(--text-primary)] overflow-hidden text-ellipsis whitespace-nowrap">
                 {formatPhoneNumber(incomingCallerId || "Unknown")}
@@ -167,7 +172,7 @@ export function Softphone() {
             </div>
 
             {/* Central Area: Visualizer or Keypad */}
-            <div className="flex-1 flex items-center justify-center w-full mb-8">
+            <div className="relative flex-1 flex items-center justify-center w-full mb-8">
               {showKeypad ? (
                 <div className="scale-90 origin-center w-full">
                   <Dialpad
@@ -177,7 +182,17 @@ export function Softphone() {
                   />
                 </div>
               ) : (
-                <AudioVisualizer isActive={isCallActive} stream={remoteStream} /> 
+                <>
+                  <AudioVisualizer isActive={isCallActive} stream={remoteStream} />
+                  {callState === "active" && remoteStream && (
+                    <button
+                      onClick={requestAudioUnlock}
+                      className="absolute bottom-1 right-3 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                    >
+                      Activer le son
+                    </button>
+                  )}
+                </>
               )}
             </div>
 
