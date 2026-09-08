@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { formatPhoneNumber } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
 const COUNTRIES = [
@@ -44,10 +43,11 @@ const KEYS = [
 
 export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   const [number, setNumber] = useState("");
-  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [countryCode, setCountryCode] = useState("+1");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressFiredRef = useRef(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -72,35 +72,47 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   const handlePointerDown = useCallback((key: string) => {
     if (disabled) return;
     if (key === "0") {
+      if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+      longPressFiredRef.current = false;
       const timer = setTimeout(() => {
         if (navigator.vibrate) navigator.vibrate(50);
+        longPressFiredRef.current = true;
         setNumber((prev) => prev + "+");
-        setPressTimer(null);
+        pressTimerRef.current = null;
       }, 500); // 500ms long press
-      setPressTimer(timer);
+      pressTimerRef.current = timer;
     }
   }, [disabled]);
 
   const handlePointerUp = useCallback((key: string) => {
     if (disabled) return;
-    if (key === "0") {
-      if (pressTimer) {
-        // If timer is still active, it wasn't a long press. Clear timer and add '0'.
-        clearTimeout(pressTimer);
-        setPressTimer(null);
-        handlePress("0");
-      }
-    } else {
-      handlePress(key);
+    if (key === "0" && pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
     }
-  }, [disabled, handlePress, pressTimer]);
+  }, [disabled]);
+
+  const handleKeyClick = useCallback((digit: string) => {
+    if (disabled) return;
+    if (digit === "0") {
+      if (longPressFiredRef.current) {
+        longPressFiredRef.current = false;
+        return;
+      }
+      if (pressTimerRef.current) {
+        clearTimeout(pressTimerRef.current);
+        pressTimerRef.current = null;
+      }
+    }
+    handlePress(digit);
+  }, [disabled, handlePress]);
 
   const handlePointerLeave = useCallback(() => {
-    if (pressTimer) {
-      clearTimeout(pressTimer);
-      setPressTimer(null);
+    if (pressTimerRef.current) {
+      clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
     }
-  }, [pressTimer]);
+  }, []);
 
   const handleBackspace = useCallback(() => {
     if (disabled) return;
@@ -223,6 +235,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
             onPointerDown={() => handlePointerDown(key.digit)}
             onPointerUp={() => handlePointerUp(key.digit)}
             onPointerLeave={handlePointerLeave}
+            onClick={() => handleKeyClick(key.digit)}
             onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
             disabled={disabled}
             className="bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border-none text-[var(--text-primary)] relative flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-[0_2px_10px_rgba(0,0,0,0.05)] active:scale-95"
