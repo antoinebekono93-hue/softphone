@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { formatPhoneNumber } from "@/lib/utils";
 
 interface IncomingCallProps {
@@ -9,14 +10,33 @@ interface IncomingCallProps {
 }
 
 export function IncomingCall({ callerNumber, onAccept, onReject }: IncomingCallProps) {
-  // Simulate fetching CRM data for this caller
-  const crmData = {
-    name: "Alice Smith",
-    company: "Acme Corp",
-    status: "Premium Customer",
-    recentActivity: "Opened Ticket #1029 (Billing) 2 hours ago",
-    lastPurchase: "$1,200 (Annual Plan)",
-  };
+  const [contact, setContact] = useState<{
+    name: string | null;
+    company: string | null;
+    isVip: boolean;
+    totalSpent: number;
+    purchaseCount: number;
+    lastPurchaseAt: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/contacts/caller-lookup?phone=${encodeURIComponent(callerNumber)}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then((response) => response.ok ? response.json() : { contact: null })
+      .then((body) => setContact(body.contact ?? null))
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [callerNumber]);
+
+  const displayName = contact?.name?.trim() || "Appelant inconnu";
+  const initials = useMemo(() => {
+    const value = contact?.name?.trim();
+    if (!value) return "?";
+    return value.split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+  }, [contact?.name]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
@@ -34,12 +54,12 @@ export function IncomingCall({ callerNumber, onAccept, onReject }: IncomingCallP
             <div className="absolute inset-0 rounded-full border border-cyan-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
             <div className="absolute inset-0 rounded-full border border-cyan-400/20 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.5s]" />
             <div className="w-28 h-28 rounded-full bg-gradient-to-tr from-cyan-500 to-violet-500 flex items-center justify-center shadow-[0_0_30px_rgba(0,212,255,0.4)] relative z-10">
-              <span className="text-4xl font-bold text-white">AS</span>
+              <span className="text-4xl font-bold text-white">{initials}</span>
             </div>
           </div>
 
           <div className="text-4xl font-light text-[var(--text-primary)] mb-2 text-center">
-            {crmData.name}
+            {displayName}
           </div>
           <div className="text-[var(--text-secondary)] mb-10 text-lg">{formatPhoneNumber(callerNumber)}</div>
 
@@ -85,33 +105,36 @@ export function IncomingCall({ callerNumber, onAccept, onReject }: IncomingCallP
               <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-1 font-semibold">Company</div>
               <div className="text-sm text-[var(--text-primary)] font-medium flex items-center gap-2">
                 <div className="w-6 h-6 bg-[var(--bg-surface-solid)] rounded border border-[var(--border-subtle)] flex items-center justify-center text-xs">AC</div>
-                {crmData.company}
+                {contact?.company || "Non renseignée"}
               </div>
             </div>
             
             <div>
               <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-1 font-semibold">Account Status</div>
               <div className="inline-block px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs rounded-full border border-emerald-500/20 font-bold tracking-wide">
-                {crmData.status}
+                {contact ? (contact.isVip ? "Client VIP" : "Contact CRM") : "Inconnu"}
               </div>
             </div>
 
             <div>
-              <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-2 font-semibold">Heads Up!</div>
-              <div className="text-sm text-amber-500 font-medium bg-amber-500/10 p-3 rounded-xl border border-amber-500/20 shadow-sm flex gap-2 items-start">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                {crmData.recentActivity}
+              <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-2 font-semibold">Historique</div>
+              <div className="text-sm text-[var(--text-primary)] font-medium bg-[var(--bg-surface-solid)] p-3 rounded-xl border border-[var(--border-subtle)]">
+                {contact ? `${contact.purchaseCount} achat(s) enregistré(s)` : "Aucun contact correspondant"}
               </div>
             </div>
 
             <div>
               <div className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-1 font-semibold">Last Purchase</div>
-              <div className="text-sm text-[var(--text-primary)] font-medium">{crmData.lastPurchase}</div>
+              <div className="text-sm text-[var(--text-primary)] font-medium">
+                {contact?.lastPurchaseAt
+                  ? new Date(contact.lastPurchaseAt).toLocaleDateString()
+                  : "Non renseigné"}
+              </div>
             </div>
           </div>
           
           <div className="mt-auto pt-6 border-t border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] text-center">
-            Data synced from HubSpot CRM
+            Données CRM de votre organisation
           </div>
         </div>
       </div>

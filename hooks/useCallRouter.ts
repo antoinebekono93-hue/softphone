@@ -4,6 +4,7 @@ import { useCallback } from "react";
 import { useAppCall } from "@/contexts/AppCallContext";
 import { useTelnyx } from "@/contexts/TelnyxContext";
 import { toast } from "sonner";
+import { dispatchCallRoute } from "@/lib/call-dispatch";
 
 type RouteResult = {
   type: "APP_TO_APP" | "APP_TO_PSTN";
@@ -55,20 +56,19 @@ export function useCallRouter() {
       }
 
       const route = data.route;
-      if (!route) {
+      if (!route || typeof route.destination !== "string" || !route.destination ||
+          !["APP_TO_APP", "APP_TO_PSTN"].includes(route.type)) {
         toast.error("Routage indisponible");
         return;
       }
 
-      if (route.type === "APP_TO_APP") {
-        // L'appel interne passe par le chemin WebRTC (aucun Telnyx, aucun wallet).
-        // La destination vient de la résolution serveur et /api/app-calls la
-        // résout une seconde fois : le navigateur ne transmet jamais un userId
-        // arbitraire et ne choisit jamais seul le type d'appel.
-        await makeAppCall(route.destination);
-      } else {
-        // Décision serveur explicite : destination externe → Telnyx.
-        makeCall(route.destination, callerId || undefined);
+      try {
+        await dispatchCallRoute(route, {
+          app: makeAppCall,
+          pstn: async (destination) => { await makeCall(destination, callerId || undefined); },
+        });
+      } catch {
+        toast.error("Impossible de lancer l'appel");
       }
     },
     [makeAppCall, makeCall]

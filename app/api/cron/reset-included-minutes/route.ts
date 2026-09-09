@@ -39,6 +39,7 @@ export async function GET(req: Request) {
         where: { usageResetDate: { lt: periodStart } },
         data: {
           minutesUsedThisMonth: 0,
+          callSecondsUsedThisMonth: 0,
           usageResetDate: now,
         },
       });

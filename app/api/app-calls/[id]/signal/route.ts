@@ -184,7 +184,9 @@ export async function POST(
   });
 
   try {
-    await getPusherServer()?.trigger(appCallChannels.call(id), APP_CALL_EVENTS.SIGNAL, signal);
+    const server = getPusherServer();
+    if (!server) return NextResponse.json({ error: "REALTIME_UNAVAILABLE" }, { status: 503 });
+    await server.trigger(appCallChannels.call(id), APP_CALL_EVENTS.SIGNAL, signal);
   } catch (err) {
     logServerCallEvent({
       level: "error",

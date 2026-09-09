@@ -247,14 +247,13 @@ export function isSignalAllowedForState(args: {
       // Pusher/PeerConnection ; le callee ré-accuse réception au READY du caller.
       // Cela évite de perdre le premier READY si l'autre canal privé termine son
       // abonnement quelques millisecondes plus tard.
-      return ["OFFERING", "RINGING", "CONNECTING"].includes(sessionStatus);
+      return ["OFFERING", "RINGING", "CONNECTING", "ACTIVE"].includes(sessionStatus);
     case CALL_SIGNAL_TYPES.OFFER:
       // Offer envoyé par le CALLER pendant le handshake. La session passe à
       // CONNECTING dès que le callee accepte (avant que le caller n'émette son
       // offer) : l'OFFER doit donc rester permis en OFFERING, RINGING et
-      // CONNECTING, mais JAMAIS après ACTIVE (où seul ICE/HANGUP/ENDED sont
-      // permis) ni dans un état terminal.
-      return isCaller && ["OFFERING", "RINGING", "CONNECTING"].includes(sessionStatus);
+      // CONNECTING et ACTIVE (restart ICE), jamais dans un état terminal.
+      return isCaller && ["OFFERING", "RINGING", "CONNECTING", "ACTIVE"].includes(sessionStatus);
     case CALL_SIGNAL_TYPES.ACCEPT:
       // Acceptation par le callee.
       return !isCaller && ["RINGING", "OFFERING"].includes(sessionStatus);
@@ -263,7 +262,7 @@ export function isSignalAllowedForState(args: {
       return !isCaller && ["RINGING", "OFFERING"].includes(sessionStatus);
     case CALL_SIGNAL_TYPES.ANSWER:
       // Answer SDP par le callee.
-      return !isCaller && ["OFFERING", "RINGING", "CONNECTING"].includes(sessionStatus);
+      return !isCaller && ["OFFERING", "RINGING", "CONNECTING", "ACTIVE"].includes(sessionStatus);
     case CALL_SIGNAL_TYPES.ICE_CANDIDATE:
       // Les deux participants échangent des candidats une fois le handshake lancé.
       return ["OFFERING", "RINGING", "CONNECTING", "ACTIVE"].includes(sessionStatus);

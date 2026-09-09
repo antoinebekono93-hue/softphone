@@ -2,202 +2,76 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+const API_BASE = "https://api.telnyx.com/v2";
+
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
     const settings = await prisma.systemSettings.findUnique({
       where: { id: "default" },
       select: { telnyxApiKey: true, telnyxConnectionId: true },
     });
-    const telnyxApiKey = settings?.telnyxApiKey || process.env.TELNYX_API_KEY;
-    if (!telnyxApiKey) {
-      throw new Error("Missing TELNYX_API_KEY environment variable");
+    const apiKey = settings?.telnyxApiKey?.trim() || process.env.TELNYX_API_KEY?.trim();
+    const connectionId = settings?.telnyxConnectionId?.trim() || process.env.TELNYX_SIP_CONNECTION_ID?.trim();
+    if (!apiKey || !connectionId) {
+      return NextResponse.json({ error: "TELNYX_WEBRTC_NOT_CONFIGURED" }, { status: 503 });
     }
 
-    // Database check removed to prevent Prisma connection pool exhaustion on Neon Free Tier
-    // This route only needs to interact with Telnyx APIs.
-
-    // Since finding the Telephony Credential ID in the Telnyx Portal can be confusing,
-    // we will automatically fetch the first credential from your Telnyx account using your API key.
-    const listRes = await fetch("https://api.telnyx.com/v2/telephony_credentials", {
-      headers: {
-        "Authorization": `Bearer ${telnyxApiKey}`,
-        "Accept": "application/json"
-      }
+    const headers = { Authorization: `Bearer ${apiKey}`, Accept: "application/json" };
+    const connectionResponse = await fetch(`${API_BASE}/credential_connections/${connectionId}`, {
+      headers,
+      cache: "no-store",
     });
-
-    if (!listRes.ok) {
-       console.error("Failed to list Telnyx credentials", await listRes.text());
-       return NextResponse.json({ error: "Failed to list credentials" }, { status: 500 });
+    if (!connectionResponse.ok) {
+      console.error("Configured Telnyx connection unavailable", connectionResponse.status);
+      return NextResponse.json({ error: "TELNYX_CONNECTION_UNAVAILABLE" }, { status: 502 });
+    }
+    const connection = (await connectionResponse.json()).data;
+    if (!connection?.active) {
+      return NextResponse.json({ error: "TELNYX_CONNECTION_INACTIVE" }, { status: 503 });
     }
 
-    const listData = await listRes.json();
-    const credentials = listData.data;
-    
-    let credentialId;
-
-    // --- AUTOMATIC TELNYX CONFIGURATION ---
-    // The user needs an Outbound Voice Profile attached to their SIP Connection to make outbound calls.
-    // We will automatically configure this to provide a plug-and-play experience.
-    
-    // 1. Fetch SIP Connections
-    const connRes = await fetch("https://api.telnyx.com/v2/credential_connections", {
-      headers: {
-        "Authorization": `Bearer ${telnyxApiKey}`,
-        "Accept": "application/json"
-      }
-    });
-    const connData = await connRes.json();
-    const connections = connData.data || [];
-    
-    if (connections.length === 0) {
-      return NextResponse.json({ error: "No SIP Connection found on Telnyx. Please create one first." }, { status: 500 });
+    const credentialResponse = await fetch(
+      `${API_BASE}/telephony_credentials?filter[resource_id]=${encodeURIComponent(`connection:${connectionId}`)}&page[size]=100`,
+      { headers, cache: "no-store" },
+    );
+    if (!credentialResponse.ok) {
+      console.error("Failed to list Telnyx WebRTC credentials", credentialResponse.status);
+      return NextResponse.json({ error: "TELNYX_CREDENTIAL_LOOKUP_FAILED" }, { status: 502 });
     }
-    
-    // God Mode is the operational source of truth; the environment variable
-    // remains a safe deployment fallback.
-    const configuredConnectionId = settings?.telnyxConnectionId || process.env.TELNYX_SIP_CONNECTION_ID;
-    const sipConnection = configuredConnectionId
-      ? connections.find((connection: any) => connection.id === configuredConnectionId)
-      : connections[0];
-    if (!sipConnection) {
-      return NextResponse.json(
-        { error: "La connexion SIP configurée est introuvable sur ce compte Telnyx." },
-        { status: 503 },
-      );
-    }
-    const sipConnectionId = sipConnection.id;
-
-    // Do not issue a token for an arbitrary credential. It has to belong to
-    // the connection where purchased numbers are provisioned, otherwise that
-    // browser will never receive its inbound call invitation.
-    credentialId = credentials?.find((credential: any) =>
-      credential.connection_id === sipConnectionId,
-    )?.id;
-    if (!credentialId) {
-      console.log("No Telephony Credential found for the configured SIP Connection. Creating one...");
+    const credentials = (await credentialResponse.json()).data ?? [];
+    const credential = credentials.find((item: any) =>
+      !item.expired &&
+      (item.connection_id === connectionId || item.resource_id === `connection:${connectionId}`),
+    );
+    if (!credential?.id) {
+      // Provisioning belongs in God Mode, never in a user's token request.
+      return NextResponse.json({ error: "TELNYX_WEBRTC_CREDENTIAL_MISSING" }, { status: 503 });
     }
 
-    // 2. If we need to create a credential, do it now that we have the SIP Connection ID
-    if (!credentialId) {
-      const createRes = await fetch("https://api.telnyx.com/v2/telephony_credentials", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${telnyxApiKey}`,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          connection_id: sipConnectionId
-        })
-      });
-
-      if (!createRes.ok) {
-        console.error("Failed to create Telephony Credential:", await createRes.text());
-        return NextResponse.json({ error: "Failed to create Telephony Credential" }, { status: 500 });
-      }
-
-      const createData = await createRes.json();
-      credentialId = createData.data.id;
-      console.log("Successfully created Telephony Credential:", credentialId);
-    }
-
-    // 3. Check if the SIP Connection has an Outbound Voice Profile
-    if (!sipConnection.outbound?.outbound_voice_profile_id) {
-      console.log("SIP Connection has no Outbound Voice Profile. Configuring automatically...");
-      
-      // Fetch existing profiles
-      const profRes = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
-        headers: {
-          "Authorization": `Bearer ${telnyxApiKey}`,
-          "Accept": "application/json"
-        }
-      });
-      const profData = await profRes.json();
-      let profileId;
-      
-      if (profData.data && profData.data.length > 0) {
-        profileId = profData.data[0].id;
-        console.log("Found existing Outbound Voice Profile:", profileId);
-      } else {
-        // Create one
-        console.log("Creating new Outbound Voice Profile...");
-        const createProfRes = await fetch("https://api.telnyx.com/v2/outbound_voice_profiles", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${telnyxApiKey}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            name: "Antigravity Auto Profile",
-            max_destination_rate: "0.1",
-            daily_spend_limit: "50",
-            daily_spend_limit_enabled: true
-          })
-        });
-        
-        if (createProfRes.ok) {
-          const newProfData = await createProfRes.json();
-          profileId = newProfData.data.id;
-          console.log("Created new Outbound Voice Profile:", profileId);
-        } else {
-          console.error("Failed to create Outbound Voice Profile:", await createProfRes.text());
-        }
-      }
-      
-      // Attach profile to SIP Connection
-      if (profileId) {
-        console.log("Attaching Outbound Voice Profile to SIP Connection...");
-        const patchRes = await fetch(`https://api.telnyx.com/v2/credential_connections/${sipConnectionId}`, {
-          method: "PATCH",
-          headers: {
-            "Authorization": `Bearer ${telnyxApiKey}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            outbound: {
-              outbound_voice_profile_id: profileId
-            }
-          })
-        });
-        
-        if (!patchRes.ok) {
-          console.error("Failed to attach profile to SIP Connection:", await patchRes.text());
-        } else {
-          console.log("Successfully attached Outbound Voice Profile to SIP Connection!");
-        }
-      }
-    }
-
-    // 4. Request the WebRTC Token using the Telephony Credential ID
-    const tokenRes = await fetch(`https://api.telnyx.com/v2/telephony_credentials/${credentialId}/token`, {
+    const tokenResponse = await fetch(`${API_BASE}/telephony_credentials/${credential.id}/token`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${telnyxApiKey}`,
-        "Accept": "application/json"
-      }
+      headers,
+      cache: "no-store",
     });
-
-    if (tokenRes.ok) {
-      const tokenString = await tokenRes.text();
-      return NextResponse.json({ token: tokenString });
+    if (!tokenResponse.ok) {
+      const upstream = await tokenResponse.text().catch(() => "");
+      console.error("Failed to generate Telnyx WebRTC token", tokenResponse.status, upstream.slice(0, 300));
+      return NextResponse.json({ error: "TELNYX_WEBRTC_TOKEN_FAILED" }, { status: 502 });
     }
-
-    // Fallback if token generation fails
-    return NextResponse.json({ 
-      token: "mock_jwt_token_for_ui", 
-      warning: "Failed to generate real WebRTC token." 
-    });
-
-  } catch (error: any) {
-    console.error("WebRTC Token Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const token = (await tokenResponse.text()).trim();
+    if (!token) {
+      return NextResponse.json({ error: "TELNYX_WEBRTC_TOKEN_EMPTY" }, { status: 502 });
+    }
+    return NextResponse.json({ token }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    console.error("WebRTC Token Error:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "TELNYX_WEBRTC_TOKEN_UNAVAILABLE" }, { status: 503 });
   }
 }

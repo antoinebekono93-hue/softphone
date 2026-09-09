@@ -30,7 +30,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (body.target !== undefined && typeof body.target !== "string") {
+  if (!body || typeof body !== "object" || Array.isArray(body) ||
+      (body.target !== undefined && typeof body.target !== "string")) {
     return NextResponse.json({ error: "INVALID_TARGET" }, { status: 400 });
   }
 

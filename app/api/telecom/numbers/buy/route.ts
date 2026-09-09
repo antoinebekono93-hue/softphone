@@ -2,17 +2,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { debitWalletAtomically } from "@/lib/billing";
-import { canonicalizePhoneNumber } from "@/lib/phone-number";
+import { canonicalizePhoneNumber, phoneNumberCountry } from "@/lib/phone-number";
+import { resellerNumberPrice } from "@/lib/telnyx-number-pricing";
 
 const API_BASE = 'https://api.telnyx.com/v2';
 
 export async function POST(request: Request) {
   try {
-    const { phoneNumber, cost } = await request.json();
+    const { phoneNumber } = await request.json();
     const canonicalPhoneNumber = canonicalizePhoneNumber(phoneNumber);
 
-    if (!canonicalPhoneNumber || typeof cost !== "number" || !Number.isFinite(cost) || cost < 0) {
-      return NextResponse.json({ error: "Invalid phone number or cost" }, { status: 400 });
+    if (!canonicalPhoneNumber) {
+      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 });
     }
 
     // 1. Get current organization
@@ -38,31 +39,64 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 });
     }
 
+    const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
+    const apiKey = settings?.telnyxApiKey?.trim() || process.env.TELNYX_API_KEY?.trim();
+    const voiceConnectionId = settings?.telnyxConnectionId?.trim() || process.env.TELNYX_SIP_CONNECTION_ID?.trim();
+    const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID?.trim();
+    if (!apiKey) {
+      return NextResponse.json({ error: "TELNYX_API_KEY_NOT_CONFIGURED" }, { status: 503 });
+    }
+    if (!voiceConnectionId) {
+      return NextResponse.json(
+        { error: "La connexion vocale Telnyx n'est pas configurée. Impossible d'acheter un numéro appelable." },
+        { status: 503 },
+      );
+    }
+
+    // The browser-provided display price is never trusted. Re-query the exact
+    // number and calculate the charge from Telnyx cost_information + God Mode.
+    const country = phoneNumberCountry(canonicalPhoneNumber);
+    if (!country) {
+      return NextResponse.json({ error: "Unable to determine number country" }, { status: 400 });
+    }
+    const searchParams = new URLSearchParams({
+      "filter[country_code]": country,
+      "filter[phone_number]": canonicalPhoneNumber,
+      "filter[limit]": "10",
+    });
+    const availabilityResponse = await fetch(`${API_BASE}/available_phone_numbers?${searchParams}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!availabilityResponse.ok) {
+      console.error("[Telnyx Buy] Availability check failed", availabilityResponse.status);
+      return NextResponse.json({ error: "TELNYX_NUMBER_AVAILABILITY_FAILED" }, { status: 502 });
+    }
+    const availability = await availabilityResponse.json();
+    const exactNumber = (Array.isArray(availability.data) ? availability.data : [])
+      .find((item: any) => canonicalizePhoneNumber(item?.phone_number) === canonicalPhoneNumber);
+    if (!exactNumber) {
+      return NextResponse.json({ error: "NUMBER_NO_LONGER_AVAILABLE" }, { status: 409 });
+    }
+    const cost = resellerNumberPrice({
+      costInformation: exactNumber.cost_information,
+      multiplier: settings?.phoneNumberMarkupMultiplier ?? 2.5,
+      fixedMarkup: settings?.phoneNumberMarkupFixed ?? 0,
+    });
+    if (cost === null) {
+      return NextResponse.json({ error: "TELNYX_NUMBER_PRICE_UNAVAILABLE" }, { status: 502 });
+    }
+
     // 2. Early balance check (fast-fail before hitting the Telnyx API).
     //    La garantie RÉELLE est le débit atomique gardé dans la transaction (§3).
     if (org.walletBalance.toNumber() < cost) {
       return NextResponse.json({ error: "Solde insuffisant dans le Wallet. Veuillez recharger votre compte." }, { status: 402 });
     }
 
-    const settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
-    const apiKey = settings?.telnyxApiKey || process.env.TELNYX_API_KEY;
-    const useMock = process.env.TELNYX_MOCK_PURCHASES === 'true';
-    // Keep newly bought numbers on the same connection as the WebRTC client.
-    // Choosing the first credential/profile in the Telnyx account is not a
-    // routing strategy: it can belong to an unrelated connection.
-    const voiceConnectionId = process.env.TELNYX_SIP_CONNECTION_ID || settings?.telnyxConnectionId;
-    const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
-
     let telnyxOrderId: string;
     let telnyxPhoneNumberId: string;
 
-    if (!useMock && apiKey) {
-      if (!voiceConnectionId) {
-        return NextResponse.json(
-          { error: "La connexion vocale Telnyx n'est pas configurée. Impossible d'acheter un numéro appelable." },
-          { status: 503 },
-        );
-      }
+    {
       // ===== REAL PURCHASE via Telnyx Number Orders API =====
       const orderRes = await fetch(`${API_BASE}/number_orders`, {
         method: 'POST',
@@ -121,12 +155,6 @@ export async function POST(request: Request) {
           { status: 502 },
         );
       }
-
-    } else {
-      // ===== MOCK PURCHASE for local development =====
-      console.log(`[Telnyx API MOCK] Successfully bought number ${canonicalPhoneNumber} for $${cost}`);
-      telnyxOrderId = `mock-order-${Date.now()}`;
-      telnyxPhoneNumberId = `mock-${canonicalPhoneNumber.replace(/[^0-9]/g, '')}`;
     }
 
     // 3. Database Transaction (Atomic)
@@ -164,7 +192,6 @@ export async function POST(request: Request) {
       success: true,
       message: `Numéro ${canonicalPhoneNumber} acheté avec succès.`,
       orderId: telnyxOrderId,
-      mock: useMock,
     });
 
   } catch (error: any) {

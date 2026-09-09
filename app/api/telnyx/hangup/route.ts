@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { telnyx } from "@/lib/telnyx";
+import { getConfiguredTelnyxClient } from "@/lib/telnyx";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import crypto from "crypto";
@@ -55,6 +55,7 @@ export async function POST(req: Request) {
       );
     }
 
+    const telnyx = await getConfiguredTelnyxClient();
     const call = new telnyx.Call({ call_control_id: callControlId });
     await call.hangup({ command_id: crypto.randomUUID() });
 

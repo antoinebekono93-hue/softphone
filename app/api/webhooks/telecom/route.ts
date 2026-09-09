@@ -1,14 +1,83 @@
 import { NextResponse } from 'next/server';
-import { telnyx } from '@/lib/telnyx';
+import { getConfiguredTelnyxClient } from '@/lib/telnyx';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { executeAutomation } from '@/lib/automations';
 import { preAuthorizeCall, settlePstnCall, releasePstnReservation } from '@/lib/pstn-billing';
 import { getPusherServer } from '@/lib/pusher';
 import { appCallChannels, PSTN_EVENTS } from '@/lib/app-call-channels';
+import { canonicalizePhoneNumber, phoneNumberLookupCandidates } from '@/lib/phone-number';
 
-// We need the media server URL. Ideally, it's wss://our-domain/media
-const MEDIA_SERVER_URL = process.env.MEDIA_SERVER_URL || 'wss://your-ngrok-domain.ngrok-free.app/media';
+function decodeClientState(value: unknown): { outboundAttemptId?: string; rateProfile?: string } {
+  if (typeof value !== 'string' || value.length === 0 || value.length > 4096) return {};
+  try {
+    const decoded = JSON.parse(Buffer.from(value, 'base64').toString('utf8'));
+    return decoded && typeof decoded === 'object' && !Array.isArray(decoded) ? decoded : {};
+  } catch {
+    return {};
+  }
+}
+
+async function terminateProviderCall(callControlId: string, reason: string) {
+  try {
+    const telnyx = await getConfiguredTelnyxClient();
+    const call = new telnyx.Call({ call_control_id: callControlId });
+    await call.hangup({ command_id: crypto.randomUUID() });
+  } catch (error) {
+    console.error(`[Telnyx Webhook] Unable to terminate ${callControlId} (${reason})`, error);
+  }
+}
+
+async function authorizeCallLog(params: {
+  callLog: { id: string; organizationId: string; reservation?: { id: string } | null };
+  callControlId: string;
+  rateProfile: 'STANDARD' | 'AI_AGENT';
+}) {
+  if (params.callLog.reservation) return true;
+  try {
+    const result = await preAuthorizeCall({
+      organizationId: params.callLog.organizationId,
+      callControlId: params.callControlId,
+      callLogId: params.callLog.id,
+      rateProfile: params.rateProfile,
+    });
+    if (result.authorized) return true;
+    await prisma.callLog.update({
+      where: { id: params.callLog.id },
+      data: { status: 'DENIED', endedAt: new Date() },
+    });
+    await terminateProviderCall(params.callControlId, result.reason ?? 'CALL_NOT_AUTHORIZED');
+    return false;
+  } catch (error) {
+    console.error(`[Telnyx Webhook] Preauthorization failed for ${params.callControlId}`, error);
+    await prisma.callLog.update({
+      where: { id: params.callLog.id },
+      data: { status: 'FAILED', endedAt: new Date() },
+    }).catch(() => undefined);
+    await terminateProviderCall(params.callControlId, 'PREAUTHORIZATION_ERROR');
+    return false;
+  }
+}
+
+async function findManagedPhoneNumber(raw: unknown) {
+  const candidates = phoneNumberLookupCandidates(raw);
+  if (candidates.length === 0) return null;
+  return prisma.phoneNumber.findFirst({
+    where: { number: { in: candidates }, status: 'ACTIVE' },
+    include: { aiEmployee: true, assignedUser: { select: { id: true, name: true } } },
+  });
+}
+
+function providerEventDate(event: any): Date {
+  const candidate = event?.occurred_at ?? event?.payload?.occurred_at;
+  if (typeof candidate === 'string') {
+    const parsed = new Date(candidate);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+  }
+  return new Date();
+}
+
+const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 /**
  * Destinataire humain d'un appel PSTN entrant sur un numéro :
@@ -29,11 +98,33 @@ async function resolveNotifyUser(phoneNumber: {
 }
 
 async function processEvent(event: any) {
+  const eventId = typeof event?.id === 'string' && event.id.length <= 200 ? event.id : null;
+  let claimed = false;
   try {
     if (!event || !event.event_type) return;
 
+    if (eventId) {
+      try {
+        await prisma.webhookEvent.create({
+          data: { provider: 'TELNYX', eventId, type: event.event_type },
+        });
+        claimed = true;
+      } catch (error: any) {
+        if (error?.code === 'P2002') {
+          console.log(`[Telnyx Webhook] Duplicate event ignored: ${eventId}`);
+          return;
+        }
+        throw error;
+      }
+    }
+
     const callControlId = event.payload?.call_control_id;
     const eventType = event.event_type;
+    if (eventType.startsWith('call.') &&
+        (typeof callControlId !== 'string' || callControlId.length === 0 || callControlId.length > 200)) {
+      console.error(`[Telnyx Webhook] Invalid call_control_id for ${eventType}`);
+      return;
+    }
 
     if (eventType === 'call.initiated') {
       const direction = event.payload.direction; // 'incoming' or 'outgoing'
@@ -45,10 +136,7 @@ async function processEvent(event: any) {
       // Log both inbound and outbound calls. Outbound calls previously had no
       // CallLog/reservation, so their completed duration could not be billed.
       if (direction === 'incoming') {
-        const phoneNumber = await prisma.phoneNumber.findUnique({
-          where: { number: to },
-          include: { aiEmployee: true, assignedUser: { select: { id: true, name: true } } }
-        });
+        const phoneNumber = await findManagedPhoneNumber(to);
 
         if (phoneNumber) {
           const createdCallLog = await prisma.callLog.upsert({
@@ -57,29 +145,21 @@ async function processEvent(event: any) {
             create: {
               telnyxCallControlId: callControlId,
               direction: 'INBOUND',
-              fromNumber: from,
-              toNumber: to,
+              fromNumber: canonicalizePhoneNumber(from) ?? from,
+              toNumber: phoneNumber.number,
               organizationId: phoneNumber.organizationId,
               phoneNumberId: phoneNumber.id,
               status: 'INITIATED'
-            }
+            },
+            include: { reservation: { select: { id: true } } },
           });
 
-          // Phase 3 : pré-autorisation PSTN (réservation de solde estimé)
           const rateProfile = phoneNumber.aiEmployee?.isActive ? 'AI_AGENT' : 'STANDARD';
-          try {
-            await preAuthorizeCall({
-              organizationId: phoneNumber.organizationId,
-              callControlId,
-              callLogId: createdCallLog.id,
-              rateProfile,
-            });
-          } catch (preAuthErr) {
-            console.error('[Telnyx Webhook] preAuthorizeCall failed', preAuthErr);
-          }
+          if (!await authorizeCallLog({ callLog: createdCallLog, callControlId, rateProfile })) return;
 
           // If there is an active AI Agent assigned to this number, take over the call
           if (phoneNumber.aiEmployee && phoneNumber.aiEmployee.isActive) {
+            const telnyx = await getConfiguredTelnyxClient();
             const call = new telnyx.Call({ call_control_id: callControlId });
             await call.answer({ command_id: crypto.randomUUID() });
             console.log(`[CALL_INCOMING_RECEIVED] ${callControlId} org=${phoneNumber.organizationId} direction=${direction} target=AI_AGENT`);
@@ -93,64 +173,120 @@ async function processEvent(event: any) {
               console.log(`[CALL_INCOMING_ROUTED] ${callControlId} org=${phoneNumber.organizationId} recipient=${notifyUser.id}`);
               try {
                 const pusher = getPusherServer();
-                if (pusher) {
-                  await pusher.trigger(
-                    appCallChannels.user(notifyUser.id),
-                    PSTN_EVENTS.INCOMING,
-                    {
-                      callControlId,
-                      from: from,
-                      to: to,
-                      phoneNumberId: phoneNumber.id,
-                      organizationId: phoneNumber.organizationId,
-                      callerName: null,
-                    },
-                  );
-                  console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id}`);
-                } else {
-                  console.warn(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} — Pusher non configuré, fallback SIP natif`);
-                }
+                if (!pusher) throw new Error('PUSHER_NOT_CONFIGURED');
+                await pusher.trigger(
+                  appCallChannels.user(notifyUser.id),
+                  PSTN_EVENTS.INCOMING,
+                  {
+                    callControlId,
+                    from: canonicalizePhoneNumber(from) ?? from,
+                    to: phoneNumber.number,
+                    phoneNumberId: phoneNumber.id,
+                    organizationId: phoneNumber.organizationId,
+                    callerName: null,
+                  },
+                );
+                console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id}`);
               } catch (pusherErr) {
                 console.error(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} ERREUR`, pusherErr);
+                await prisma.callLog.update({
+                  where: { id: createdCallLog.id },
+                  data: { status: 'FAILED', endedAt: new Date() },
+                });
+                await releasePstnReservation({
+                  organizationId: createdCallLog.organizationId,
+                  callControlId,
+                  callLogId: createdCallLog.id,
+                  reason: 'NOTIFICATION_FAILED',
+                });
+                await terminateProviderCall(callControlId, 'NOTIFICATION_FAILED');
               }
             } else {
-              console.warn(`[CALL_INCOMING_ROUTED] ${callControlId} org=${phoneNumber.organizationId} — aucun utilisateur trouvé, fallback SIP natif`);
+              console.error(`[CALL_INCOMING_ROUTED] ${callControlId} org=${phoneNumber.organizationId} — aucun utilisateur disponible`);
+              await prisma.callLog.update({
+                where: { id: createdCallLog.id },
+                data: { status: 'FAILED', endedAt: new Date() },
+              });
+              await releasePstnReservation({
+                organizationId: createdCallLog.organizationId,
+                callControlId,
+                callLogId: createdCallLog.id,
+                reason: 'NO_RECIPIENT',
+              });
+              await terminateProviderCall(callControlId, 'NO_RECIPIENT');
             }
             // Le SIP WebRTC natif (Telnyx SDK) reste le canal de média principal.
             // Pusher sert de notification fiable pour afficher l'UI d'appel entrant.
           }
+        } else {
+          console.error(`[CALL_INCOMING_REJECTED] ${callControlId} — numéro inactif ou non géré: ${to}`);
+          await terminateProviderCall(callControlId, 'UNMANAGED_DESTINATION');
         }
       } else if (direction === 'outgoing') {
         // Only a known application caller ID may create a billable record.
-        const phoneNumber = await prisma.phoneNumber.findUnique({
-          where: { number: from },
-          include: { aiEmployee: true, assignedUser: { select: { id: true } } },
-        });
+        const phoneNumber = await findManagedPhoneNumber(from);
 
         if (phoneNumber) {
-          const callLog = await prisma.callLog.upsert({
+          const clientState = decodeClientState(event.payload?.client_state);
+          const attemptId = typeof clientState.outboundAttemptId === 'string' &&
+            /^[0-9a-f-]{36}$/i.test(clientState.outboundAttemptId)
+            ? clientState.outboundAttemptId
+            : null;
+          let callLog = await prisma.callLog.findUnique({
             where: { telnyxCallControlId: callControlId },
-            update: {}, // Webhooks can be delivered more than once.
-            create: {
-              telnyxCallControlId: callControlId,
-              direction: 'OUTBOUND',
-              fromNumber: from,
-              toNumber: to,
-              organizationId: phoneNumber.organizationId,
-              phoneNumberId: phoneNumber.id,
-              userId: phoneNumber.assignedUserId,
-              status: 'INITIATED',
-            },
+            include: { reservation: { select: { id: true } } },
           });
-          const rateProfile = phoneNumber.aiEmployee?.isActive ? 'AI_AGENT' : 'STANDARD';
-          try {
-            await preAuthorizeCall({ organizationId: phoneNumber.organizationId, callControlId, callLogId: callLog.id, rateProfile });
-          } catch (preAuthErr) {
-            console.error('[Telnyx Webhook] outbound preAuthorizeCall failed', preAuthErr);
+
+          if (!callLog && attemptId) {
+            const provisionalId = `pending:${attemptId}`;
+            const provisional = await prisma.callLog.findFirst({
+              where: {
+                telnyxCallControlId: provisionalId,
+                organizationId: phoneNumber.organizationId,
+                phoneNumberId: phoneNumber.id,
+                direction: 'OUTBOUND',
+                status: 'PREAUTHORIZED',
+                startedAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
+              },
+              include: { reservation: { select: { id: true } } },
+            });
+            if (provisional) {
+              callLog = await prisma.callLog.update({
+                where: { id: provisional.id },
+                data: {
+                  telnyxCallControlId: callControlId,
+                  fromNumber: phoneNumber.number,
+                  toNumber: canonicalizePhoneNumber(to) ?? to,
+                  status: 'INITIATED',
+                },
+                include: { reservation: { select: { id: true } } },
+              });
+            }
           }
+
+          if (!callLog) {
+            callLog = await prisma.callLog.create({
+              data: {
+                telnyxCallControlId: callControlId,
+                direction: 'OUTBOUND',
+                fromNumber: phoneNumber.number,
+                toNumber: canonicalizePhoneNumber(to) ?? to,
+                organizationId: phoneNumber.organizationId,
+                phoneNumberId: phoneNumber.id,
+                userId: phoneNumber.assignedUserId,
+                status: 'INITIATED',
+              },
+              include: { reservation: { select: { id: true } } },
+            });
+          }
+          const rateProfile = clientState.rateProfile === 'AI_AGENT' || phoneNumber.aiEmployee?.isActive
+            ? 'AI_AGENT'
+            : 'STANDARD';
+          if (!await authorizeCallLog({ callLog, callControlId, rateProfile })) return;
           console.log(`[CALL_OUTBOUND_BILLING_STARTED] ${callControlId} org=${phoneNumber.organizationId}`);
         } else {
-          console.warn(`[CALL_OUTBOUND_BILLING_SKIPPED] ${callControlId} — caller ID non géré: ${from}`);
+          console.error(`[CALL_OUTBOUND_REJECTED] ${callControlId} — caller ID inactif ou non géré: ${from}`);
+          await terminateProviderCall(callControlId, 'UNMANAGED_CALLER_ID');
         }
       }
     }
@@ -159,22 +295,49 @@ async function processEvent(event: any) {
       console.log(`[Telnyx Webhook] Call Answered: ${callControlId}`);
       
       // Fetch the call log to see if this call has an AI Agent assigned
-      const callLog = await prisma.callLog.findUnique({
+      let callLog = await prisma.callLog.findUnique({
         where: { telnyxCallControlId: callControlId },
         include: { phoneNumber: { include: { aiEmployee: true } } }
       });
+      for (let attempt = 0; !callLog && attempt < 5; attempt++) {
+        await wait(250);
+        callLog = await prisma.callLog.findUnique({
+          where: { telnyxCallControlId: callControlId },
+          include: { phoneNumber: { include: { aiEmployee: true } } },
+        });
+      }
+
+      // Webhook delivery order is not guaranteed. The initiated handler owns
+      // creation and billing; an early/unknown answered event must not crash.
+      if (!callLog) {
+        throw new Error(`CALL_LOG_NOT_READY:${callControlId}:answered`);
+      }
 
       const agent = callLog?.phoneNumber?.aiEmployee;
 
       // Only start streaming if there's an active AI Agent
-      // Only start streaming if there's an active AI Agent
       if (agent && agent.isActive) {
         // Option B: LiveKit SIP Architecture
         // We transfer the answered call to the LiveKit SIP Trunk.
+        const telnyx = await getConfiguredTelnyxClient();
         const call = new telnyx.Call({ call_control_id: callControlId });
         
-        // Retrieve LiveKit SIP URI from env (can be configured in God Mode later)
-        const livekitSipUri = process.env.LIVEKIT_SIP_URI || "sip:agent@your-project.sip.livekit.cloud";
+        const livekitSipUri = process.env.LIVEKIT_SIP_URI?.trim();
+        if (!livekitSipUri) {
+          console.error(`[Telnyx Webhook] LIVEKIT_SIP_URI missing for AI call ${callControlId}`);
+          await prisma.callLog.update({
+            where: { id: callLog.id },
+            data: { status: 'FAILED', endedAt: providerEventDate(event) },
+          });
+          await releasePstnReservation({
+            organizationId: callLog.organizationId,
+            callControlId,
+            callLogId: callLog.id,
+            reason: 'AI_MEDIA_NOT_CONFIGURED',
+          });
+          await terminateProviderCall(callControlId, 'AI_MEDIA_NOT_CONFIGURED');
+          return;
+        }
 
         // We inject the AI context via custom SIP headers
         // LiveKit will receive these headers when the SIP call arrives
@@ -189,17 +352,33 @@ async function processEvent(event: any) {
 
         console.log(`[Telnyx Webhook] Transferring call ${callControlId} to LiveKit SIP: ${livekitSipUri}`);
 
-        await call.transfer({
-          to: livekitSipUri,
-          custom_headers: customHeaders
-        });
+        try {
+          await call.transfer({
+            to: livekitSipUri,
+            custom_headers: customHeaders
+          });
+        } catch (error) {
+          console.error(`[Telnyx Webhook] LiveKit transfer failed for ${callControlId}`, error);
+          await prisma.callLog.update({
+            where: { id: callLog.id },
+            data: { status: 'FAILED', endedAt: providerEventDate(event) },
+          });
+          await releasePstnReservation({
+            organizationId: callLog.organizationId,
+            callControlId,
+            callLogId: callLog.id,
+            reason: 'AI_MEDIA_TRANSFER_FAILED',
+          });
+          await terminateProviderCall(callControlId, 'AI_MEDIA_TRANSFER_FAILED');
+          return;
+        }
       }
 
       await prisma.callLog.update({
-        where: { telnyxCallControlId: callControlId },
+        where: { id: callLog.id },
         data: {
           status: 'IN_PROGRESS',
-          answeredAt: new Date()
+          answeredAt: providerEventDate(event)
         }
       });
     }
@@ -207,8 +386,8 @@ async function processEvent(event: any) {
     else if (eventType === 'call.hangup') {
       console.log(`[Telnyx Webhook] Call Hangup: ${callControlId}`);
 
-      const ended = new Date();
-      const callLog = await prisma.callLog.findUnique({
+      const ended = providerEventDate(event);
+      let callLog = await prisma.callLog.findUnique({
         where: { telnyxCallControlId: callControlId },
         include: {
           phoneNumber: {
@@ -219,10 +398,29 @@ async function processEvent(event: any) {
           },
         },
       });
+
+      for (let attempt = 0; !callLog && attempt < 5; attempt++) {
+        await wait(250);
+        callLog = await prisma.callLog.findUnique({
+          where: { telnyxCallControlId: callControlId },
+          include: {
+            phoneNumber: {
+              include: {
+                aiEmployee: true,
+                assignedUser: { select: { id: true, name: true } },
+              },
+            },
+          },
+        });
+      }
+
+      if (!callLog) {
+        throw new Error(`CALL_LOG_NOT_READY:${callControlId}:hangup`);
+      }
       
       let duration = 0;
       if (callLog?.answeredAt) {
-        duration = Math.round((ended.getTime() - callLog.answeredAt.getTime()) / 1000);
+        duration = Math.max(1, Math.ceil((ended.getTime() - callLog.answeredAt.getTime()) / 1000));
       }
 
       const finalStatus = (duration === 0 || !callLog?.answeredAt) ? 'NO_ANSWER' : 'COMPLETED';
@@ -236,7 +434,7 @@ async function processEvent(event: any) {
 
       // Only update stats. DO NOT OVERWRITE transcription or summary here (handled by media-server.ts).
       await prisma.callLog.update({
-        where: { telnyxCallControlId: callControlId },
+        where: { id: callLog.id },
         data: {
           status: finalStatus,
           endedAt: ended,
@@ -284,6 +482,8 @@ async function processEvent(event: any) {
         try {
           // Détermine le profil tarifaire : AI_AGENT si un agent IA actif est assigné au numéro.
           let rateProfile: 'STANDARD' | 'AI_AGENT' = 'STANDARD';
+          const hangupClientState = decodeClientState(event.payload?.client_state);
+          if (hangupClientState.rateProfile === 'AI_AGENT') rateProfile = 'AI_AGENT';
           if (callLog.phoneNumberId) {
             const pn = await prisma.phoneNumber.findUnique({
               where: { id: callLog.phoneNumberId },
@@ -300,8 +500,8 @@ async function processEvent(event: any) {
             rateProfile,
           });
         } catch (billingErr) {
-          // La facturation ne doit pas casser le traitement du hangup.
           console.error('[Telnyx Webhook] settlePstnCall failed', billingErr);
+          throw billingErr;
         }
       } else if (callLog?.organizationId && callLog?.id) {
         // Appel non facturable (NO_ANSWER / BUSY / FAILED / CANCELLED / durée 0) :
@@ -315,6 +515,7 @@ async function processEvent(event: any) {
           });
         } catch (relErr) {
           console.error('[Telnyx Webhook] releasePstnReservation failed', relErr);
+          throw relErr;
         }
       }
 
@@ -329,17 +530,17 @@ async function processEvent(event: any) {
           const notifyUser = await resolveNotifyUser(pn);
           if (notifyUser) {
             const pusher = getPusherServer();
-            if (pusher) {
-              await pusher.trigger(
-                appCallChannels.user(notifyUser.id),
-                PSTN_EVENTS.ENDED,
-                { callControlId, status: finalStatus },
-              );
-              console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} event=${PSTN_EVENTS.ENDED}`);
-            }
+            if (!pusher) throw new Error('PUSHER_NOT_CONFIGURED');
+            await pusher.trigger(
+              appCallChannels.user(notifyUser.id),
+              PSTN_EVENTS.ENDED,
+              { callControlId, status: finalStatus },
+            );
+            console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} event=${PSTN_EVENTS.ENDED}`);
           }
         } catch (notifyErr) {
           console.error(`[Telnyx Webhook] pstn:ended failed for ${callControlId}`, notifyErr);
+          throw notifyErr;
         }
       }
     }
@@ -520,7 +721,15 @@ async function processEvent(event: any) {
       }
     }
   } catch (error: any) {
+    // A failed claim is removed so Telnyx can safely retry the event. All
+    // monetary mutations themselves are idempotent by callControlId.
+    if (claimed && eventId) {
+      await prisma.webhookEvent.deleteMany({
+        where: { provider: 'TELNYX', eventId },
+      }).catch(() => undefined);
+    }
     console.error('[Telnyx Webhook Async Error]', error);
+    throw error;
   }
 }
 
@@ -533,21 +742,28 @@ export async function POST(req: Request) {
     const timestamp = req.headers.get('telnyx-timestamp');
     const publicKey = process.env.TELNYX_PUBLIC_KEY;
 
-    if (signature && timestamp && publicKey) {
-      try {
-        event = telnyx.webhooks.constructEvent(rawBody, signature, timestamp, publicKey).data;
-      } catch (err: any) {
-        console.error('[Telnyx Webhook] Signature verification failed:', err.message);
-        return new NextResponse('Invalid signature', { status: 400 });
-      }
-    } else {
-      // Fallback if public key is not configured (e.g. local dev)
-      console.warn('[Telnyx Webhook] No signature verification performed (missing headers or PUBLIC_KEY)');
-      event = JSON.parse(rawBody).data;
+    if (!publicKey) {
+      console.error('[Telnyx Webhook] TELNYX_PUBLIC_KEY is not configured');
+      return new NextResponse('Webhook verification is not configured', { status: 503 });
+    }
+    if (!signature || !timestamp) {
+      return new NextResponse('Missing Telnyx signature', { status: 401 });
+    }
+    try {
+      const telnyx = await getConfiguredTelnyxClient();
+      event = telnyx.webhooks.constructEvent(rawBody, signature, timestamp, publicKey).data;
+    } catch (err: any) {
+      console.error('[Telnyx Webhook] Signature verification failed:', err.message);
+      return new NextResponse('Invalid signature', { status: 401 });
+    }
+    if (!event || typeof event.id !== 'string' || !event.id ||
+        typeof event.event_type !== 'string' || !event.event_type) {
+      return new NextResponse('Invalid Telnyx event', { status: 400 });
     }
 
-    // Run async to return 200 OK fast
-    processEvent(event).catch(console.error);
+    // Acknowledge only after durable processing. Returning an error lets
+    // Telnyx retry; the WebhookEvent claim makes successful retries idempotent.
+    await processEvent(event);
 
     return new NextResponse('OK', { status: 200 });
   } catch (error: any) {

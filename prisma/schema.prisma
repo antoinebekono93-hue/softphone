@@ -93,6 +93,7 @@ model Organization {
   pricingPlanId              String?
   planStatus                 String                   @default("UNPAID")
   minutesUsedThisMonth       Int                      @default(0)
+  callSecondsUsedThisMonth   Int                      @default(0)
   usageResetDate             DateTime                 @default(now())
   walletBalance              Decimal                  @default(0) @db.Decimal(12, 4)
   createdAt                  DateTime                 @default(now())

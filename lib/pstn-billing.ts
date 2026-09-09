@@ -80,25 +80,25 @@ async function readIncludedUsed(
 ): Promise<number> {
   const org = await tx.organization.findUnique({
     where: { id: orgId },
-    select: { minutesUsedThisMonth: true, usageResetDate: true },
+    select: { callSecondsUsedThisMonth: true, usageResetDate: true },
   });
   if (!org) return 0;
 
   if (org.usageResetDate >= currentPeriodStartUtc()) {
-    return org.minutesUsedThisMonth ?? 0;
+    return (org.callSecondsUsedThisMonth ?? 0) / MINUTES_DIVISOR;
   }
 
   await tx.organization.updateMany({
     where: { id: orgId, usageResetDate: org.usageResetDate },
-    data: { minutesUsedThisMonth: 0, usageResetDate: new Date() },
+    data: { minutesUsedThisMonth: 0, callSecondsUsedThisMonth: 0, usageResetDate: new Date() },
   });
   return 0;
 }
 
 /**
  * Consomme des minutes incluses de façon ATOMIQUE avec garde :
- *   UPDATE ... SET minutesUsedThisMonth = minutesUsedThisMonth + canUse
- *   WHERE id = org AND minutesUsedThisMonth <= includedMinutes - canUse
+ *   UPDATE ... SET callSecondsUsedThisMonth = callSecondsUsedThisMonth + seconds
+ *   WHERE id = org AND callSecondsUsedThisMonth <= includedSeconds - seconds
  * Renvoie le nombre de minutes incluses réellement consommées (0 si épuisées
  * en raison d'une course). Sûr en concurrence : deux settlements simultanés ne
  * peuvent pas consommer deux fois les mêmes minutes.
@@ -110,35 +110,35 @@ async function consumeIncludedMinutes(
   wantedMinutes: number
 ): Promise<number> {
   if (wantedMinutes <= 0) return 0;
-  const canUse = Math.min(wantedMinutes, Math.max(includedTotal, 0));
-  const toIncrement = Math.round(canUse);
+  const includedSeconds = Math.max(0, Math.floor(includedTotal * MINUTES_DIVISOR));
+  const wantedSeconds = Math.max(0, Math.round(wantedMinutes * MINUTES_DIVISOR));
+  const toIncrement = Math.min(wantedSeconds, includedSeconds);
   if (toIncrement <= 0) return 0;
 
   // Garde atomique : le cumul ne doit pas dépasser includedTotal.
   const res = await tx.organization.updateMany({
     where: {
       id: orgId,
-      minutesUsedThisMonth: { lte: includedTotal - canUse },
+      callSecondsUsedThisMonth: { lte: includedSeconds - toIncrement },
     },
-    data: { minutesUsedThisMonth: { increment: toIncrement } },
+    data: { callSecondsUsedThisMonth: { increment: toIncrement } },
   });
-  if (res.count === 1) return canUse;
+  if (res.count === 1) return toIncrement / MINUTES_DIVISOR;
 
   // Course : quelqu'un a consommé entre-temps. On retente avec le reste disponible.
   const fresh = await tx.organization.findUnique({
     where: { id: orgId },
-    select: { minutesUsedThisMonth: true },
+    select: { callSecondsUsedThisMonth: true },
   });
-  const usedNow = fresh?.minutesUsedThisMonth ?? 0;
-  const remaining = Math.max(includedTotal - usedNow, 0);
-  const canUse2 = Math.min(wantedMinutes, remaining);
-  const toIncrement2 = Math.round(canUse2);
+  const usedNow = fresh?.callSecondsUsedThisMonth ?? 0;
+  const remaining = Math.max(includedSeconds - usedNow, 0);
+  const toIncrement2 = Math.min(wantedSeconds, remaining);
   if (toIncrement2 <= 0) return 0;
   const res2 = await tx.organization.updateMany({
-    where: { id: orgId, minutesUsedThisMonth: { lte: includedTotal - canUse2 } },
-    data: { minutesUsedThisMonth: { increment: toIncrement2 } },
+    where: { id: orgId, callSecondsUsedThisMonth: { lte: includedSeconds - toIncrement2 } },
+    data: { callSecondsUsedThisMonth: { increment: toIncrement2 } },
   });
-  return res2.count === 1 ? canUse2 : 0;
+  return res2.count === 1 ? toIncrement2 / MINUTES_DIVISOR : 0;
 }
 
 /**
@@ -241,7 +241,7 @@ export async function preAuthorizeCall(params: {
 /**
  * Minutes PSTN réellement consommées pour rapport (agrégat des CallLog COMPLETED).
  * Conservé à titre informatif ; l'autorité de facturation des minutes incluses est
- * le compteur atomique `Organization.minutesUsedThisMonth`.
+ * le compteur atomique `Organization.callSecondsUsedThisMonth`.
  */
 export async function usedPstnMinutes(organizationId: string): Promise<number> {
   const org = await prisma.organization.findUnique({

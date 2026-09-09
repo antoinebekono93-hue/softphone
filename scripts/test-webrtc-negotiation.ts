@@ -83,28 +83,28 @@ check(
 );
 
 check(
-  "collision + polite → appliquer (polite cède)",
-  decideIncomingOffer({ signalingState: S.HAVE_LOCAL_OFFER, polite: true }) === "apply"
+  "collision + polite → rollback",
+  decideIncomingOffer({ signalingState: S.HAVE_LOCAL_OFFER, polite: true }) === "rollback"
 );
 
 check(
-  "collision + impolite → rollback (impolite perd)",
-  decideIncomingOffer({ signalingState: S.HAVE_LOCAL_OFFER, polite: false }) === "rollback"
+  "collision + impolite → ignore",
+  decideIncomingOffer({ signalingState: S.HAVE_LOCAL_OFFER, polite: false }) === "ignore"
 );
 
 check(
-  "collision explicite (override) + impolite → rollback",
-  decideIncomingOffer({ signalingState: S.STABLE, polite: false, collision: true }) === "rollback"
+  "collision explicite (override) + impolite → ignore",
+  decideIncomingOffer({ signalingState: S.STABLE, polite: false, collision: true }) === "ignore"
 );
 
 check(
-  "collision explicite + polite → apply",
-  decideIncomingOffer({ signalingState: S.STABLE, polite: true, collision: true }) === "apply"
+  "collision explicite + polite → rollback",
+  decideIncomingOffer({ signalingState: S.STABLE, polite: true, collision: true }) === "rollback"
 );
 
 check(
   "signalingState CLOSED → collision détectée",
-  decideIncomingOffer({ signalingState: S.CLOSED, polite: false }) === "rollback"
+  decideIncomingOffer({ signalingState: S.CLOSED, polite: false }) === "ignore"
 );
 
 // ── canApplyRemoteDescription ───────────────────────────────────────────────

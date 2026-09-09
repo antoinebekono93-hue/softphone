@@ -103,10 +103,10 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
                   <div className="flex flex-col gap-1">
                      <div className="flex justify-between text-xs">
                         <span className="text-[var(--text-secondary)]">Voice</span>
-                        <span className="text-[var(--text-primary)] font-mono">{tenant.minutesUsedThisMonth} min</span>
+                        <span className="text-[var(--text-primary)] font-mono">{((tenant.callSecondsUsedThisMonth ?? tenant.minutesUsedThisMonth * 60) / 60).toFixed(2)} min</span>
                      </div>
                      <div className="w-full bg-[var(--bg-surface-hover)] rounded-full h-1.5 mt-1">
-                        <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${Math.min((tenant.minutesUsedThisMonth / (tenant.pricingPlan?.includedMinutes || 1000)) * 100, 100)}%` }}></div>
+                        <div className="bg-red-500 h-1.5 rounded-full" style={{ width: `${Math.min((((tenant.callSecondsUsedThisMonth ?? tenant.minutesUsedThisMonth * 60) / 60) / (tenant.pricingPlan?.includedMinutes || 1000)) * 100, 100)}%` }}></div>
                      </div>
                   </div>
                 </td>

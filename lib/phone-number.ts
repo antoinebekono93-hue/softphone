@@ -1,4 +1,5 @@
-import { parsePhoneNumberFromString } from "libphonenumber-js";
+import { parsePhoneNumberFromString, type MetadataJson } from "libphonenumber-js/core";
+import metadata from "libphonenumber-js/metadata.min.json";
 
 /**
  * Canonical telephone identity used at application boundaries.
@@ -48,7 +49,7 @@ export function canonicalizePhoneNumber(raw: unknown): string | null {
 
   if (!/^\+[1-9]\d{1,14}$/.test(value)) return null;
 
-  const parsed = parsePhoneNumberFromString(value);
+  const parsed = parsePhoneNumberFromString(value, metadata as MetadataJson);
   if (!parsed?.isValid()) return null;
 
   // `number` is already E.164.  Retain the explicit shape guard in case a
@@ -75,4 +76,10 @@ export function phoneNumberLookupCandidates(raw: unknown): string[] {
   }
 
   return [...new Set(candidates)];
+}
+
+export function phoneNumberCountry(raw: unknown): string | null {
+  const canonical = canonicalizePhoneNumber(raw);
+  if (!canonical) return null;
+  return parsePhoneNumberFromString(canonical, metadata as MetadataJson)?.country ?? null;
 }

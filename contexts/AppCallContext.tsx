@@ -411,13 +411,14 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
   // ── Fin d'appel (termine une session) ───────────────────────
   const finishCall = useCallback(
     async (status: "ENDED" | "FAILED" | "DECLINED" | "MISSED", reason?: string) => {
-      const callId = activeCallIdRef.current;
+      const callId = activeCallIdRef.current ?? incomingCallIdRef.current;
       const role = activeCallRoleRef.current ?? "caller";
       if (!callId) {
         resetCall();
         return;
       }
       logCallState(callId, role, "callEnded", { status, reason });
+      resetCall();
       try {
         await fetch(`/api/app-calls/${callId}/status`, {
           method: "PATCH",
@@ -428,7 +429,6 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         // ignore
       }
       logMedia(callId, role, "mediaCleanup", { status });
-      resetCall();
     },
     [resetCall]
   );
@@ -560,6 +560,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       }
       activeCallIdRef.current = callId;
       activeCallRoleRef.current = role;
+      activeCallIsInitiatorRef.current = isInitiator;
       pendingCandidatesRef.current = [];
       peerUserIdRef.current = peerUserId;
       iceRestartCountRef.current = 0;
@@ -568,11 +569,12 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       politeRef.current = isPolitePair({ myId: userId ?? "", peerId: peerUserId });
 
       if (!callChannelRef.current) {
-        callChannelRef.current = pusherRef.current!.subscribe(appCallChannels.call(callId));
-        callChannelRef.current.bind(APP_CALL_EVENTS.SIGNAL, (message: any) => {
-          handleSignal(message, role, isInitiator);
-        });
+        if (!pusherRef.current) throw new Error("Realtime unavailable");
+        callChannelRef.current = pusherRef.current.subscribe(appCallChannels.call(callId));
       }
+      bindCallSignalHandler(callChannelRef.current);
+      await waitForPusherSubscription(callChannelRef.current);
+      if (activeCallIdRef.current !== callId) return;
 
       // ── Microphone local (M2) ───────────────────────────────────────
       // Réutilise le flux local DÉJÀ acquis s'il est stable (aucun nouveau
@@ -609,8 +611,14 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         getUserMediaInProgressRef.current = false;
       }
       localStreamRef.current = localStream;
+      if (activeCallIdRef.current !== callId) {
+        localStream.getTracks().forEach((track) => track.stop());
+        localStreamRef.current = null;
+        return;
+      }
 
       // M10 : configuration ICE issue du serveur (STUN/TURN).
+      iceConfigRef.current = null;
       if (!iceConfigRef.current) {
         try {
           const res = await fetch("/api/app-calls/ice-config");
@@ -625,6 +633,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         }
       }
 
+      if (activeCallIdRef.current !== callId) return;
       const pc = new RTCPeerConnection(
         iceConfigRef.current ?? rtcConfiguration()
       );
@@ -702,18 +711,11 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
           makingOfferRef.current = false;
         }
       };
-      pc.onnegotiationneeded = async () => {
-        if (!makingOfferRef.current) {
-          makingOfferRef.current = true;
-          try {
-            await pc.setLocalDescription();
-          } catch (err) {
-            console.error("[WebRTC] onnegotiationneeded failed", err);
-            makingOfferRef.current = false;
-          }
-        }
-      };
+      // The caller initiates negotiation after the READY handshake. addTrack's
+      // negotiationneeded event must not create an unpublished local offer.
+      pc.onnegotiationneeded = null;
       pc.onconnectionstatechange = () => {
+        if (activeCallIdRef.current !== callId) return;
         logIce(callId, role, "connectionState", { state: pc.connectionState });
 
         if (pc.connectionState === "connected") {
@@ -729,7 +731,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
           iceRestartInProgressRef.current = false;
           setConnected(true);
           setAppCallStatus("ACTIVE");
-          fetch(`/api/app-calls/${callId}/status`, {
+          if (role === "callee") fetch(`/api/app-calls/${callId}/status`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ status: "ACTIVE" }),
@@ -754,15 +756,16 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
             });
             (async () => {
               try {
+                if (role === "callee") {
+                  if (!await publishSignal(callId, { type: "CALL_READY" })) await finishCall("FAILED", "restart request failed");
+                  return;
+                }
                 pc.restartIce();
                 if (pc.signalingState !== "stable") {
                   iceRestartInProgressRef.current = false;
                   return;
                 }
-                makingOfferRef.current = true;
-                const offer = await pc.createOffer({ iceRestart: true });
-                await pc.setLocalDescription(offer);
-                publishSignal(callId, { type: "CALL_OFFER", sdp: offer });
+                await sendOffer(callId, true);
               } catch (err) {
                 logIce(callId, role, "restartFailed", { error: String(err) });
                 iceRestartInProgressRef.current = false;
@@ -816,15 +819,16 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
             });
             (async () => {
               try {
+                if (role === "callee") {
+                  if (!await publishSignal(callId, { type: "CALL_READY" })) await finishCall("FAILED", "restart request failed");
+                  return;
+                }
                 pc.restartIce();
                 if (pc.signalingState !== "stable") {
                   iceRestartInProgressRef.current = false;
                   return;
                 }
-                makingOfferRef.current = true;
-                const offer = await pc.createOffer({ iceRestart: true });
-                await pc.setLocalDescription(offer);
-                publishSignal(callId, { type: "CALL_OFFER", sdp: offer });
+                await sendOffer(callId, true);
               } catch (err) {
                 logIce(callId, role, "restartFailed", { error: String(err) });
                 iceRestartInProgressRef.current = false;
@@ -841,12 +845,13 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         // de se rétablir. Aucune action requise.
       };
 
-      // Le callee signale qu'il est prêt avant que le caller envoie l'offer.
-      if (role === "callee") {
-        publishSignal(callId, { type: "CALL_READY" });
+      // Both peers announce readiness; the callee acknowledges the caller if
+      // its first READY arrived before the caller's microphone was available.
+      if (!await publishSignal(callId, { type: "CALL_READY" })) {
+        await finishCall("FAILED", "signaling unavailable");
       }
     },
-    [publishSignal, attachRemoteAudio, finishCall, resetCall]
+    [publishSignal, attachRemoteAudio, finishCall, resetCall, userId, sendOffer]
   );
 
   // Fonction handleSignal référencée par le binding (définie plus loin par fermeture).
@@ -857,6 +862,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
   ) {
     const pc = pcRef.current;
     if (!pc || pc.signalingState === "closed") return;
+    if (message.toId !== userId || message.senderId !== peerUserIdRef.current) return;
 
     // M5 : ignore les candidats dont la session ne correspond plus à la session
     // active (ré-utilisation du même binding après un appel).
@@ -888,23 +894,17 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
 
     try {
       const p = message.payload;
-      if (p.type === "CALL_READY" && role === "caller") {
+      if (p.type === "CALL_READY" && role === "callee") {
+        await publishSignal(activeCallIdRef.current!, { type: "CALL_READY" });
+      } else if (p.type === "CALL_READY" && role === "caller") {
         peerReadyRef.current = true;
         // Garde perfect negotiation : une seule offre en vol à la fois.
-        if (isInitiator && canMakeOffer({ makingOffer: makingOfferRef.current })) {
-          makingOfferRef.current = true;
-          try {
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            publishSignal(activeCallIdRef.current!, { type: "CALL_OFFER", sdp: offer });
-          } catch (err) {
-            console.error("createOffer failed", err);
-            makingOfferRef.current = false;
-          }
+        if (isInitiator && pc.signalingState === "stable") {
+          await sendOffer(activeCallIdRef.current!, !!pc.remoteDescription);
         }
       } else if (p.type === "CALL_OFFER" && role === "callee") {
         // Collision d'offre : décision PURE selon le rôle polite/impolite.
-        if (ignoreOfferRef.current) {
+        if (ignoreOfferRef.current || pc.signalingState === "have-remote-offer") {
           // Offre correspondant à la collision déjà traitée par rollback.
           return;
         }
@@ -912,34 +912,21 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
           signalingState: pc.signalingState,
           polite: politeRef.current,
         });
+        if (decision === "ignore") return;
         if (decision === "rollback") {
-          // Impolite perd la collision : on annule notre description locale,
-          // puis on traite la nouvelle offre qui suit (fall-through).
-          try {
-            await pc.setLocalDescription({ type: "rollback" });
-          } catch {
-            // rollback impossible en l'état → on laisse l'événement suivant.
-          }
-          ignoreOfferRef.current = true;
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(p.sdp!));
-          } catch {
-            // L'offre collée a déjà été consommée ; on s'appuie sur la suivante.
-          }
-          ignoreOfferRef.current = false;
-          await flushPendingCandidates();
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          publishSignal(activeCallIdRef.current!, { type: "CALL_ANSWER", sdp: answer });
-          return;
+          // Le pair poli abandonne son offre locale puis applique celle reçue.
+          await pc.setLocalDescription({ type: "rollback" });
         }
         await pc.setRemoteDescription(new RTCSessionDescription(p.sdp!));
         ignoreOfferRef.current = false;
         await flushPendingCandidates();
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        publishSignal(activeCallIdRef.current!, { type: "CALL_ANSWER", sdp: answer });
+        if (!await publishSignal(activeCallIdRef.current!, { type: "CALL_ANSWER", sdp: answer })) {
+          await finishCall("FAILED", "answer delivery failed");
+        }
       } else if (p.type === "CALL_ANSWER" && role === "caller") {
+        if (pc.signalingState !== "have-local-offer") return;
         // On mémorise que l'on s'apprête à appliquer une réponse : en cas de
         // nouvelle collision, l'impolite saura qu'un rollback est nécessaire.
         isSettingRemoteAnswerPendingRef.current = true;
@@ -951,12 +938,14 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         }
         await pc.setRemoteDescription(new RTCSessionDescription(p.sdp!));
         isSettingRemoteAnswerPendingRef.current = false;
+        makingOfferRef.current = false;
         await flushPendingCandidates();
       } else if (p.type === "ICE_CANDIDATE") {
         await queueOrAddCandidate(p.candidate);
       }
     } catch (err) {
       console.error("handleSignal failed", err);
+      await finishCall("FAILED", "WebRTC negotiation failed");
     }
   }
 
@@ -982,6 +971,11 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       setError(null);
       if (!userId) {
         toast.error("Non authentifié");
+        return;
+      }
+      if (activeCallIdRef.current || incomingCallIdRef.current) return;
+      if (!pusherRef.current) {
+        toast.error("Le service d'appel interne est indisponible");
         return;
       }
       try {
@@ -1014,6 +1008,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
           return;
         }
         setError("Impossible de lancer l'appel");
+        await finishCall("FAILED", "call setup failed");
         toast.error("Impossible de lancer l'appel");
         setAppCallStatus("idle");
       }
@@ -1028,14 +1023,16 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     setAppCallStatus("CONNECTING");
     logCallState(incoming.callId, "callee", "callAccepting");
     try {
-      await fetch(`/api/app-calls/${incoming.callId}/status`, {
+      const response = await fetch(`/api/app-calls/${incoming.callId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "CONNECTING" }),
       });
-      setIncomingAppCall(null);
+        if (!response.ok) throw new Error("Call acceptance rejected");
+        // The caller may have hung up while the acceptance request was in flight.
+        if (incomingCallIdRef.current !== incoming.callId) return;
+        setIncomingAppCall(null);
       await setupPeerAndChannel(incoming.callId, "callee", false, incoming.callerId);
-      setAppCallStatus("CONNECTING");
     } catch (err) {
       console.error(err);
       // Erreur média : finishCall a déjà terminé la session — pas de "idle" écrasant.
@@ -1045,6 +1042,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         return;
       }
       setError("Impossible de répondre");
+      await finishCall("FAILED", "call acceptance failed");
       setAppCallStatus("idle");
     }
   }, [incomingAppCall, setupPeerAndChannel]);
@@ -1126,18 +1124,32 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     // s'assure qu'un appel en cours restaure son abonnement au canal d'appel
     // après une reconnexion (les bindings du canal d'appel sont posés dans
     // setupPeerAndChannel ; ici on re-déclenche le re-subscribe au besoin).
-    const onConnectionAvailable = () => {
-      if (activeCallIdRef.current && callChannelRef.current) {
-        try {
-          callChannelRef.current =
-            pusher.subscribe(appCallChannels.call(activeCallIdRef.current));
-          // Re-small-scale : les bindings de signal sont posés par
-          // setupPeerAndChannel ; une réconnexion pleine du canal d'appel est
-          // gérée par Pusher -js automatiquement. Ici on ne fait qu'alourdir la
-          // re-souscription pour la robustesse (aucune double-bind).
-        } catch {
-          // ignore
+    const onConnectionAvailable = async () => {
+      const callId = activeCallIdRef.current ?? incomingCallIdRef.current;
+      if (!callId) return;
+      try {
+        // Pusher does not replay a hangup missed while disconnected.
+        const response = await fetch(`/api/app-calls/${callId}`, { cache: "no-store" });
+        if (callId !== (activeCallIdRef.current ?? incomingCallIdRef.current)) return;
+        if (response.status === 404) { resetCall(); return; }
+        if (!response.ok) return;
+        const data = await response.json();
+        if (callId !== (activeCallIdRef.current ?? incomingCallIdRef.current)) return;
+        if (["ENDED", "FAILED", "MISSED", "DECLINED"].includes(data.call?.status)) {
+          resetCall();
+          return;
         }
+        if (activeCallIdRef.current !== callId || !callChannelRef.current) return;
+        const channel = pusher.subscribe(appCallChannels.call(callId));
+        callChannelRef.current = channel;
+        bindCallSignalHandler(channel);
+        await waitForPusherSubscription(channel);
+        if (activeCallIdRef.current === callId && pcRef.current &&
+            pcRef.current.connectionState !== "connected") {
+          await publishSignal(callId, { type: "CALL_READY" });
+        }
+      } catch (err) {
+        console.warn("[AppCall] reconnect reconciliation failed", err);
       }
     };
     pusher.connection.bind("connected", onConnectionAvailable);
@@ -1155,6 +1167,8 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     });
 
     userChannel.bind(APP_CALL_EVENTS.INCOMING, (data: any) => {
+      if (activeCallIdRef.current || incomingCallIdRef.current) return;
+      incomingCallIdRef.current = data.callId;
       setIncomingAppCall({
         callId: data.callId,
         callerId: data.caller?.id ?? "",
@@ -1175,6 +1189,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     });
 
     userChannel.bind(APP_CALL_EVENTS.DECLINED, (data: any) => {
+      if (data?.callId !== (activeCallIdRef.current ?? incomingCallIdRef.current)) return;
       logCallState(
         data?.callId ?? activeCallIdRef.current,
         activeCallRoleRef.current ?? "caller",
@@ -1185,6 +1200,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     });
 
     userChannel.bind(APP_CALL_EVENTS.CANCELLED, (data: any) => {
+      if (data?.callId !== (activeCallIdRef.current ?? incomingCallIdRef.current)) return;
       logCallState(
         data?.callId ?? activeCallIdRef.current,
         activeCallRoleRef.current ?? "caller",
@@ -1195,6 +1211,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     });
 
     userChannel.bind(APP_CALL_EVENTS.ENDED, (data: any) => {
+      if (data?.callId !== (activeCallIdRef.current ?? incomingCallIdRef.current)) return;
       logCallState(
         data?.callId ?? activeCallIdRef.current,
         activeCallRoleRef.current ?? "caller",
@@ -1204,7 +1221,6 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       resetCall();
     });
 
-    refreshDirectory();
 
     return () => {
       try {

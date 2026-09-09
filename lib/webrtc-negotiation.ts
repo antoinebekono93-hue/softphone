@@ -46,9 +46,8 @@ export type OfferDecision = "apply" | "ignore" | "rollback";
  *
  * - Pas de collision (signalingState "stable") → toujours appliquer.
  * - Collision (une offre est déjà en vol) :
- *     . pair impolite → on perd, on ROLLBACK (annuler notre description locale)
- *       puis on trait la nouvelle offre ;
- *     . pair polite → on laisse la nouvelle offre "gagner", on l'applique.
+ *     . pair impolite → ignore l'offre concurrente ;
+ *     . pair polite → annule son offre locale puis accepte l'offre distante.
  *
  * Note : "collision" signifie ici signalingState !== "stable". L'appelant peut
  * fournir `collision` explicitement (simplifie le test pur sans fake de PC).
@@ -64,7 +63,7 @@ export function decideIncomingOffer({
 }): OfferDecision {
   const isCollision = collision ?? signalingState !== SIGNALING_STATES.STABLE;
   if (!isCollision) return "apply";
-  return polite ? "apply" : "rollback";
+  return polite ? "rollback" : "ignore";
 }
 
 /**

@@ -43,6 +43,25 @@ interface TelnyxContextValue {
 
 const TelnyxContext = createContext<TelnyxContextValue | undefined>(undefined);
 
+function bodyMessage(code: unknown): string {
+  switch (code) {
+    case "INSUFFICIENT_FUNDS":
+      return "Solde insuffisant pour démarrer cet appel.";
+    case "NO_ACTIVE_CALLER_NUMBER":
+      return "Aucun numéro actif ne vous est attribué pour passer cet appel.";
+    case "INTERNAL_CALL_MUST_USE_APP_TO_APP":
+      return "Ce destinataire doit être appelé via l'appel interne de l'application.";
+    case "INVALID_DESTINATION":
+      return "Le numéro de destination est invalide.";
+    case "PSTN_PREAUTHORIZATION_FAILED":
+      return "La facturation n'a pas pu autoriser l'appel. Réessayez dans un instant.";
+    default:
+      return typeof code === "string" && code.length > 0
+        ? code
+        : "L'appel n'a pas pu être autorisé.";
+  }
+}
+
 export const useTelnyx = () => {
   const context = useContext(TelnyxContext);
   if (!context) {
@@ -85,6 +104,8 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   const consumedRef = useRef<Set<string>>(new Set());
   /** Anti double-Accept / double-answer. */
   const acceptInFlightRef = useRef(false);
+  /** Tentative PSTN réservée avant que le SDK ne fournisse un Call Control ID. */
+  const outboundAttemptIdRef = useRef<string | null>(null);
   /** Incrémenté à chaque reset : invalide les boucles d'attente en vol. */
   const waitGenerationRef = useRef(0);
 
@@ -165,6 +186,21 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       : tag;
     console.log(`[${line}]`);
     setDebugLog((prev) => (prev ? `${prev} | ${tag}` : tag));
+  }, []);
+
+  const cancelPendingOutbound = useCallback(async () => {
+    const attemptId = outboundAttemptIdRef.current;
+    if (!attemptId) return;
+    outboundAttemptIdRef.current = null;
+    try {
+      await fetch("/api/telnyx/preauthorize/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ attemptId }),
+      });
+    } catch {
+      // The server-side reservation expiry remains the final safety net.
+    }
   }, []);
 
   /** Notification SDK d'un appel qui est le NÔTRE (corrélé ou natif outbound). */
@@ -251,6 +287,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                   // Notre appel (inbound corrélé au PSTN courant, sinon outbound déjà affiché).
                   currentCallRef.current = call;
                   const cc = getCallControlId(call as SdkCallLike);
+                  if (cc && !pstnCallControlIdRef.current) {
+                    setPstnCallControlId(cc);
+                    pstnCallControlIdRef.current = cc;
+                  }
                   if (cc && cc === pstnCallControlIdRef.current) {
                     // Inbound Pusher → l'UI de sonnerie est déjà affichée (ou arrive) ;
                     // on garantit que currentCallRef porte le Call média pour Accept.
@@ -267,8 +307,13 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                 // Foreign (autre tenant/org) : NI UI NI liaison — la barrière est la corrélation.
               } else if (kind === "active") {
                 if (mine) {
+                  outboundAttemptIdRef.current = null;
                   currentCallRef.current = call;
                   const cc = getCallControlId(call as SdkCallLike);
+                  if (cc && !pstnCallControlIdRef.current) {
+                    setPstnCallControlId(cc);
+                    pstnCallControlIdRef.current = cc;
+                  }
                   setCallState("active");
                   setActiveCallId(cc || call.id || call.callId || null);
                   // L'audio remote est géré par le SDK (options.remoteStream ← track event,
@@ -283,6 +328,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
               } else if (kind === "terminated") {
                 if (mine) {
                   logTag("CALL_SDK_TERMINATED", { state: call.state });
+                  void cancelPendingOutbound();
                   resetPstnState(getCallControlId(call as SdkCallLike));
                 } else {
                   unregisterSdkCall(call);
@@ -462,18 +508,26 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      let cleanDestination = destination.replace(/[^0-9+]/g, "");
-
-      // Force E.164 formatting
-      if (cleanDestination.length === 10 && !cleanDestination.startsWith("+")) {
-        cleanDestination = "+1" + cleanDestination;
-      } else if (cleanDestination.length > 10 && !cleanDestination.startsWith("+")) {
-        cleanDestination = "+" + cleanDestination;
+      const authorizationResponse = await fetch("/api/telnyx/preauthorize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: destination, callerId: callerId || undefined }),
+      });
+      const authorization = await authorizationResponse.json().catch(() => ({}));
+      if (!authorizationResponse.ok) {
+        throw new Error(bodyMessage(authorization.error));
       }
+      if (!authorization.attemptId || !authorization.destination ||
+          !authorization.callerNumber || !authorization.clientState) {
+        throw new Error("Réponse de préautorisation téléphonique invalide.");
+      }
+      outboundAttemptIdRef.current = authorization.attemptId;
 
       const call = clientRef.current.newCall({
-        destinationNumber: cleanDestination,
-        callerNumber: callerId || undefined, // Pass the selected Caller ID here, or undefined if empty
+        destinationNumber: authorization.destination,
+        callerNumber: authorization.callerNumber,
+        clientState: authorization.clientState,
+        id: authorization.attemptId,
         audio: true,
         video: false,
       });
@@ -484,10 +538,11 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
 
       currentCallRef.current = call;
       registerSdkCall(call);
-      setIncomingCallerId(cleanDestination);
+      setIncomingCallerId(authorization.destination);
       setCallDirection("outbound");
       setCallState("ringing");
     } catch (err: any) {
+      await cancelPendingOutbound();
       console.error("Failed to make call", err);
       setCallState("idle");
       toast.error(`Erreur: ${err?.message || err || "Vérifiez le format du numéro."}`);

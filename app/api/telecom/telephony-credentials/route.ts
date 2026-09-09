@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import Telnyx from 'telnyx';
-
-// @ts-ignore
-const telnyxClient = new Telnyx(process.env.TELNYX_API_KEY as string);
+import { getConfiguredTelnyxClient } from '@/lib/telnyx';
+import { requireSuperAdminApi } from '@/lib/security';
 
 export async function GET(request: Request) {
   try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const telnyxClient = await getConfiguredTelnyxClient();
     const url = new URL(request.url);
     const connectionId = url.searchParams.get('connection_id');
     const status = url.searchParams.get('status');
@@ -30,6 +31,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const telnyxClient = await getConfiguredTelnyxClient();
     const body = await request.json();
     const { connection_id, expires_at, name, tag } = body;
 
@@ -62,6 +66,9 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const telnyxClient = await getConfiguredTelnyxClient();
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
     if (!id) {
@@ -90,6 +97,9 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const telnyxClient = await getConfiguredTelnyxClient();
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
     if (!id) {

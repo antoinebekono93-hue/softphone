@@ -10,6 +10,8 @@ import {
   buildServerSignal,
   isSignalAllowedForState,
   CALL_SIGNAL_TYPES,
+  validateSignalPayload,
+  normalizeSignalPayload,
 } from "../lib/app-call-signals";
 
 let failures = 0;
@@ -23,6 +25,14 @@ const check = (name: string, cond: boolean) => {
 };
 
 const S = CALL_SIGNAL_TYPES;
+
+for (const [type, descriptionType] of [[S.OFFER, "offer"], [S.ANSWER, "answer"]] as const) {
+  const payload = { type, sdp: { type: descriptionType, sdp: "v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n" } };
+  check(`Browser ${descriptionType} object passes server validation`, validateSignalPayload(payload).valid);
+  const relayed = buildServerSignal({ sessionId: "call", senderId: "a", peerId: "b", payload: normalizeSignalPayload(payload) });
+  check(`${descriptionType} description survives relay`, JSON.stringify(relayed.payload) === JSON.stringify(payload));
+  check(`${descriptionType} wrong SDP type rejected`, !validateSignalPayload({ ...payload, sdp: { ...payload.sdp, type: descriptionType === "offer" ? "answer" : "offer" } }).valid);
+}
 
 // ── isSignalAllowedForState ─────────────────────────────────────────────────
 check(
@@ -60,8 +70,8 @@ check(
 );
 // L'OFFER ne doit JAMAIS être permis hors handshake (ACTIVE ou terminal).
 check(
-  "caller NE PEUT PAS envoyer OFFER en ACTIVE",
-  !isSignalAllowedForState({ sessionStatus: "ACTIVE", isCaller: true, signalType: S.OFFER })
+  "caller peut envoyer OFFER en ACTIVE pour un restart ICE",
+  isSignalAllowedForState({ sessionStatus: "ACTIVE", isCaller: true, signalType: S.OFFER })
 );
 check(
   "caller NE PEUT PAS envoyer OFFER en ENDED",
@@ -106,8 +116,8 @@ check(
   isSignalAllowedForState({ sessionStatus: "RINGING", isCaller: false, signalType: S.READY })
 );
 check(
-  "caller NE PEUT PAS envoyer READY",
-  !isSignalAllowedForState({ sessionStatus: "OFFERING", isCaller: true, signalType: S.READY })
+  "caller annonce READY pour relancer le handshake après abonnement",
+  isSignalAllowedForState({ sessionStatus: "OFFERING", isCaller: true, signalType: S.READY })
 );
 
 check(

@@ -10,12 +10,16 @@ import { canonicalizePhoneNumber } from "@/lib/phone-number";
 export async function getSystemSettings() {
   await requireSuperAdmin();
   let settings = await prisma.systemSettings.findUnique({
-    where: { id: "default" }
+    where: { id: "default" },
+    // Keep the Telnyx console operational even while an unrelated pricing
+    // migration is waiting to be deployed.
+    select: { id: true, telnyxApiKey: true, telnyxConnectionId: true },
   });
 
   if (!settings) {
     settings = await prisma.systemSettings.create({
-      data: { id: "default" }
+      data: { id: "default" },
+      select: { id: true, telnyxApiKey: true, telnyxConnectionId: true },
     });
   }
 
@@ -28,7 +32,8 @@ export async function saveTelnyxApiKey(apiKey: string) {
   await prisma.systemSettings.upsert({
     where: { id: "default" },
     update: { telnyxApiKey: apiKey },
-    create: { id: "default", telnyxApiKey: apiKey }
+    create: { id: "default", telnyxApiKey: apiKey },
+    select: { id: true },
   });
   revalidatePath("/god-mode/telnyx");
 }
@@ -41,6 +46,7 @@ export async function saveTelnyxVoiceConnection(connectionId: string) {
     where: { id: "default" },
     update: { telnyxConnectionId: connectionId },
     create: { id: "default", telnyxConnectionId: connectionId },
+    select: { id: true },
   });
   revalidatePath("/god-mode/telnyx");
   return { success: true };
