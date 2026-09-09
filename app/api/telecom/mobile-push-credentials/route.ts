@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { requireSuperAdminApi } from '@/lib/security';
+import { getConfiguredTelnyxApiKey } from '@/lib/telnyx';
 
 // We will use native fetch since we're not 100% sure if the Node SDK 
 // fully exposes `.mobilePushCredentials` in the current version installed.
@@ -6,9 +8,12 @@ const API_BASE = 'https://api.telnyx.com/v2';
 
 export async function GET(request: Request) {
   try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const apiKey = await getConfiguredTelnyxApiKey();
     const res = await fetch(`${API_BASE}/mobile_push_credentials`, {
       headers: {
-        'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       }
     });
     const data = await res.json();
@@ -27,6 +32,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const apiKey = await getConfiguredTelnyxApiKey();
     const body = await request.json();
     // Payload depends on the type. 
     // iOS: type='ios', certificate='...', private_key='...'
@@ -34,7 +42,7 @@ export async function POST(request: Request) {
     const res = await fetch(`${API_BASE}/mobile_push_credentials`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
@@ -55,6 +63,9 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const apiKey = await getConfiguredTelnyxApiKey();
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
     if (!id) {
@@ -64,7 +75,7 @@ export async function DELETE(request: Request) {
     const res = await fetch(`${API_BASE}/mobile_push_credentials/${id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`
+        'Authorization': `Bearer ${apiKey}`
       }
     });
     

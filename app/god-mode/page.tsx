@@ -6,8 +6,11 @@ export const metadata = {
 
 export default async function GodModeOverviewPage() {
   // Fetch dynamic data
-  const usersCount = await prisma.user.count();
-  const numbersCount = await prisma.phoneNumber.count();
+  const [usersCount, numbersCount, systemSettings] = await Promise.all([
+    prisma.user.count(),
+    prisma.phoneNumber.count(),
+    prisma.systemSettings.findUnique({ where: { id: "default" }, select: { telnyxApiKey: true } }),
+  ]);
   
   const organizations = await prisma.organization.findMany({
     include: {
@@ -20,7 +23,7 @@ export default async function GodModeOverviewPage() {
   }, 0);
 
   // Diagnostics
-  const telnyxReady = !!process.env.TELNYX_API_KEY;
+  const telnyxReady = Boolean(systemSettings?.telnyxApiKey?.trim() || process.env.TELNYX_API_KEY?.trim());
   // Prisma is implicitly ready if the queries above succeeded.
 
   return (

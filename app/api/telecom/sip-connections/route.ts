@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getConfiguredTelnyxClient } from '@/lib/telnyx';
 import { requireSuperAdminApi } from '@/lib/security';
+import { credentialConnectionPayload } from '@/lib/telnyx-voice-settings';
 
 export async function GET(request: Request) {
   try {
@@ -31,42 +32,7 @@ export async function POST(request: Request) {
     const denied = await requireSuperAdminApi();
     if (denied) return denied;
     const telnyxClient = await getConfiguredTelnyxClient();
-    const body = await request.json();
-    const { connection_name, user_name, password, outbound_voice_profile_id } = body;
-
-    if (!connection_name || !user_name || !password) {
-      return NextResponse.json(
-        { success: false, error: 'connection_name, user_name, and password are required' },
-        { status: 400 }
-      );
-    }
-
-    const payload: any = {
-      connection_name,
-      user_name,
-      password,
-      active: true,
-      anchorsite_override: 'Latency',
-      // Configuration par défaut issue des best practices Telnyx (Module 7)
-      noise_suppression: {
-        direction: 'both',
-        noise_suppression_engine: 'Denoiser' // ou 'Krisp Viva Tel Lite'
-      },
-      jitter_buffer: {
-        enable_jitter_buffer: true,
-        jitterbuffer_msec_min: 60,
-        jitterbuffer_msec_max: 200
-      }
-    };
-
-    if (outbound_voice_profile_id) {
-      payload.outbound = {
-        outbound_voice_profile_id,
-        localization: 'US' // E.164 validation logic
-      };
-    }
-
-    const response = await telnyxClient.credentialConnections.create(payload);
+    const response = await telnyxClient.credentialConnections.create(credentialConnectionPayload(await request.json(), true) as any);
 
     return NextResponse.json({ success: true, connection: response.data });
   } catch (error: any) {
@@ -75,5 +41,33 @@ export async function POST(request: Request) {
       { success: false, error: error.message || 'Failed to create SIP connection' },
       { status: 500 }
     );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: 'id is required' }, { status: 400 });
+    const client = await getConfiguredTelnyxClient();
+    const response = await client.credentialConnections.update(id, credentialConnectionPayload(await request.json()) as any);
+    return NextResponse.json({ success: true, connection: response.data });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to update SIP connection' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: 'id is required' }, { status: 400 });
+    const client = await getConfiguredTelnyxClient();
+    const response = await client.credentialConnections.delete(id);
+    return NextResponse.json({ success: true, connection: response.data });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to delete SIP connection' }, { status: 500 });
   }
 }

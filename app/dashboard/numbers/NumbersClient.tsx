@@ -12,22 +12,50 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
   const [selectedNumber, setSelectedNumber] = useState<any>(null);
   const [editName, setEditName] = useState("");
   const [editUserId, setEditUserId] = useState<string>("");
+  const [routingMode, setRoutingMode] = useState("APP");
+  const [forwardTo, setForwardTo] = useState("");
+  const [ringSeconds, setRingSeconds] = useState("15");
+  const [routingEnabled, setRoutingEnabled] = useState(true);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const openEditModal = (num: any) => {
     setSelectedNumber(num);
     setEditName(num.friendlyName || "");
     setEditUserId(num.assignedUserId || "");
+    setRoutingMode(num.incomingRoutingMode || "APP");
+    setForwardTo(num.forwardToE164 || "");
+    setRingSeconds(String(num.ringAppSeconds ?? 15));
+    setRoutingEnabled(num.incomingRoutingEnabled !== false);
+    setSaveError(null);
     setIsEditModalOpen(true);
   };
 
   const handleSaveEdit = async () => {
     if (!selectedNumber) return;
     setIsSaving(true);
-    const res = await updateNumber(selectedNumber.id, editName, editUserId === "" ? null : editUserId);
-    if (res.success) {
-      setNumbers(numbers.map(n => n.id === selectedNumber.id ? { ...n, friendlyName: editName, assignedUserId: editUserId === "" ? null : editUserId } : n));
+    try {
+      const routingResponse = await fetch(`/api/phone-numbers/${selectedNumber.id}/routing`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: routingMode, forwardToE164: forwardTo, ringAppSeconds: Number(ringSeconds), isEnabled: routingEnabled }),
+      });
+      const routing = await routingResponse.json();
+      if (!routingResponse.ok) throw new Error(routing.error || "Impossible de modifier le routage");
+      const res = await updateNumber(selectedNumber.id, editName, editUserId === "" ? null : editUserId);
+      if (!res.success) throw new Error(res.error || "Routage enregistré, mais impossible de modifier l’affectation du numéro");
+      setNumbers(numbers.map(n => n.id === selectedNumber.id ? {
+        ...n,
+        friendlyName: editName,
+        assignedUserId: editUserId === "" ? null : editUserId,
+        incomingRoutingMode: routing.mode,
+        incomingRoutingEnabled: routing.isEnabled,
+        forwardToE164: routing.forwardToE164,
+        ringAppSeconds: routing.ringAppSeconds,
+      } : n));
       setIsEditModalOpen(false);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Erreur de sauvegarde");
     }
     setIsSaving(false);
   };
@@ -90,6 +118,10 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
                       </div>
                    )}
                 </div>
+                <div className="mt-4 text-xs text-[var(--text-secondary)]">
+                  Routage : <span className="font-semibold text-cyan-400">{num.incomingRoutingEnabled === false ? "Désactivé" : num.incomingRoutingMode || "APP"}</span>
+                  {num.forwardToE164 ? <span> → {num.forwardToE164}</span> : null}
+                </div>
              </div>
            );
         })}
@@ -115,6 +147,24 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
                   className="apple-input"
                   placeholder="e.g. Sales Line"
                 />
+              </div>
+              <div className="pt-5 border-t border-[var(--border-subtle)] space-y-4">
+                <div className="flex items-center justify-between"><h3 className="font-semibold">Routage des appels entrants</h3><label className="text-sm flex items-center gap-2"><input type="checkbox" checked={routingEnabled} onChange={(e) => setRoutingEnabled(e.target.checked)} /> Actif</label></div>
+                <label className="block text-sm font-semibold">Mode
+                  <select value={routingMode} onChange={(e) => setRoutingMode(e.target.value)} className="apple-input mt-2">
+                    <option value="APP">Application uniquement</option>
+                    <option value="FORWARD">Transférer directement</option>
+                    <option value="APP_THEN_FORWARD">Application puis transfert</option>
+                  </select>
+                </label>
+                {routingMode !== "APP" && <label className="block text-sm font-semibold">Numéro de transfert
+                  <input value={forwardTo} onChange={(e) => setForwardTo(e.target.value)} className="apple-input mt-2" placeholder="+237699112233" />
+                  <span className="block mt-1 text-xs font-normal text-[var(--text-secondary)]">Les formats 237… et 00237… seront normalisés automatiquement.</span>
+                </label>}
+                {routingMode === "APP_THEN_FORWARD" && <label className="block text-sm font-semibold">Sonner dans l’application (5–60 secondes)
+                  <input type="number" min="5" max="60" value={ringSeconds} onChange={(e) => setRingSeconds(e.target.value)} className="apple-input mt-2" />
+                </label>}
+                {saveError && <p className="text-sm text-red-400">{saveError}</p>}
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-2">Assigned User</label>

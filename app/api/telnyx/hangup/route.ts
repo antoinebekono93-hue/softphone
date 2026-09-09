@@ -55,9 +55,31 @@ export async function POST(req: Request) {
       );
     }
 
+    const claimed = await prisma.callLog.updateMany({
+      where: {
+        id: callLog.id,
+        status: callLog.status,
+        NOT: { status: { in: ["ENDING", "COMPLETED", "NO_ANSWER", "FAILED", "DENIED"] } },
+      },
+      data: {
+        status: "ENDING",
+        ...(callLog.forwardStatus === "SCHEDULED" ? { forwardStatus: "CANCELLED" } : {}),
+      },
+    });
+    if (claimed.count !== 1) {
+      return NextResponse.json({ error: "Call is already ended or being forwarded" }, { status: 409 });
+    }
+
     const telnyx = await getConfiguredTelnyxClient();
-    const call = new telnyx.Call({ call_control_id: callControlId });
-    await call.hangup({ command_id: crypto.randomUUID() });
+    try {
+      await telnyx.calls.actions.hangup(callControlId, { command_id: crypto.randomUUID() });
+    } catch (error) {
+      await prisma.callLog.updateMany({
+        where: { id: callLog.id, status: "ENDING" },
+        data: { status: callLog.status, forwardStatus: callLog.forwardStatus },
+      });
+      throw error;
+    }
 
     console.log(`[Telnyx Hangup] Call ${callControlId} hung up via API`);
     return NextResponse.json({ success: true });

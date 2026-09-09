@@ -7,12 +7,25 @@ export async function GET() {
     const guard = await requireSuperAdminApi();
     if (guard) return guard;
 
-    let settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
+    let settings = await prisma.systemSettings.findUnique({
+      where: { id: "default" },
+      select: {
+        id: true, smsRate: true, callRatePerMinute: true, callBaseRatePerMinute: true,
+        callMarkupPercent: true, aiAgentRatePerMinute: true, whatsappRate: true,
+        phoneNumberRate: true, eSimRate: true, telnyxApiKey: true,
+        telnyxConnectionId: true, updatedAt: true,
+      },
+    });
     if (!settings) {
       settings = await prisma.systemSettings.create({ data: { id: "default" } });
     }
 
-    return NextResponse.json(settings);
+    const { telnyxApiKey, telnyxConnectionId, ...publicSettings } = settings;
+    return NextResponse.json({
+      ...publicSettings,
+      telnyxApiKeyConfigured: Boolean(telnyxApiKey?.trim() || process.env.TELNYX_API_KEY?.trim()),
+      telnyxConnectionConfigured: Boolean(telnyxConnectionId?.trim() || process.env.TELNYX_SIP_CONNECTION_ID?.trim()),
+    });
   } catch (error) {
     console.error("[/api/admin/settings GET] Error:", error);
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
@@ -33,9 +46,7 @@ export async function POST(req: Request) {
       aiAgentRatePerMinute,
       whatsappRate,
       phoneNumberRate,
-      eSimRate,
-      telnyxApiKey,
-      telnyxConnectionId
+      eSimRate
     } = body;
 
     // Backward compatibility for the legacy admin screen: its old single
@@ -52,9 +63,7 @@ export async function POST(req: Request) {
         aiAgentRatePerMinute,
         whatsappRate,
         phoneNumberRate,
-        eSimRate,
-        telnyxApiKey,
-        telnyxConnectionId
+        eSimRate
       },
       create: {
         id: "default",
@@ -65,13 +74,11 @@ export async function POST(req: Request) {
         aiAgentRatePerMinute,
         whatsappRate,
         phoneNumberRate,
-        eSimRate,
-        telnyxApiKey,
-        telnyxConnectionId
+        eSimRate
       }
     });
 
-    return NextResponse.json(settings);
+    return NextResponse.json({ id: settings.id, updatedAt: settings.updatedAt });
   } catch (error) {
     console.error("[/api/admin/settings POST] Error:", error);
     return NextResponse.json({ error: "Server Error" }, { status: 500 });

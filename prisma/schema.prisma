@@ -59,6 +59,8 @@ model User {
   callUsername  String?
   callExtension String?
   isCallable    Boolean @default(true)
+  telnyxTelephonyCredentialId String? @unique
+  telnyxCredentialConnectionId String?
 
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -79,6 +81,7 @@ model User {
   @@unique([organizationId, callExtension])
   @@index([organizationId])
   @@index([email])
+  @@index([telnyxCredentialConnectionId])
 }
 
 model Organization {
@@ -178,6 +181,11 @@ model PhoneNumber {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
   messagingProfileId String?
+  // Routage entrant piloté par notre backend (jamais par le portail Telnyx).
+  incomingRoutingMode    String  @default("APP")
+  incomingRoutingEnabled Boolean @default(true)
+  forwardToE164          String?
+  ringAppSeconds         Int     @default(15)
   callLogs           CallLog[]
   campaigns          Campaign[]
   assignedUser       User?             @relation("AssignedUser", fields: [assignedUserId], references: [id])
@@ -280,14 +288,27 @@ model CallLog {
   sipHangupCause      String?
   cost                Decimal?         @db.Decimal(12, 4)
   billedAmount        Decimal?         @db.Decimal(12, 4)
+  providerCost        Decimal?         @db.Decimal(12, 6)
+  providerCurrency    String?
+  providerBilledSeconds Int?
+  providerReconciledAt DateTime?
   billedAt            DateTime?
   isBilled            Boolean          @default(false)
   planIdAtCallTime    String?
+  callPurpose         String           @default("PSTN")
+  parentCallLogId     String?          @unique
+  forwardStatus       String?
+  forwardDueAt        DateTime?
+  forwardToE164       String?
+  forwardCommandId    String?          @unique
+  forwardStartedAt    DateTime?
   contact             Contact?         @relation(fields: [contactId], references: [id])
   organization        Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   phoneNumber         PhoneNumber?     @relation(fields: [phoneNumberId], references: [id])
   user                User?            @relation(fields: [userId], references: [id])
   reservation         CallReservation?
+  parentCallLog       CallLog?         @relation("ForwardedCallLeg", fields: [parentCallLogId], references: [id])
+  forwardedCallLog    CallLog?         @relation("ForwardedCallLeg")
 
   @@index([organizationId])
   @@index([userId])
@@ -296,6 +317,9 @@ model CallLog {
   @@index([telnyxCallControlId])
   @@index([isBilled])
   @@index([organizationId, isBilled])
+  @@index([providerReconciledAt])
+  @@index([forwardStatus, forwardDueAt])
+  @@index([callPurpose])
 }
 
 model SmsMessage {
@@ -736,6 +760,7 @@ model NumberOrder {
   status         String       @default("pending")
   phoneNumbers   String?
   organizationId String
+  requestedUserId String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

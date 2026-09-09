@@ -20,6 +20,7 @@ export type PreAuthResult = {
   reason?: string;
   planName?: string | null;
   walletBalance: number;
+  maxDurationSeconds?: number;
 };
 
 export type SettleResult = {
@@ -223,7 +224,7 @@ export async function preAuthorizeCall(params: {
       undefined,
       callControlId
     );
-    return { authorized: false, estimatedCost, heldAmount: 0, reason: "INSUFFICIENT_FUNDS", planName: plan?.name ?? null, walletBalance };
+    return { authorized: false, estimatedCost, heldAmount: 0, reason: "INSUFFICIENT_FUNDS", planName: plan?.name ?? null, walletBalance, maxDurationSeconds };
   }
 
   await logAppCallDecision(
@@ -235,7 +236,7 @@ export async function preAuthorizeCall(params: {
     callControlId
   );
 
-  return { authorized: true, reservationId, estimatedCost, heldAmount: holdAmount, planName: plan?.name ?? null, walletBalance };
+  return { authorized: true, reservationId, estimatedCost, heldAmount: holdAmount, planName: plan?.name ?? null, walletBalance, maxDurationSeconds };
 }
 
 /**
@@ -347,8 +348,19 @@ export async function settlePstnCall(params: {
   callLogId: string;
   durationSeconds: number;
   rateProfile?: PstnRateProfile;
+  providerCost?: number | null;
+  providerCurrency?: string | null;
+  providerBilledSeconds?: number | null;
 }): Promise<SettleResult> {
-  const { callControlId, organizationId, callLogId, durationSeconds, rateProfile = "STANDARD" } = params;
+  const {
+    callControlId,
+    organizationId,
+    callLogId,
+    durationSeconds,
+    rateProfile = "STANDARD",
+    providerCurrency,
+    providerBilledSeconds,
+  } = params;
 
   // Idempotence : si déjà facturé (WalletTransaction SETTLE OU CallLog réglé), ne rien refaire.
   const existing = await prisma.walletTransaction.findUnique({
@@ -378,7 +390,16 @@ export async function settlePstnCall(params: {
   const plan = org.pricingPlan;
   const planIdAtCallTime = plan?.id ?? null;
   const includedPerMinute = plan?.includedMinutes ?? 0;
-  const totalCost = new Prisma.Decimal(durationSeconds / MINUTES_DIVISOR).mul(costPerMinute);
+  const validProviderCost = typeof params.providerCost === "number" &&
+    Number.isFinite(params.providerCost) && params.providerCost >= 0
+    ? params.providerCost
+    : null;
+  // Telnyx is authoritative when it provides the finalized transport cost.
+  // The configured minute rate remains the real-time fallback until that cost
+  // is available. AI calls keep their separately configured retail rate.
+  const totalCost = rateProfile === "STANDARD" && validProviderCost !== null
+    ? new Prisma.Decimal(validProviderCost).mul(new Prisma.Decimal(1).add(rates.callMarkupPercent.div(100)))
+    : new Prisma.Decimal(durationSeconds / MINUTES_DIVISOR).mul(costPerMinute);
 
   const transactionIds: string[] = [];
   let settledReservationId: string | null = null;
@@ -398,8 +419,10 @@ export async function settlePstnCall(params: {
     const includedWanted = calc.includedMinutesUsed;
     // Consommation atomique (garde). En cas de course, recoûte le reste au wallet.
     const includedActuallyUsed = await consumeIncludedMinutes(tx, organizationId, includedPerMinute, includedWanted);
-    const walletMinutesUsed = Math.max(durationSeconds / MINUTES_DIVISOR - includedActuallyUsed, 0);
-    walletCost = new Prisma.Decimal(walletMinutesUsed).mul(costPerMinute);
+    const totalMinutes = Math.max(durationSeconds / MINUTES_DIVISOR, 0);
+    const walletMinutesUsed = Math.max(totalMinutes - includedActuallyUsed, 0);
+    const walletFraction = totalMinutes > 0 ? Math.min(walletMinutesUsed / totalMinutes, 1) : 0;
+    walletCost = totalCost.mul(walletFraction);
     includedMinutesUsed = includedActuallyUsed;
 
     // 2. Réservation : état et montant réellement retenu.
@@ -416,6 +439,12 @@ export async function settlePstnCall(params: {
           isBilled: true,
           billedAt: new Date(),
           planIdAtCallTime,
+          ...(validProviderCost !== null ? {
+            providerCost: new Prisma.Decimal(validProviderCost),
+            providerCurrency: providerCurrency || null,
+            providerBilledSeconds: providerBilledSeconds ?? null,
+            providerReconciledAt: new Date(),
+          } : {}),
         },
       });
       return;
@@ -478,6 +507,12 @@ export async function settlePstnCall(params: {
         isBilled: true,
         billedAt: new Date(),
         planIdAtCallTime,
+        ...(validProviderCost !== null ? {
+          providerCost: new Prisma.Decimal(validProviderCost),
+          providerCurrency: providerCurrency || null,
+          providerBilledSeconds: providerBilledSeconds ?? null,
+          providerReconciledAt: new Date(),
+        } : {}),
       },
     });
   });
@@ -514,4 +549,76 @@ export async function settlePstnCall(params: {
     transactionIds,
     reservationId: settledReservationId,
   };
+}
+
+/** Reconciles a call already settled from its fallback rate against Telnyx's
+ * finalized CDR cost. The ledger entry is unique per call, so cron retries can
+ * never double debit or double refund the wallet. */
+export async function reconcilePstnProviderCost(params: {
+  callControlId: string;
+  providerCost: number;
+  providerCurrency?: string | null;
+  providerBilledSeconds?: number | null;
+}): Promise<{ reconciled: boolean; adjustment: number }> {
+  if (!Number.isFinite(params.providerCost) || params.providerCost < 0) {
+    throw new Error("INVALID_PROVIDER_COST");
+  }
+
+  const [callLog, rates, settlement] = await Promise.all([
+    prisma.callLog.findUnique({ where: { telnyxCallControlId: params.callControlId } }),
+    getSystemRates(),
+    prisma.walletTransaction.findUnique({
+      where: { unique_billing_per_call: { callControlId: params.callControlId, type: SETTLE_TX_TYPE } },
+    }),
+  ]);
+  if (!callLog || !callLog.isBilled) return { reconciled: false, adjustment: 0 };
+
+  // AI retail pricing is intentionally independent. We still retain the
+  // provider expense for margin reporting, without replacing the AI tariff.
+  const isAiCall = settlement?.description.includes("AI_AGENT") ?? false;
+  const oldTotal = callLog.cost?.toNumber() ?? 0;
+  const oldWallet = callLog.billedAmount?.toNumber() ?? 0;
+  const walletShare = oldTotal > 0 ? Math.max(0, Math.min(oldWallet / oldTotal, 1)) : 0;
+  const retailTotal = isAiCall
+    ? new Prisma.Decimal(oldTotal)
+    : new Prisma.Decimal(params.providerCost).mul(new Prisma.Decimal(1).add(rates.callMarkupPercent.div(100)));
+  const newWallet = isAiCall ? new Prisma.Decimal(oldWallet) : retailTotal.mul(walletShare);
+  const adjustment = newWallet.sub(oldWallet).toDecimalPlaces(4);
+
+  await prisma.$transaction(async (tx) => {
+    const existing = await tx.walletTransaction.findUnique({
+      where: { unique_billing_per_call: { callControlId: params.callControlId, type: "PSTN_CDR_ADJUSTMENT" } },
+    });
+    if (existing) return;
+
+    if (adjustment.gt(0)) {
+      const debited = await debitWalletAtomically(tx, callLog.organizationId, adjustment.toNumber());
+      if (!debited) throw new Error("INSUFFICIENT_FUNDS_FOR_CDR_ADJUSTMENT");
+    } else if (adjustment.lt(0)) {
+      await creditWalletAtomically(tx, callLog.organizationId, adjustment.abs().toNumber());
+    }
+
+    await tx.walletTransaction.create({
+      data: {
+        organizationId: callLog.organizationId,
+        amount: adjustment.negated(),
+        type: "PSTN_CDR_ADJUSTMENT",
+        description: `Réconciliation CDR Telnyx (${params.providerCurrency || "devise inconnue"})`,
+        callControlId: params.callControlId,
+      },
+    });
+    await tx.callLog.update({
+      where: { id: callLog.id },
+      data: {
+        cost: retailTotal.toDecimalPlaces(4),
+        billedAmount: newWallet.toDecimalPlaces(4),
+        providerCost: new Prisma.Decimal(params.providerCost),
+        providerCurrency: params.providerCurrency || null,
+        providerBilledSeconds: params.providerBilledSeconds ?? null,
+        providerReconciledAt: new Date(),
+      },
+    });
+  });
+
+  return { reconciled: true, adjustment: adjustment.toNumber() };
 }

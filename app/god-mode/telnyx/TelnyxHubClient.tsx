@@ -19,10 +19,13 @@ import {
   updateCredentialConnection,
   updateCallControlApplication,
   repairApplicationNumberRouting,
+  listVoiceUsers,
+  setUserVoiceAccess,
 } from "./actions";
 
 export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
-  const [apiKey, setApiKey] = useState(initialSettings?.telnyxApiKey || "");
+  const [newApiKey, setNewApiKey] = useState("");
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(Boolean(initialSettings?.telnyxApiKeyConfigured));
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -36,13 +39,33 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
   const [isCreatingProfile, setIsCreatingProfile] = useState(false);
   const [newProfileName, setNewProfileName] = useState("");
   const [newProfileLimit, setNewProfileLimit] = useState("10");
+  const [newProfileDestinations, setNewProfileDestinations] = useState("US,CA,FR,GB,CM");
+  const [newProfileMaxRate, setNewProfileMaxRate] = useState("1.00");
+  const [newProfileDailyLimit, setNewProfileDailyLimit] = useState("100.00");
+  const [newProfileDailyEnabled, setNewProfileDailyEnabled] = useState(true);
+  const [editingProfile, setEditingProfile] = useState<any | null>(null);
+  const [editingCallApp, setEditingCallApp] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [voiceConnectionId, setVoiceConnectionId] = useState(initialSettings?.telnyxConnectionId || "");
   const [voiceWebhookUrl, setVoiceWebhookUrl] = useState("");
   const [voiceFailoverUrl, setVoiceFailoverUrl] = useState("");
   const [voiceWebhookVersion, setVoiceWebhookVersion] = useState<"1" | "2">("2");
   const [voiceWebhookTimeout, setVoiceWebhookTimeout] = useState("10");
+  const [voiceOptions, setVoiceOptions] = useState<any>({
+    active: true, connectionName: "", anchor: "Latency", dtmf: "RFC 2833", sipUri: "disabled",
+    comfortNoise: true, encodeContact: true, encryptedMedia: "SRTP", noiseSuppression: "both", tags: "",
+    inboundChannelLimit: "10", inboundCodecs: "OPUS,G722,PCMU,PCMA", aniFormat: "+E.164", dnisFormat: "+e164",
+    generateInboundRingback: true, shakenStir: true, simultaneousRinging: "enabled", prack: true,
+    timeout1xx: "10", timeout2xx: "20", outboundChannelLimit: "10", outboundProfileId: "",
+    aniOverride: "normal", callParking: true, instantRingback: true, generateOutboundRingback: true,
+    localization: "US", jitterEnabled: true, jitterMin: "60", jitterMax: "200", rtcpCapture: false,
+    rtcpPort: "rtcp-mux", rtcpFrequency: "10", conversationPersistence: false, t38Passthrough: false,
+    t38ReinviteSource: "customer", iosPushCredentialId: "", androidPushCredentialId: "",
+    inboundRoutingMethod: "sequential", isupHeaders: false, compactSipHeaders: false,
+    noiseEngine: "deep_filter_net", noiseAttenuation: "80",
+  });
   const [routingMessage, setRoutingMessage] = useState<string | null>(null);
+  const [voiceUsers, setVoiceUsers] = useState<any[]>([]);
 
   // Numbers State
   const [searchCountry, setSearchCountry] = useState("US");
@@ -58,23 +81,27 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
   const handleSaveKey = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      await saveTelnyxApiKey(apiKey);
-      loadTelnyxData(apiKey);
+      const result = await saveTelnyxApiKey(newApiKey);
+      if (result?.error) return setError(result.error);
+      setNewApiKey("");
+      setApiKeyConfigured(true);
+      loadTelnyxData();
     });
   };
 
-  const loadTelnyxData = async (key: string) => {
-    if (!key) return;
+  const loadTelnyxData = async () => {
+    if (!apiKeyConfigured && !newApiKey) return;
     setLoadingData(true);
     setError(null);
     try {
-      const [balRes, msgRes, callRes, logsRes, outProfRes, credConnRes] = await Promise.all([
-        fetchTelnyxBalance(key),
-        fetchMessagingProfiles(key),
-        fetchCallControlApps(key),
-        fetchRecentMessages(key),
-        fetchOutboundProfiles(key),
-        fetchCredentialConnections(key)
+      const [balRes, msgRes, callRes, logsRes, outProfRes, credConnRes, voiceUsersRes] = await Promise.all([
+        fetchTelnyxBalance(),
+        fetchMessagingProfiles(),
+        fetchCallControlApps(),
+        fetchRecentMessages(),
+        fetchOutboundProfiles(),
+        fetchCredentialConnections(),
+        listVoiceUsers(),
       ]);
 
       if (balRes.error) throw new Error(balRes.error);
@@ -85,6 +112,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
       if (logsRes.data) setRecentMessages(logsRes.data);
       if (outProfRes.data) setOutboundProfiles(outProfRes.data);
       if (credConnRes.data) setCredentialConnections(credConnRes.data);
+      if (voiceUsersRes.data) setVoiceUsers(voiceUsersRes.data);
 
     } catch (e: any) {
       setError(e.message);
@@ -97,7 +125,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     setIsSearching(true);
     setError(null);
     try {
-      const res = await searchGlobalNumbers(apiKey, searchCountry);
+      const res = await searchGlobalNumbers(searchCountry);
       if (res.error) throw new Error(res.error);
       setAvailableNumbers(res.data || []);
       
@@ -117,7 +145,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     }
     setPurchasingNumber(phoneNumber);
     try {
-      const res = await purchaseAndAssignNumber(apiKey, phoneNumber, selectedOrgId);
+      const res = await purchaseAndAssignNumber(phoneNumber, selectedOrgId);
       if (res.error) throw new Error(res.error);
       alert(`Number ${phoneNumber} successfully purchased and assigned!`);
       // Remove from list
@@ -130,9 +158,9 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
   };
 
   const handleRefreshLogs = async () => {
-    if (!apiKey) return;
+    if (!apiKeyConfigured) return;
     try {
-      const logsRes = await fetchRecentMessages(apiKey);
+      const logsRes = await fetchRecentMessages();
       if (logsRes.data) setRecentMessages(logsRes.data);
     } catch (e: any) {
       console.error(e);
@@ -140,8 +168,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
   };
 
   useEffect(() => {
-    if (initialSettings?.telnyxApiKey) {
-      loadTelnyxData(initialSettings.telnyxApiKey);
+    if (initialSettings?.telnyxApiKeyConfigured) {
+      loadTelnyxData();
     }
   }, [initialSettings]);
 
@@ -152,6 +180,51 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     setVoiceFailoverUrl(connection.webhook_event_failover_url || "");
     setVoiceWebhookVersion(connection.webhook_api_version === "1" ? "1" : "2");
     setVoiceWebhookTimeout(String(connection.webhook_timeout_secs ?? 10));
+    setVoiceOptions({
+      active: connection.active !== false,
+      connectionName: connection.connection_name || connection.user_name || "",
+      anchor: connection.anchorsite_override || "Latency",
+      dtmf: connection.dtmf_type || "RFC 2833",
+      sipUri: connection.sip_uri_calling_preference || "disabled",
+      comfortNoise: Boolean(connection.default_on_hold_comfort_noise_enabled),
+      encodeContact: Boolean(connection.encode_contact_header_enabled),
+      encryptedMedia: connection.encrypted_media || "none",
+      noiseSuppression: typeof connection.noise_suppression === "string" ? connection.noise_suppression : "disabled",
+      tags: Array.isArray(connection.tags) ? connection.tags.join(",") : "",
+      inboundChannelLimit: String(connection.inbound?.channel_limit ?? 10),
+      inboundCodecs: Array.isArray(connection.inbound?.codecs) ? connection.inbound.codecs.join(",") : "OPUS,G722,PCMU,PCMA",
+      aniFormat: connection.inbound?.ani_number_format || "+E.164",
+      dnisFormat: connection.inbound?.dnis_number_format || "+e164",
+      generateInboundRingback: Boolean(connection.inbound?.generate_ringback_tone),
+      shakenStir: Boolean(connection.inbound?.shaken_stir_enabled),
+      simultaneousRinging: connection.inbound?.simultaneous_ringing || "enabled",
+      prack: Boolean(connection.inbound?.prack_enabled),
+      timeout1xx: String(connection.inbound?.timeout_1xx_secs ?? 10),
+      timeout2xx: String(connection.inbound?.timeout_2xx_secs ?? 20),
+      outboundChannelLimit: String(connection.outbound?.channel_limit ?? 10),
+      outboundProfileId: connection.outbound?.outbound_voice_profile_id || "",
+      aniOverride: connection.outbound?.ani_override || "normal",
+      callParking: Boolean(connection.outbound?.call_parking_enabled),
+      instantRingback: Boolean(connection.outbound?.instant_ringback_enabled),
+      generateOutboundRingback: Boolean(connection.outbound?.generate_ringback_tone),
+      localization: connection.outbound?.localization || "US",
+      jitterEnabled: Boolean(connection.jitter_buffer?.enable_jitter_buffer),
+      jitterMin: String(connection.jitter_buffer?.jitterbuffer_msec_min ?? 60),
+      jitterMax: String(connection.jitter_buffer?.jitterbuffer_msec_max ?? 200),
+      rtcpCapture: Boolean(connection.rtcp_settings?.capture_enabled),
+      rtcpPort: connection.rtcp_settings?.port || "rtcp-mux",
+      rtcpFrequency: String(connection.rtcp_settings?.report_frequency_secs ?? 10),
+      conversationPersistence: Boolean(connection.conversation_persistence),
+      t38Passthrough: Boolean(connection.onnet_t38_passthrough_enabled),
+      t38ReinviteSource: connection.outbound?.t38_reinvite_source || "customer",
+      iosPushCredentialId: connection.ios_push_credential_id || "",
+      androidPushCredentialId: connection.android_push_credential_id || "",
+      inboundRoutingMethod: connection.inbound?.default_routing_method || "sequential",
+      isupHeaders: Boolean(connection.inbound?.isup_headers_enabled),
+      compactSipHeaders: Boolean(connection.inbound?.sip_compact_headers_enabled),
+      noiseEngine: connection.noise_suppression_details?.engine || "deep_filter_net",
+      noiseAttenuation: String(connection.noise_suppression_details?.attenuation_limit ?? 80),
+    });
   }, [credentialConnections, voiceConnectionId]);
 
   const saveVoiceRouting = () => {
@@ -163,22 +236,68 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
       setRoutingMessage(null);
       const connection = await saveTelnyxVoiceConnection(voiceConnectionId);
       if (connection.error) return setRoutingMessage(connection.error);
-      const webhook = await updateCredentialConnection(apiKey, voiceConnectionId, {
+      const webhook = await updateCredentialConnection(voiceConnectionId, {
         webhook_event_url: voiceWebhookUrl,
         webhook_event_failover_url: voiceFailoverUrl,
         webhook_api_version: voiceWebhookVersion,
         webhook_timeout_secs: Math.min(30, Math.max(0, Number(voiceWebhookTimeout) || 10)),
+        active: voiceOptions.active,
+        conversation_persistence: voiceOptions.conversationPersistence,
+        connection_name: voiceOptions.connectionName,
+        anchorsite_override: voiceOptions.anchor,
+        dtmf_type: voiceOptions.dtmf,
+        sip_uri_calling_preference: voiceOptions.sipUri,
+        default_on_hold_comfort_noise_enabled: voiceOptions.comfortNoise,
+        encode_contact_header_enabled: voiceOptions.encodeContact,
+        onnet_t38_passthrough_enabled: voiceOptions.t38Passthrough,
+        ios_push_credential_id: voiceOptions.iosPushCredentialId || null,
+        android_push_credential_id: voiceOptions.androidPushCredentialId || null,
+        encrypted_media: voiceOptions.encryptedMedia === "SRTP" ? "SRTP" : null,
+        noise_suppression: voiceOptions.noiseSuppression,
+        noise_suppression_details: { engine: voiceOptions.noiseEngine, attenuation_limit: Number(voiceOptions.noiseAttenuation) },
+        tags: String(voiceOptions.tags).split(",").map((item) => item.trim()).filter(Boolean),
+        rtcp_settings: { port: voiceOptions.rtcpPort, capture_enabled: voiceOptions.rtcpCapture, report_frequency_secs: Number(voiceOptions.rtcpFrequency) },
+        jitter_buffer: {
+          enable_jitter_buffer: voiceOptions.jitterEnabled,
+          jitterbuffer_msec_min: Number(voiceOptions.jitterMin),
+          jitterbuffer_msec_max: Number(voiceOptions.jitterMax),
+        },
+        inbound: {
+          ani_number_format: voiceOptions.aniFormat,
+          dnis_number_format: voiceOptions.dnisFormat,
+          codecs: String(voiceOptions.inboundCodecs).split(",").map((item) => item.trim().toUpperCase()).filter(Boolean),
+          default_routing_method: voiceOptions.inboundRoutingMethod,
+          channel_limit: voiceOptions.inboundChannelLimit === "" ? null : Number(voiceOptions.inboundChannelLimit),
+          generate_ringback_tone: voiceOptions.generateInboundRingback,
+          shaken_stir_enabled: voiceOptions.shakenStir,
+          simultaneous_ringing: voiceOptions.simultaneousRinging,
+          timeout_1xx_secs: Number(voiceOptions.timeout1xx),
+          timeout_2xx_secs: Number(voiceOptions.timeout2xx),
+          prack_enabled: voiceOptions.prack,
+          isup_headers_enabled: voiceOptions.isupHeaders,
+          sip_compact_headers_enabled: voiceOptions.compactSipHeaders,
+        },
+        outbound: {
+          outbound_voice_profile_id: voiceOptions.outboundProfileId || null,
+          channel_limit: voiceOptions.outboundChannelLimit === "" ? null : Number(voiceOptions.outboundChannelLimit),
+          ani_override: voiceOptions.aniOverride,
+          call_parking_enabled: voiceOptions.callParking,
+          instant_ringback_enabled: voiceOptions.instantRingback,
+          generate_ringback_tone: voiceOptions.generateOutboundRingback,
+          localization: voiceOptions.localization,
+          t38_reinvite_source: voiceOptions.t38ReinviteSource,
+        },
       });
       if (webhook.error) return setRoutingMessage(`Configuration enregistrée localement, mais Telnyx a refusé le webhook : ${webhook.error}`);
       setRoutingMessage("Connexion vocale et webhooks enregistrés.");
-      await loadTelnyxData(apiKey);
+      await loadTelnyxData();
     });
   };
 
   const repairExistingNumbers = () => {
     if (!voiceConnectionId) return setRoutingMessage("Choisissez une connexion vocale avant la synchronisation.");
     startTransition(async () => {
-      const result = await repairApplicationNumberRouting(apiKey, voiceConnectionId);
+      const result = await repairApplicationNumberRouting(voiceConnectionId);
       if (result.error !== undefined) return setRoutingMessage(result.error);
       setRoutingMessage(`${result.repaired} numéro(s) rattaché(s) à la connexion vocale.${result.failures.length ? ` ${result.failures.length} échec(s).` : ""}`);
     });
@@ -189,10 +308,15 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     if (!newProfileName) return;
     
     startTransition(async () => {
-      const res = await createOutboundProfile(apiKey, {
+      const res = await createOutboundProfile({
         name: newProfileName,
         concurrent_call_limit: parseInt(newProfileLimit) || 10,
-        billing_group_id: null
+        whitelisted_destinations: newProfileDestinations,
+        max_destination_rate: Number(newProfileMaxRate),
+        daily_spend_limit: Number(newProfileDailyLimit),
+        daily_spend_limit_enabled: newProfileDailyEnabled,
+        enabled: true,
+        billing_group_id: null,
       });
       if (res.error) {
         alert(res.error);
@@ -200,7 +324,55 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
       }
       setIsCreatingProfile(false);
       setNewProfileName("");
-      await loadTelnyxData(apiKey);
+      await loadTelnyxData();
+    });
+  };
+
+  const saveEditedProfile = () => {
+    if (!editingProfile?.id) return;
+    startTransition(async () => {
+      const result = await updateOutboundProfile(editingProfile.id, {
+        ...editingProfile,
+        whitelisted_destinations: Array.isArray(editingProfile.whitelisted_destinations)
+          ? editingProfile.whitelisted_destinations
+          : String(editingProfile.whitelisted_destinations || "").split(","),
+      });
+      if (result.error) return setError(result.error);
+      setEditingProfile(null);
+      await loadTelnyxData();
+    });
+  };
+
+  const saveEditedCallApp = () => {
+    if (!editingCallApp?.id) return;
+    startTransition(async () => {
+      const result = await updateCallControlApplication(editingCallApp.id, {
+        application_name: editingCallApp.application_name,
+        webhook_event_url: editingCallApp.webhook_event_url,
+        webhook_event_failover_url: editingCallApp.webhook_event_failover_url || "",
+        webhook_api_version: editingCallApp.webhook_api_version === "1" ? "1" : "2",
+        webhook_timeout_secs: Number(editingCallApp.webhook_timeout_secs ?? 10),
+        active: editingCallApp.active !== false,
+        anchorsite_override: editingCallApp.anchorsite_override || "Latency",
+        dtmf_type: editingCallApp.dtmf_type || "RFC 2833",
+        first_command_timeout: Boolean(editingCallApp.first_command_timeout),
+        first_command_timeout_secs: Number(editingCallApp.first_command_timeout_secs ?? 10),
+        redact_dtmf_debug_logging: editingCallApp.redact_dtmf_debug_logging !== false,
+        tags: Array.isArray(editingCallApp.tags) ? editingCallApp.tags : String(editingCallApp.tags || "").split(",").filter(Boolean),
+        inbound: {
+          channel_limit: editingCallApp.inbound?.channel_limit === "" ? null : Number(editingCallApp.inbound?.channel_limit ?? 10),
+          shaken_stir_enabled: editingCallApp.inbound?.shaken_stir_enabled !== false,
+          sip_subdomain: editingCallApp.inbound?.sip_subdomain || undefined,
+          sip_subdomain_receive_settings: editingCallApp.inbound?.sip_subdomain_receive_settings || "only_my_connections",
+        },
+        outbound: {
+          channel_limit: editingCallApp.outbound?.channel_limit === "" ? null : Number(editingCallApp.outbound?.channel_limit ?? 10),
+          outbound_voice_profile_id: editingCallApp.outbound?.outbound_voice_profile_id || null,
+        },
+      });
+      if (result.error) return setRoutingMessage(result.error);
+      setEditingCallApp(null);
+      await loadTelnyxData();
     });
   };
 
@@ -240,6 +412,12 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
           className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors whitespace-nowrap ${activeTab === 'routing' ? 'bg-[var(--bg-surface-hover)] text-white' : 'text-[var(--text-secondary)] hover:text-white'}`}
         >
           Call Control & Messaging
+        </button>
+        <button
+          onClick={() => setActiveTab('credentials')}
+          className={`px-4 py-2 font-medium text-sm rounded-lg transition-colors whitespace-nowrap ${activeTab === 'credentials' ? 'bg-[var(--bg-surface-hover)] text-white' : 'text-[var(--text-secondary)] hover:text-white'}`}
+        >
+          Utilisateurs WebRTC
         </button>
         <button 
           onClick={() => setActiveTab('numbers')}
@@ -286,8 +464,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 <div className="relative">
                   <input 
                     type="password" 
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
+                    value={newApiKey}
+                    onChange={(e) => setNewApiKey(e.target.value)}
                     placeholder="KEY018A..."
                     className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-4 py-3 pr-12 text-white font-mono focus:outline-none focus:border-cyan-500 transition-colors"
                   />
@@ -358,7 +536,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
             
             {isCreatingProfile && (
               <form onSubmit={handleCreateProfile} className="mb-6 p-4 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                   <div>
                     <label className="block text-sm text-[var(--text-secondary)] mb-1">Profile Name (Required)</label>
                     <input 
@@ -380,12 +558,46 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                       min="1"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm text-[var(--text-secondary)] mb-1">Destinations autorisées (ISO2)</label>
+                    <input value={newProfileDestinations} onChange={(e) => setNewProfileDestinations(e.target.value)} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" placeholder="US,CA,FR,GB,CM" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[var(--text-secondary)] mb-1">Tarif Telnyx maximal / min</label>
+                    <input type="number" min="0" step="0.0001" value={newProfileMaxRate} onChange={(e) => setNewProfileMaxRate(e.target.value)} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-[var(--text-secondary)] mb-1">Plafond journalier USD</label>
+                    <input type="number" min="0" step="0.01" value={newProfileDailyLimit} onChange={(e) => setNewProfileDailyLimit(e.target.value)} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm self-end pb-2">
+                    <input type="checkbox" checked={newProfileDailyEnabled} onChange={(e) => setNewProfileDailyEnabled(e.target.checked)} />
+                    Appliquer le plafond journalier
+                  </label>
                 </div>
                 <button type="submit" disabled={isPending} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded text-sm font-bold disabled:opacity-50 flex items-center gap-2">
                   {isPending && <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
                   Create
                 </button>
               </form>
+            )}
+
+            {editingProfile && (
+              <div className="mb-6 p-4 bg-cyan-500/5 border border-cyan-500/30 rounded-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold">Modifier {editingProfile.name}</h3>
+                  <button onClick={() => setEditingProfile(null)} className="text-xs text-[var(--text-secondary)]">Fermer</button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <label className="text-sm text-[var(--text-secondary)]">Nom<input value={editingProfile.name || ""} onChange={(e) => setEditingProfile({ ...editingProfile, name: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                  <label className="text-sm text-[var(--text-secondary)]">Canaux simultanés<input type="number" min="1" value={editingProfile.concurrent_call_limit ?? ""} onChange={(e) => setEditingProfile({ ...editingProfile, concurrent_call_limit: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                  <label className="text-sm text-[var(--text-secondary)]">Destinations ISO2<input value={Array.isArray(editingProfile.whitelisted_destinations) ? editingProfile.whitelisted_destinations.join(",") : editingProfile.whitelisted_destinations || ""} onChange={(e) => setEditingProfile({ ...editingProfile, whitelisted_destinations: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                  <label className="text-sm text-[var(--text-secondary)]">Tarif maximal<input type="number" min="0" step="0.0001" value={editingProfile.max_destination_rate ?? 0} onChange={(e) => setEditingProfile({ ...editingProfile, max_destination_rate: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                  <label className="text-sm text-[var(--text-secondary)]">Plafond journalier<input type="number" min="0" step="0.01" value={editingProfile.daily_spend_limit ?? 0} onChange={(e) => setEditingProfile({ ...editingProfile, daily_spend_limit: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                  <div className="space-y-2 pt-5 text-sm"><label className="flex items-center gap-2"><input type="checkbox" checked={editingProfile.enabled !== false} onChange={(e) => setEditingProfile({ ...editingProfile, enabled: e.target.checked })} />Profil actif</label><label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(editingProfile.daily_spend_limit_enabled)} onChange={(e) => setEditingProfile({ ...editingProfile, daily_spend_limit_enabled: e.target.checked })} />Plafond actif</label></div>
+                </div>
+                <button onClick={saveEditedProfile} disabled={isPending} className="mt-4 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded text-sm font-bold disabled:opacity-50">Enregistrer chez Telnyx</button>
+              </div>
             )}
 
             <div className="overflow-x-auto">
@@ -412,7 +624,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                         <td className="px-4 py-3 text-[var(--text-secondary)]">{prof.concurrent_call_limit || "Unlimited"}</td>
                         <td className="px-4 py-3 text-[var(--text-secondary)]">{prof.daily_spend_limit_enabled ? `$${prof.daily_spend_limit}` : "Disabled"}</td>
                         <td className="px-4 py-3 text-right">
-                          <button className="text-cyan-500 hover:text-cyan-400 font-medium text-xs">Edit</button>
+                          <button onClick={() => setEditingProfile({ ...prof })} className="text-cyan-500 hover:text-cyan-400 font-medium text-xs">Modifier</button>
                         </td>
                       </tr>
                     ))
@@ -455,8 +667,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                             onChange={(e) => {
                               const newProfileId = e.target.value || null;
                               startTransition(async () => {
-                                await assignOutboundProfileToConnection(apiKey, conn.id, newProfileId);
-                                await loadTelnyxData(apiKey);
+                                await assignOutboundProfileToConnection(conn.id, newProfileId);
+                                await loadTelnyxData();
                               });
                             }}
                           >
@@ -522,6 +734,42 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 </label>
               </div>
             </div>
+            <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-5">
+              <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] space-y-3">
+                <h3 className="font-bold">Connexion et média</h3>
+                <label className="block text-xs text-[var(--text-secondary)]">Nom<input value={voiceOptions.connectionName} onChange={(e) => setVoiceOptions({ ...voiceOptions, connectionName: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                <label className="block text-xs text-[var(--text-secondary)]">Anchor site<select value={voiceOptions.anchor} onChange={(e) => setVoiceOptions({ ...voiceOptions, anchor: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option>Latency</option><option>Frankfurt, Germany</option><option>Amsterdam, Netherlands</option><option>London, UK</option><option>Ashburn, VA</option><option>Chicago, IL</option><option>San Jose, CA</option><option>Toronto, Canada</option><option>Vancouver, Canada</option><option>Sydney, Australia</option></select></label>
+                <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">DTMF<select value={voiceOptions.dtmf} onChange={(e) => setVoiceOptions({ ...voiceOptions, dtmf: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2"><option>RFC 2833</option><option>Inband</option><option>SIP INFO</option></select></label><label className="block text-xs text-[var(--text-secondary)]">SIP URI<select value={voiceOptions.sipUri} onChange={(e) => setVoiceOptions({ ...voiceOptions, sipUri: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2"><option value="disabled">Désactivé</option><option value="internal">Interne</option><option value="unrestricted">Public</option></select></label></div>
+                <label className="block text-xs text-[var(--text-secondary)]">Suppression du bruit<select value={voiceOptions.noiseSuppression} onChange={(e) => setVoiceOptions({ ...voiceOptions, noiseSuppression: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="disabled">Désactivée</option><option value="inbound">Entrant</option><option value="outbound">Sortant</option><option value="both">Deux sens</option></select></label>
+                <label className="block text-xs text-[var(--text-secondary)]">Atténuation du bruit (0–100)<input type="number" min="0" max="100" value={voiceOptions.noiseAttenuation} onChange={(e) => setVoiceOptions({ ...voiceOptions, noiseAttenuation: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                <label className="block text-xs text-[var(--text-secondary)]">Tags<input value={voiceOptions.tags} onChange={(e) => setVoiceOptions({ ...voiceOptions, tags: e.target.value })} placeholder="production,webrtc" className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">Jitter min ms<input type="number" value={voiceOptions.jitterMin} onChange={(e) => setVoiceOptions({ ...voiceOptions, jitterMin: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label><label className="block text-xs text-[var(--text-secondary)]">Jitter max ms<input type="number" value={voiceOptions.jitterMax} onChange={(e) => setVoiceOptions({ ...voiceOptions, jitterMax: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label></div>
+                <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">Port RTCP<select value={voiceOptions.rtcpPort} onChange={(e) => setVoiceOptions({ ...voiceOptions, rtcpPort: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2"><option value="rtcp-mux">RTCP mux</option><option value="rtp+1">RTP + 1</option></select></label><label className="block text-xs text-[var(--text-secondary)]">Rapport RTCP (s)<input type="number" min="1" max="60" value={voiceOptions.rtcpFrequency} onChange={(e) => setVoiceOptions({ ...voiceOptions, rtcpFrequency: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label></div>
+                <label className="block text-xs text-[var(--text-secondary)]">Credential push iOS<input value={voiceOptions.iosPushCredentialId} onChange={(e) => setVoiceOptions({ ...voiceOptions, iosPushCredentialId: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                <label className="block text-xs text-[var(--text-secondary)]">Credential push Android<input value={voiceOptions.androidPushCredentialId} onChange={(e) => setVoiceOptions({ ...voiceOptions, androidPushCredentialId: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                <div className="grid grid-cols-2 gap-2 text-xs"><label><input type="checkbox" checked={voiceOptions.active} onChange={(e) => setVoiceOptions({ ...voiceOptions, active: e.target.checked })} /> Active</label><label><input type="checkbox" checked={voiceOptions.encryptedMedia === "SRTP"} onChange={(e) => setVoiceOptions({ ...voiceOptions, encryptedMedia: e.target.checked ? "SRTP" : "none" })} /> SRTP</label><label><input type="checkbox" checked={voiceOptions.comfortNoise} onChange={(e) => setVoiceOptions({ ...voiceOptions, comfortNoise: e.target.checked })} /> Bruit de confort</label><label><input type="checkbox" checked={voiceOptions.encodeContact} onChange={(e) => setVoiceOptions({ ...voiceOptions, encodeContact: e.target.checked })} /> Contact NAT</label><label><input type="checkbox" checked={voiceOptions.jitterEnabled} onChange={(e) => setVoiceOptions({ ...voiceOptions, jitterEnabled: e.target.checked })} /> Jitter buffer</label><label><input type="checkbox" checked={voiceOptions.rtcpCapture} onChange={(e) => setVoiceOptions({ ...voiceOptions, rtcpCapture: e.target.checked })} /> Capture RTCP</label><label><input type="checkbox" checked={voiceOptions.conversationPersistence} onChange={(e) => setVoiceOptions({ ...voiceOptions, conversationPersistence: e.target.checked })} /> Persistance conversation</label><label><input type="checkbox" checked={voiceOptions.t38Passthrough} onChange={(e) => setVoiceOptions({ ...voiceOptions, t38Passthrough: e.target.checked })} /> T.38 on-net</label></div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] space-y-3">
+                <h3 className="font-bold">Appels entrants</h3>
+                <label className="block text-xs text-[var(--text-secondary)]">Codecs préférés<input value={voiceOptions.inboundCodecs} onChange={(e) => setVoiceOptions({ ...voiceOptions, inboundCodecs: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">Canaux<input type="number" min="1" value={voiceOptions.inboundChannelLimit} onChange={(e) => setVoiceOptions({ ...voiceOptions, inboundChannelLimit: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label><label className="block text-xs text-[var(--text-secondary)]">Sonnerie<select value={voiceOptions.simultaneousRinging} onChange={(e) => setVoiceOptions({ ...voiceOptions, simultaneousRinging: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2"><option value="enabled">Simultanée</option><option value="disabled">Désactivée</option></select></label></div>
+                <label className="block text-xs text-[var(--text-secondary)]">Méthode de routage<select value={voiceOptions.inboundRoutingMethod} onChange={(e) => setVoiceOptions({ ...voiceOptions, inboundRoutingMethod: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="sequential">Séquentielle</option><option value="round-robin">Round robin</option></select></label>
+                <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">Format ANI<input value={voiceOptions.aniFormat} onChange={(e) => setVoiceOptions({ ...voiceOptions, aniFormat: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label><label className="block text-xs text-[var(--text-secondary)]">Format DNIS<input value={voiceOptions.dnisFormat} onChange={(e) => setVoiceOptions({ ...voiceOptions, dnisFormat: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label></div>
+                <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">Timeout 1xx<input type="number" value={voiceOptions.timeout1xx} onChange={(e) => setVoiceOptions({ ...voiceOptions, timeout1xx: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label><label className="block text-xs text-[var(--text-secondary)]">Timeout 2xx<input type="number" value={voiceOptions.timeout2xx} onChange={(e) => setVoiceOptions({ ...voiceOptions, timeout2xx: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label></div>
+                <div className="space-y-2 text-xs"><label className="block"><input type="checkbox" checked={voiceOptions.shakenStir} onChange={(e) => setVoiceOptions({ ...voiceOptions, shakenStir: e.target.checked })} /> En-têtes SHAKEN/STIR</label><label className="block"><input type="checkbox" checked={voiceOptions.generateInboundRingback} onChange={(e) => setVoiceOptions({ ...voiceOptions, generateInboundRingback: e.target.checked })} /> Générer la tonalité</label><label className="block"><input type="checkbox" checked={voiceOptions.prack} onChange={(e) => setVoiceOptions({ ...voiceOptions, prack: e.target.checked })} /> PRACK</label><label className="block"><input type="checkbox" checked={voiceOptions.isupHeaders} onChange={(e) => setVoiceOptions({ ...voiceOptions, isupHeaders: e.target.checked })} /> En-têtes ISUP</label><label className="block"><input type="checkbox" checked={voiceOptions.compactSipHeaders} onChange={(e) => setVoiceOptions({ ...voiceOptions, compactSipHeaders: e.target.checked })} /> En-têtes SIP compacts</label></div>
+              </div>
+
+              <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] space-y-3">
+                <h3 className="font-bold">Appels sortants</h3>
+                <label className="block text-xs text-[var(--text-secondary)]">Profil sortant<select value={voiceOptions.outboundProfileId} onChange={(e) => setVoiceOptions({ ...voiceOptions, outboundProfileId: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="">Aucun</option>{outboundProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select></label>
+                <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">Canaux<input type="number" min="1" value={voiceOptions.outboundChannelLimit} onChange={(e) => setVoiceOptions({ ...voiceOptions, outboundChannelLimit: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label><label className="block text-xs text-[var(--text-secondary)]">Localisation<input maxLength={2} value={voiceOptions.localization} onChange={(e) => setVoiceOptions({ ...voiceOptions, localization: e.target.value.toUpperCase() })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label></div>
+                <label className="block text-xs text-[var(--text-secondary)]">Politique Caller ID<select value={voiceOptions.aniOverride} onChange={(e) => setVoiceOptions({ ...voiceOptions, aniOverride: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="normal">Normale</option><option value="always">Toujours remplacer</option><option value="never">Ne jamais remplacer</option></select></label>
+                <label className="block text-xs text-[var(--text-secondary)]">Source réinvite T.38<select value={voiceOptions.t38ReinviteSource} onChange={(e) => setVoiceOptions({ ...voiceOptions, t38ReinviteSource: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="customer">Client</option><option value="telnyx">Telnyx</option></select></label>
+                <div className="space-y-2 text-xs"><label className="block"><input type="checkbox" checked={voiceOptions.callParking} onChange={(e) => setVoiceOptions({ ...voiceOptions, callParking: e.target.checked })} /> Parking Call Control</label><label className="block"><input type="checkbox" checked={voiceOptions.instantRingback} onChange={(e) => setVoiceOptions({ ...voiceOptions, instantRingback: e.target.checked })} /> Ringback instantané</label><label className="block"><input type="checkbox" checked={voiceOptions.generateOutboundRingback} onChange={(e) => setVoiceOptions({ ...voiceOptions, generateOutboundRingback: e.target.checked })} /> Générer la tonalité</label></div>
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-300">Le coût d’appel dans les webhooks reste toujours activé pour protéger la facturation.</div>
+              </div>
+            </div>
             <div className="mt-5 flex items-center gap-4">
               <button onClick={saveVoiceRouting} disabled={isPending} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg disabled:opacity-50">Enregistrer le routage vocal</button>
               {routingMessage && <span className="text-sm text-[var(--text-secondary)]">{routingMessage}</span>}
@@ -567,6 +815,28 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
               <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-xs font-bold rounded-full">{callApps.length} Apps</span>
             </div>
             <div className="p-6">
+              {editingCallApp && (
+                <div className="mb-6 p-4 rounded-xl border border-purple-500/30 bg-purple-500/5">
+                  <div className="flex justify-between items-center mb-4"><h3 className="font-bold">Configuration complète — {editingCallApp.application_name}</h3><button onClick={() => setEditingCallApp(null)} className="text-xs text-[var(--text-secondary)]">Fermer</button></div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <label className="text-xs text-[var(--text-secondary)]">Nom<input value={editingCallApp.application_name || ""} onChange={(e) => setEditingCallApp({ ...editingCallApp, application_name: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Webhook primaire<input value={editingCallApp.webhook_event_url || ""} onChange={(e) => setEditingCallApp({ ...editingCallApp, webhook_event_url: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Webhook secours<input value={editingCallApp.webhook_event_failover_url || ""} onChange={(e) => setEditingCallApp({ ...editingCallApp, webhook_event_failover_url: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Anchor site<select value={editingCallApp.anchorsite_override || "Latency"} onChange={(e) => setEditingCallApp({ ...editingCallApp, anchorsite_override: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option>Latency</option><option>Amsterdam, Netherlands</option><option>London, UK</option><option>Ashburn, VA</option><option>Chicago, IL</option><option>San Jose, CA</option><option>Toronto, Canada</option><option>Sydney, Australia</option><option>Chennai, IN</option></select></label>
+                    <label className="text-xs text-[var(--text-secondary)]">DTMF<select value={editingCallApp.dtmf_type || "RFC 2833"} onChange={(e) => setEditingCallApp({ ...editingCallApp, dtmf_type: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option>RFC 2833</option><option>Inband</option><option>SIP INFO</option></select></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Timeout webhook<input type="number" min="0" max="30" value={editingCallApp.webhook_timeout_secs ?? 10} onChange={(e) => setEditingCallApp({ ...editingCallApp, webhook_timeout_secs: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Timeout première commande<input type="number" min="1" max="120" value={editingCallApp.first_command_timeout_secs ?? 10} onChange={(e) => setEditingCallApp({ ...editingCallApp, first_command_timeout_secs: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Canaux entrants<input type="number" min="1" value={editingCallApp.inbound?.channel_limit ?? 10} onChange={(e) => setEditingCallApp({ ...editingCallApp, inbound: { ...editingCallApp.inbound, channel_limit: e.target.value } })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Canaux sortants<input type="number" min="1" value={editingCallApp.outbound?.channel_limit ?? 10} onChange={(e) => setEditingCallApp({ ...editingCallApp, outbound: { ...editingCallApp.outbound, channel_limit: e.target.value } })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Profil sortant<select value={editingCallApp.outbound?.outbound_voice_profile_id || ""} onChange={(e) => setEditingCallApp({ ...editingCallApp, outbound: { ...editingCallApp.outbound, outbound_voice_profile_id: e.target.value } })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="">Aucun</option>{outboundProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Sous-domaine SIP<input value={editingCallApp.inbound?.sip_subdomain || ""} onChange={(e) => setEditingCallApp({ ...editingCallApp, inbound: { ...editingCallApp.inbound, sip_subdomain: e.target.value } })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Réception SIP<select value={editingCallApp.inbound?.sip_subdomain_receive_settings || "only_my_connections"} onChange={(e) => setEditingCallApp({ ...editingCallApp, inbound: { ...editingCallApp.inbound, sip_subdomain_receive_settings: e.target.value } })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="only_my_connections">Mes connexions uniquement</option><option value="from_anyone">Internet public</option></select></label>
+                    <label className="text-xs text-[var(--text-secondary)]">Tags<input value={Array.isArray(editingCallApp.tags) ? editingCallApp.tags.join(",") : editingCallApp.tags || ""} onChange={(e) => setEditingCallApp({ ...editingCallApp, tags: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-4 text-xs"><label><input type="checkbox" checked={editingCallApp.active !== false} onChange={(e) => setEditingCallApp({ ...editingCallApp, active: e.target.checked })} /> Application active</label><label><input type="checkbox" checked={Boolean(editingCallApp.first_command_timeout)} onChange={(e) => setEditingCallApp({ ...editingCallApp, first_command_timeout: e.target.checked })} /> Raccrocher si timeout initial</label><label><input type="checkbox" checked={editingCallApp.redact_dtmf_debug_logging !== false} onChange={(e) => setEditingCallApp({ ...editingCallApp, redact_dtmf_debug_logging: e.target.checked })} /> Masquer DTMF dans les logs</label><label><input type="checkbox" checked={editingCallApp.inbound?.shaken_stir_enabled !== false} onChange={(e) => setEditingCallApp({ ...editingCallApp, inbound: { ...editingCallApp.inbound, shaken_stir_enabled: e.target.checked } })} /> SHAKEN/STIR</label></div>
+                  <button onClick={saveEditedCallApp} disabled={isPending} className="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded text-sm font-bold disabled:opacity-50">Enregistrer chez Telnyx</button>
+                </div>
+              )}
               {callApps.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {callApps.map(a => (
@@ -588,7 +858,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                       <button
                         disabled={isPending || !voiceWebhookUrl}
                         onClick={() => startTransition(async () => {
-                          const result = await updateCallControlApplication(apiKey, a.id, {
+                          const result = await updateCallControlApplication(a.id, {
                             application_name: a.application_name,
                             webhook_event_url: voiceWebhookUrl,
                             webhook_event_failover_url: voiceFailoverUrl,
@@ -597,12 +867,13 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                             active: a.active !== false,
                           });
                           setRoutingMessage(result.error || `Application ${a.application_name} configurée.`);
-                          if (!result.error) await loadTelnyxData(apiKey);
+                          if (!result.error) await loadTelnyxData();
                         })}
                         className="mt-4 w-full py-2 border border-purple-500/30 text-purple-300 hover:bg-purple-500/10 rounded-lg text-xs font-semibold disabled:opacity-50"
                       >
                         Appliquer ce webhook vocal
                       </button>
+                      <button onClick={() => setEditingCallApp({ ...a, inbound: { ...(a.inbound || {}) }, outbound: { ...(a.outbound || {}) } })} className="mt-2 w-full py-2 border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/10 rounded-lg text-xs font-semibold">Modifier tous les réglages</button>
                     </div>
                   ))}
                 </div>
@@ -610,6 +881,36 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 <p className="text-[var(--text-secondary)] text-sm">No Call Control Applications found.</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'credentials' && (
+        <div className="glass-panel border-none rounded-2xl shadow-2xl overflow-hidden">
+          <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)]">
+            <h2 className="text-xl font-bold">Identités WebRTC par utilisateur</h2>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">Chaque utilisateur reçoit son propre credential Telnyx et seulement un JWT temporaire côté navigateur. La clé maître reste sur le serveur.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-[var(--border-subtle)] text-[var(--text-secondary)]"><tr><th className="px-5 py-3">Utilisateur</th><th className="px-5 py-3">Organisation</th><th className="px-5 py-3">Accès</th><th className="px-5 py-3">Credential</th><th className="px-5 py-3 text-right">Actions</th></tr></thead>
+              <tbody className="divide-y divide-white/5">
+                {voiceUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td className="px-5 py-4"><div className="font-semibold">{user.name || user.email}</div><div className="text-xs text-[var(--text-secondary)]">{user.email}</div></td>
+                    <td className="px-5 py-4">{user.organization?.name || "—"}</td>
+                    <td className="px-5 py-4"><span className={user.isCallable ? "text-emerald-400" : "text-red-400"}>{user.isCallable ? "Autorisé" : "Bloqué"}</span></td>
+                    <td className="px-5 py-4"><div>{user.credentialStatus}</div><div className="text-[10px] font-mono text-[var(--text-secondary)] max-w-[220px] truncate" title={user.telnyxTelephonyCredentialId || ""}>{user.telnyxTelephonyCredentialId || "Créé à la prochaine connexion"}</div></td>
+                    <td className="px-5 py-4 text-right space-x-2">
+                      {user.isCallable && user.telnyxTelephonyCredentialId && (
+                        <button disabled={isPending} onClick={() => startTransition(async () => { const result = await setUserVoiceAccess(user.id, true); if (result.error) setError(result.error); else await loadTelnyxData(); })} className="px-3 py-1.5 border border-amber-500/30 text-amber-300 rounded text-xs disabled:opacity-50">Révoquer/renouveler</button>
+                      )}
+                      <button disabled={isPending} onClick={() => startTransition(async () => { const result = await setUserVoiceAccess(user.id, !user.isCallable); if (result.error) setError(result.error); else await loadTelnyxData(); })} className={`px-3 py-1.5 border rounded text-xs disabled:opacity-50 ${user.isCallable ? 'border-red-500/30 text-red-300' : 'border-emerald-500/30 text-emerald-300'}`}>{user.isCallable ? "Bloquer" : "Autoriser"}</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

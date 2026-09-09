@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "dev:ws": "tsx server/media-server.ts",
+        "worker:pstn-forward": "tsx server/pstn-forward-worker.ts",
         "build": "next build --webpack",
         "start": "next start",
         "lint": "eslint",

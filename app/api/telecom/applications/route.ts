@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getConfiguredTelnyxClient } from '@/lib/telnyx';
 import { requireSuperAdminApi } from '@/lib/security';
+import { callControlApplicationPayload } from '@/lib/telnyx-voice-settings';
 
 export async function GET(request: Request) {
   try {
@@ -32,22 +33,7 @@ export async function POST(request: Request) {
     if (denied) return denied;
     const telnyxClient = await getConfiguredTelnyxClient();
     const body = await request.json();
-    const { application_name, webhook_event_url } = body;
-
-    if (!application_name || !webhook_event_url) {
-      return NextResponse.json(
-        { success: false, error: 'application_name and webhook_event_url are required' },
-        { status: 400 }
-      );
-    }
-
-    const response = await telnyxClient.callControlApplications.create({
-      application_name,
-      webhook_event_url,
-      active: true,
-      anchorsite_override: 'Latency',
-      webhook_api_version: '2' // Recommandé par la V2
-    });
+    const response = await telnyxClient.callControlApplications.create(callControlApplicationPayload(body) as any);
 
     return NextResponse.json({ success: true, application: response.data });
   } catch (error: any) {
@@ -56,5 +42,33 @@ export async function POST(request: Request) {
       { success: false, error: error.message || 'Failed to create application' },
       { status: 500 }
     );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: 'id is required' }, { status: 400 });
+    const client = await getConfiguredTelnyxClient();
+    const response = await client.callControlApplications.update(id, callControlApplicationPayload(await request.json()) as any);
+    return NextResponse.json({ success: true, application: response.data });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to update application' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: 'id is required' }, { status: 400 });
+    const client = await getConfiguredTelnyxClient();
+    const response = await client.callControlApplications.delete(id);
+    return NextResponse.json({ success: true, application: response.data });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to delete application' }, { status: 500 });
   }
 }

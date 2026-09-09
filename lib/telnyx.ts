@@ -1,4 +1,3 @@
-// @ts-ignore
 import Telnyx from 'telnyx';
 import { prisma } from '@/lib/prisma';
 
@@ -7,7 +6,9 @@ let configuredTelnyxInstance: any = null;
 let configuredTelnyxApiKey: string | null = null;
 
 function createClient(apiKey: string) {
-  return new (Telnyx as any)(apiKey);
+  // Telnyx SDK >= 7 uses an options object. Passing the key positionally
+  // silently leaves apiKey unset because the constructor destructures it.
+  return new Telnyx({ apiKey });
 }
 
 export function getTelnyxClient() {
@@ -26,13 +27,18 @@ export function getTelnyxClient() {
  * remains a deployment fallback. The cache is rotated automatically when an
  * administrator replaces the key in God Mode.
  */
-export async function getConfiguredTelnyxClient() {
+export async function getConfiguredTelnyxApiKey() {
   const settings = await prisma.systemSettings.findUnique({
     where: { id: 'default' },
     select: { telnyxApiKey: true },
   });
   const apiKey = settings?.telnyxApiKey?.trim() || process.env.TELNYX_API_KEY?.trim();
   if (!apiKey) throw new Error('Telnyx API key is not configured');
+  return apiKey;
+}
+
+export async function getConfiguredTelnyxClient() {
+  const apiKey = await getConfiguredTelnyxApiKey();
   if (!configuredTelnyxInstance || configuredTelnyxApiKey !== apiKey) {
     configuredTelnyxInstance = createClient(apiKey);
     configuredTelnyxApiKey = apiKey;

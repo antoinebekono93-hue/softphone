@@ -59,9 +59,34 @@ export async function POST(req: Request) {
       );
     }
 
+    // Claim the answer before issuing the provider command. This closes the
+    // 14.8s-vs-15s race with APP_THEN_FORWARD: the worker can only claim a
+    // call still in INITIATED/RINGING.
+    const claimed = await prisma.callLog.updateMany({
+      where: {
+        id: callLog.id,
+        status: { in: ["INITIATED", "RINGING"] },
+        OR: [{ forwardStatus: null }, { forwardStatus: "SCHEDULED" }],
+      },
+      data: {
+        status: "ANSWERING",
+        ...(callLog.forwardStatus === "SCHEDULED" ? { forwardStatus: "CANCELLED" } : {}),
+      },
+    });
+    if (claimed.count !== 1) {
+      return NextResponse.json({ error: "Call is already answered or being forwarded" }, { status: 409 });
+    }
+
     const telnyx = await getConfiguredTelnyxClient();
-    const call = new telnyx.Call({ call_control_id: callControlId });
-    await call.answer({ command_id: crypto.randomUUID() });
+    try {
+      await telnyx.calls.actions.answer(callControlId, { command_id: crypto.randomUUID() });
+    } catch (error) {
+      await prisma.callLog.updateMany({
+        where: { id: callLog.id, status: "ANSWERING" },
+        data: { status: callLog.status, forwardStatus: callLog.forwardStatus },
+      });
+      throw error;
+    }
 
     console.log(`[Telnyx Answer] Call ${callControlId} answered via API`);
     return NextResponse.json({ success: true });

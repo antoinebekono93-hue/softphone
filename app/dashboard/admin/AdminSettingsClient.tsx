@@ -13,9 +13,7 @@ export default function AdminSettingsClient() {
     aiAgentRatePerMinute: 0,
     whatsappRate: 0,
     phoneNumberRate: 0,
-    eSimRate: 0,
-    telnyxApiKey: "",
-    telnyxConnectionId: ""
+    eSimRate: 0
   });
 
   useEffect(() => {
@@ -33,9 +31,7 @@ export default function AdminSettingsClient() {
           aiAgentRatePerMinute: data.aiAgentRatePerMinute,
           whatsappRate: data.whatsappRate,
           phoneNumberRate: data.phoneNumberRate,
-          eSimRate: data.eSimRate,
-          telnyxApiKey: data.telnyxApiKey || "",
-          telnyxConnectionId: data.telnyxConnectionId || ""
+          eSimRate: data.eSimRate
         });
       }
     } catch (e) {
@@ -66,7 +62,7 @@ export default function AdminSettingsClient() {
     const { name, value } = e.target;
     setRates(prev => ({ 
       ...prev, 
-      [name]: name.startsWith("telnyx") ? value : (parseFloat(value) || 0) 
+      [name]: parseFloat(value) || 0
     }));
   };
 
@@ -136,24 +132,8 @@ export default function AdminSettingsClient() {
         </div>
       </div>
 
-      <div className="pt-6 border-t border-[var(--border-subtle)] space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">Téléphonie (Telnyx WebRTC)</h3>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Configurez la clé d'API globale et l'ID de connexion SIP pour la plateforme.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[var(--text-secondary)]">API Key (V2)</label>
-            <input type="password" name="telnyxApiKey" value={rates.telnyxApiKey} onChange={handleChange} placeholder="KEY..." className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 px-3 text-[var(--text-primary)] focus:border-cyan-500 outline-none" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-[var(--text-secondary)]">SIP Connection ID</label>
-            <input type="text" name="telnyxConnectionId" value={rates.telnyxConnectionId} onChange={handleChange} placeholder="123456789..." className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 px-3 text-[var(--text-primary)] focus:border-cyan-500 outline-none" />
-          </div>
-        </div>
+      <div className="pt-6 border-t border-[var(--border-subtle)] text-sm text-[var(--text-secondary)]">
+        La clé maître et le routage Telnyx sont gérés exclusivement dans <a href="/god-mode/telnyx" className="text-cyan-400 hover:underline">God Mode → Telnyx</a>. Ils ne sont jamais renvoyés à ce navigateur.
       </div>
     </div>
   );

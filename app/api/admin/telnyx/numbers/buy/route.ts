@@ -1,66 +1,34 @@
 import { NextResponse } from "next/server";
-import { telnyx } from "@/lib/telnyx";
 import { requireSuperAdminApi } from "@/lib/security";
+import { purchaseTelnyxNumber } from "@/lib/telnyx-number-purchase";
 
 export async function POST(req: Request) {
+  const guard = await requireSuperAdminApi();
+  if (guard) return guard;
+
   try {
-    // 1. Security Check: Only allow Super Admins
-    const guard = await requireSuperAdminApi();
-    if (guard) return guard;
-
-    // 2. Extract phone number to purchase from the request body
-    const body = await req.json();
-    const { phoneNumber } = body;
-
-    if (!phoneNumber) {
-      return NextResponse.json({ error: "Phone number is required" }, { status: 400 });
+    const body = await req.json().catch(() => null);
+    if (typeof body?.organizationId !== "string" || !body.organizationId) {
+      return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
     }
-
-    // 3. Sip connection check
-    const sipConnectionId = process.env.TELNYX_SIP_CONNECTION_ID;
-    const callControlAppId = process.env.TELNYX_CALL_CONTROL_APP_ID;
-    const messagingProfileId = process.env.TELNYX_MESSAGING_PROFILE_ID;
-    
-    if (!messagingProfileId) {
-      return NextResponse.json({ error: "TELNYX_MESSAGING_PROFILE_ID is missing in environment. Cannot purchase number for SMS." }, { status: 400 });
-    }
-
-    // 4. Place the order via Telnyx Number Orders API
-    console.log(`Placing order for number: ${phoneNumber}...`);
-    
-    // We order the specific number
-    const orderResponse = await telnyx.numberOrders.create({
-      phone_numbers: [{ phone_number: phoneNumber }],
-      // Priority to Call Control App (AI Agents), fallback to SIP Connection (Softphone)
-      connection_id: callControlAppId || sipConnectionId,
-      messaging_profile_id: messagingProfileId
+    const result = await purchaseTelnyxNumber({
+      organizationId: body.organizationId,
+      phoneNumber: body.phoneNumber,
+      assignedUserId: typeof body.assignedUserId === "string" ? body.assignedUserId : null,
+      requireApprovedKyc: true,
     });
-
-    // 5. In a real application, we would save this to Prisma Database:
-    /*
-    await prisma.phoneNumber.create({
-      data: {
-        number: phoneNumber,
-        status: "ACTIVE",
-        organizationId: "SOME_ORG_ID",
-      }
-    });
-    */
-
-    return NextResponse.json({ success: true, order: orderResponse.data }, { status: 200 });
-    
-  } catch (error: any) {
-    console.error("Error buying Telnyx number:", error);
-    
-    // Extract Telnyx API error message if available
-    let errorMessage = "Failed to purchase number";
-    if (error.raw && error.raw.errors && error.raw.errors.length > 0) {
-      errorMessage = error.raw.errors[0].detail;
-    }
-
     return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
+      { success: true, order: result },
+      { status: result.status === "ACTIVE" ? 200 : 202 },
     );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "NUMBER_PURCHASE_FAILED";
+    console.error("[Admin Telnyx Number Purchase]", error);
+    const status = message === "INSUFFICIENT_FUNDS" ? 402
+      : message === "KYC_NOT_APPROVED" ? 403
+      : message === "NUMBER_ALREADY_MANAGED" || message === "NUMBER_NO_LONGER_AVAILABLE" ? 409
+      : message.startsWith("INVALID_") ? 400
+      : 502;
+    return NextResponse.json({ error: message }, { status });
   }
 }

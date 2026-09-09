@@ -7,6 +7,8 @@ import { preAuthorizeCall, settlePstnCall, releasePstnReservation } from '@/lib/
 import { getPusherServer } from '@/lib/pusher';
 import { appCallChannels, PSTN_EVENTS } from '@/lib/app-call-channels';
 import { canonicalizePhoneNumber, phoneNumberLookupCandidates } from '@/lib/phone-number';
+import { activateFulfilledTelnyxOrder } from '@/lib/telnyx-number-purchase';
+import { executePstnForward } from '@/lib/pstn-forwarding';
 
 function decodeClientState(value: unknown): { outboundAttemptId?: string; rateProfile?: string } {
   if (typeof value !== 'string' || value.length === 0 || value.length > 4096) return {};
@@ -21,11 +23,24 @@ function decodeClientState(value: unknown): { outboundAttemptId?: string; ratePr
 async function terminateProviderCall(callControlId: string, reason: string) {
   try {
     const telnyx = await getConfiguredTelnyxClient();
-    const call = new telnyx.Call({ call_control_id: callControlId });
-    await call.hangup({ command_id: crypto.randomUUID() });
+    await telnyx.calls.actions.hangup(callControlId, { command_id: crypto.randomUUID() });
   } catch (error) {
     console.error(`[Telnyx Webhook] Unable to terminate ${callControlId} (${reason})`, error);
   }
+}
+
+async function releaseAndTerminateRejectedCall(params: {
+  organizationId: string;
+  callControlId: string;
+  callLogId: string;
+  reason: string;
+}) {
+  const results = await Promise.allSettled([
+    releasePstnReservation(params),
+    terminateProviderCall(params.callControlId, params.reason),
+  ]);
+  const releaseResult = results[0];
+  if (releaseResult.status === 'rejected') throw releaseResult.reason;
 }
 
 async function authorizeCallLog(params: {
@@ -126,7 +141,37 @@ async function processEvent(event: any) {
       return;
     }
 
-    if (eventType === 'call.initiated') {
+    if (eventType === 'advanced_order.status_update' ||
+        eventType === 'number_order.status_update' ||
+        eventType === 'inexplicit_number_order.status_update') {
+      const orderId = event.payload?.order_id || event.payload?.id;
+      const status = event.payload?.new_status || event.payload?.status;
+      if (typeof orderId !== 'string' || !orderId || typeof status !== 'string' || !status) {
+        throw new Error(`Invalid Telnyx number order event: ${eventType}`);
+      }
+      const providerStatus = status.toLowerCase();
+      const fulfilled = ['success', 'completed', 'complete'].includes(providerStatus);
+      await prisma.numberOrder.updateMany({
+        where: { telnyxOrderId: orderId },
+        // "success" is reserved for locally provisioned and routable numbers.
+        data: { status: fulfilled ? 'provider_success' : providerStatus },
+      });
+      if (fulfilled) await activateFulfilledTelnyxOrder(orderId);
+    }
+
+    else if (eventType.startsWith('verification.')) {
+      const verificationId = event.payload?.id;
+      const status = event.payload?.status || event.payload?.response_code || eventType.split('.')[1];
+      if (typeof verificationId !== 'string' || !verificationId || typeof status !== 'string' || !status) {
+        throw new Error(`Invalid Telnyx verification event: ${eventType}`);
+      }
+      await prisma.verificationLog.updateMany({
+        where: { id: verificationId },
+        data: { status },
+      });
+    }
+
+    else if (eventType === 'call.initiated') {
       const direction = event.payload.direction; // 'incoming' or 'outgoing'
       const to = event.payload.to;
       const from = event.payload.from;
@@ -149,7 +194,14 @@ async function processEvent(event: any) {
               toNumber: phoneNumber.number,
               organizationId: phoneNumber.organizationId,
               phoneNumberId: phoneNumber.id,
-              status: 'INITIATED'
+              status: 'INITIATED',
+              callPurpose: 'PSTN_INBOUND',
+              ...(phoneNumber.incomingRoutingEnabled && phoneNumber.incomingRoutingMode !== 'APP' && phoneNumber.forwardToE164 ? {
+                forwardStatus: 'SCHEDULED',
+                forwardToE164: phoneNumber.forwardToE164,
+                forwardCommandId: crypto.randomUUID(),
+                forwardDueAt: new Date(Date.now() + (phoneNumber.incomingRoutingMode === 'APP_THEN_FORWARD' ? phoneNumber.ringAppSeconds * 1000 : 0)),
+              } : {}),
             },
             include: { reservation: { select: { id: true } } },
           });
@@ -157,11 +209,26 @@ async function processEvent(event: any) {
           const rateProfile = phoneNumber.aiEmployee?.isActive ? 'AI_AGENT' : 'STANDARD';
           if (!await authorizeCallLog({ callLog: createdCallLog, callControlId, rateProfile })) return;
 
+          const routingMode = phoneNumber.incomingRoutingEnabled ? phoneNumber.incomingRoutingMode : 'APP';
+          if ((routingMode === 'FORWARD' || routingMode === 'APP_THEN_FORWARD') && !phoneNumber.forwardToE164) {
+            await releaseAndTerminateRejectedCall({
+              organizationId: createdCallLog.organizationId,
+              callControlId,
+              callLogId: createdCallLog.id,
+              reason: 'FORWARD_DESTINATION_MISSING',
+            });
+            return;
+          }
+
+          if (routingMode === 'FORWARD') {
+            await executePstnForward(createdCallLog.id);
+            return;
+          }
+
           // If there is an active AI Agent assigned to this number, take over the call
           if (phoneNumber.aiEmployee && phoneNumber.aiEmployee.isActive) {
             const telnyx = await getConfiguredTelnyxClient();
-            const call = new telnyx.Call({ call_control_id: callControlId });
-            await call.answer({ command_id: crypto.randomUUID() });
+            await telnyx.calls.actions.answer(callControlId, { command_id: crypto.randomUUID() });
             console.log(`[CALL_INCOMING_RECEIVED] ${callControlId} org=${phoneNumber.organizationId} direction=${direction} target=AI_AGENT`);
           } else {
             // ── Appel PSTN entrant vers un utilisateur humain ──────────────
@@ -189,31 +256,45 @@ async function processEvent(event: any) {
                 console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id}`);
               } catch (pusherErr) {
                 console.error(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} ERREUR`, pusherErr);
+                if (routingMode === 'APP_THEN_FORWARD') {
+                  await prisma.callLog.updateMany({
+                    where: { id: createdCallLog.id, forwardStatus: 'SCHEDULED', status: { in: ['INITIATED', 'RINGING'] } },
+                    data: { forwardDueAt: new Date() },
+                  });
+                  await executePstnForward(createdCallLog.id);
+                  return;
+                }
                 await prisma.callLog.update({
                   where: { id: createdCallLog.id },
                   data: { status: 'FAILED', endedAt: new Date() },
                 });
-                await releasePstnReservation({
+                await releaseAndTerminateRejectedCall({
                   organizationId: createdCallLog.organizationId,
                   callControlId,
                   callLogId: createdCallLog.id,
                   reason: 'NOTIFICATION_FAILED',
                 });
-                await terminateProviderCall(callControlId, 'NOTIFICATION_FAILED');
               }
             } else {
               console.error(`[CALL_INCOMING_ROUTED] ${callControlId} org=${phoneNumber.organizationId} — aucun utilisateur disponible`);
+              if (routingMode === 'APP_THEN_FORWARD') {
+                await prisma.callLog.updateMany({
+                  where: { id: createdCallLog.id, forwardStatus: 'SCHEDULED', status: { in: ['INITIATED', 'RINGING'] } },
+                  data: { forwardDueAt: new Date() },
+                });
+                await executePstnForward(createdCallLog.id);
+                return;
+              }
               await prisma.callLog.update({
                 where: { id: createdCallLog.id },
                 data: { status: 'FAILED', endedAt: new Date() },
               });
-              await releasePstnReservation({
+              await releaseAndTerminateRejectedCall({
                 organizationId: createdCallLog.organizationId,
                 callControlId,
                 callLogId: createdCallLog.id,
                 reason: 'NO_RECIPIENT',
               });
-              await terminateProviderCall(callControlId, 'NO_RECIPIENT');
             }
             // Le SIP WebRTC natif (Telnyx SDK) reste le canal de média principal.
             // Pusher sert de notification fiable pour afficher l'UI d'appel entrant.
@@ -244,7 +325,7 @@ async function processEvent(event: any) {
                 telnyxCallControlId: provisionalId,
                 organizationId: phoneNumber.organizationId,
                 phoneNumberId: phoneNumber.id,
-                direction: 'OUTBOUND',
+                direction: { in: ['OUTBOUND', 'FORWARD'] },
                 status: 'PREAUTHORIZED',
                 startedAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
               },
@@ -283,6 +364,12 @@ async function processEvent(event: any) {
             ? 'AI_AGENT'
             : 'STANDARD';
           if (!await authorizeCallLog({ callLog, callControlId, rateProfile })) return;
+          if (callLog.direction === 'FORWARD' && callLog.parentCallLogId) {
+            await prisma.callLog.updateMany({
+              where: { id: callLog.parentCallLogId, forwardStatus: { in: ['STARTING', 'DIALING'] } },
+              data: { forwardStatus: 'DIALING' },
+            });
+          }
           console.log(`[CALL_OUTBOUND_BILLING_STARTED] ${callControlId} org=${phoneNumber.organizationId}`);
         } else {
           console.error(`[CALL_OUTBOUND_REJECTED] ${callControlId} — caller ID inactif ou non géré: ${from}`);
@@ -313,6 +400,15 @@ async function processEvent(event: any) {
         throw new Error(`CALL_LOG_NOT_READY:${callControlId}:answered`);
       }
 
+      const parentIsForwarding = callLog.callPurpose === 'PSTN_INBOUND' &&
+        ['STARTING', 'DIALING', 'ANSWERED', 'BRIDGED'].includes(callLog.forwardStatus || '');
+      if (callLog.direction === 'FORWARD' && callLog.parentCallLogId) {
+        await prisma.callLog.updateMany({
+          where: { id: callLog.parentCallLogId, forwardStatus: { in: ['STARTING', 'DIALING'] } },
+          data: { forwardStatus: 'ANSWERED' },
+        });
+      }
+
       const agent = callLog?.phoneNumber?.aiEmployee;
 
       // Only start streaming if there's an active AI Agent
@@ -320,8 +416,6 @@ async function processEvent(event: any) {
         // Option B: LiveKit SIP Architecture
         // We transfer the answered call to the LiveKit SIP Trunk.
         const telnyx = await getConfiguredTelnyxClient();
-        const call = new telnyx.Call({ call_control_id: callControlId });
-        
         const livekitSipUri = process.env.LIVEKIT_SIP_URI?.trim();
         if (!livekitSipUri) {
           console.error(`[Telnyx Webhook] LIVEKIT_SIP_URI missing for AI call ${callControlId}`);
@@ -353,7 +447,7 @@ async function processEvent(event: any) {
         console.log(`[Telnyx Webhook] Transferring call ${callControlId} to LiveKit SIP: ${livekitSipUri}`);
 
         try {
-          await call.transfer({
+          await telnyx.calls.actions.transfer(callControlId, {
             to: livekitSipUri,
             custom_headers: customHeaders
           });
@@ -377,14 +471,30 @@ async function processEvent(event: any) {
       await prisma.callLog.update({
         where: { id: callLog.id },
         data: {
-          status: 'IN_PROGRESS',
+          status: parentIsForwarding ? 'FORWARDING' : 'IN_PROGRESS',
+          ...(callLog.forwardStatus === 'SCHEDULED' ? { forwardStatus: 'CANCELLED' } : {}),
           answeredAt: providerEventDate(event)
         }
       });
     }
 
-    else if (eventType === 'call.hangup') {
-      console.log(`[Telnyx Webhook] Call Hangup: ${callControlId}`);
+    else if (eventType === 'call.bridged') {
+      const callLog = await prisma.callLog.findUnique({ where: { telnyxCallControlId: callControlId } });
+      if (callLog) {
+        await prisma.callLog.update({ where: { id: callLog.id }, data: { status: 'IN_PROGRESS' } });
+        if (callLog.direction === 'FORWARD' && callLog.parentCallLogId) {
+          await prisma.callLog.updateMany({
+            where: { id: callLog.parentCallLogId, forwardStatus: { in: ['STARTING', 'DIALING', 'ANSWERED'] } },
+            data: { forwardStatus: 'BRIDGED', status: 'IN_PROGRESS', answeredAt: providerEventDate(event) },
+          });
+        } else if (callLog.callPurpose === 'PSTN_INBOUND') {
+          await prisma.callLog.updateMany({ where: { id: callLog.id }, data: { forwardStatus: 'BRIDGED' } });
+        }
+      }
+    }
+
+    else if (eventType === 'call.hangup' || eventType === 'call.failed') {
+      console.log(`[Telnyx Webhook] Call terminal (${eventType}): ${callControlId}`);
 
       const ended = providerEventDate(event);
       let callLog = await prisma.callLog.findUnique({
@@ -423,7 +533,9 @@ async function processEvent(event: any) {
         duration = Math.max(1, Math.ceil((ended.getTime() - callLog.answeredAt.getTime()) / 1000));
       }
 
-      const finalStatus = (duration === 0 || !callLog?.answeredAt) ? 'NO_ANSWER' : 'COMPLETED';
+      const finalStatus = eventType === 'call.failed'
+        ? 'FAILED'
+        : (duration === 0 || !callLog?.answeredAt) ? 'NO_ANSWER' : 'COMPLETED';
 
       const hangupCause = event.payload?.hangup_cause || null;
       const sipHangupCause = event.payload?.sip_hangup_cause || null;
@@ -441,9 +553,21 @@ async function processEvent(event: any) {
           duration,
           hangupCause,
           sipHangupCause,
-          mosScore
+          mosScore,
+          ...(callLog.forwardStatus === 'SCHEDULED' ? { forwardStatus: 'CANCELLED' } : {})
         }
       });
+
+      if (callLog.direction === 'FORWARD' && callLog.parentCallLogId) {
+        await prisma.callLog.updateMany({
+          where: { id: callLog.parentCallLogId },
+          data: { forwardStatus: finalStatus === 'COMPLETED' ? 'COMPLETED' : 'FAILED' },
+        });
+        if (finalStatus !== 'COMPLETED') {
+          const parent = await prisma.callLog.findUnique({ where: { id: callLog.parentCallLogId }, select: { telnyxCallControlId: true } });
+          if (parent) await terminateProviderCall(parent.telnyxCallControlId, 'FORWARD_NO_ANSWER');
+        }
+      }
 
       // --- AUTOMATION BRIDGE : NO_ANSWER_AI ---
       if (finalStatus === 'NO_ANSWER' && callLog?.contactId && callLog?.phoneNumberId) {
@@ -492,12 +616,29 @@ async function processEvent(event: any) {
             if (pn?.aiEmployee?.isActive) rateProfile = 'AI_AGENT';
           }
 
+          const providerCostRaw = event.payload?.cost?.amount ?? event.payload?.cost;
+          const parsedProviderCost = typeof providerCostRaw === 'string' || typeof providerCostRaw === 'number'
+            ? Number(providerCostRaw)
+            : null;
+          const providerCost = parsedProviderCost !== null && Number.isFinite(parsedProviderCost) && parsedProviderCost >= 0
+            ? parsedProviderCost
+            : null;
+          const providerBilledSecondsRaw = event.payload?.billed_sec ?? event.payload?.billed_secs;
+          const providerBilledSeconds = Number.isFinite(Number(providerBilledSecondsRaw))
+            ? Math.max(0, Math.round(Number(providerBilledSecondsRaw)))
+            : null;
+
           await settlePstnCall({
             callControlId,
             organizationId: callLog.organizationId,
             callLogId: callLog.id,
             durationSeconds: duration,
             rateProfile,
+            providerCost,
+            providerCurrency: typeof event.payload?.cost?.currency === 'string'
+              ? event.payload.cost.currency
+              : (typeof event.payload?.currency === 'string' ? event.payload.currency : null),
+            providerBilledSeconds,
           });
         } catch (billingErr) {
           console.error('[Telnyx Webhook] settlePstnCall failed', billingErr);

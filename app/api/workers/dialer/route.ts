@@ -8,7 +8,7 @@ import { preAuthorizeCall, releasePstnReservation } from '@/lib/pstn-billing';
 export const maxDuration = 60;
 const API_BASE = 'https://api.telnyx.com/v2';
 
-export async function POST(req: Request) {
+async function handle(req: Request) {
   if (!requireCronSecret(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -101,6 +101,7 @@ export async function POST(req: Request) {
             from: caller.number,
             connection_id: connectionId,
             answering_machine_detection: 'premium',
+            time_limit_secs: authorization.maxDurationSeconds ?? 3600,
             client_state: clientState,
           }),
         });
@@ -148,3 +149,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'DIALER_FAILED' }, { status: 500 });
   }
 }
+
+export const POST = handle;
+export const GET = handle;

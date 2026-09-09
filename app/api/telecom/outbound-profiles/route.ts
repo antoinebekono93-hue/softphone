@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getConfiguredTelnyxClient } from '@/lib/telnyx';
 import { requireSuperAdminApi } from '@/lib/security';
+import { outboundVoiceProfilePayload } from '@/lib/telnyx-voice-settings';
 
 export async function GET(request: Request) {
   try {
@@ -31,22 +32,7 @@ export async function POST(request: Request) {
     const denied = await requireSuperAdminApi();
     if (denied) return denied;
     const telnyxClient = await getConfiguredTelnyxClient();
-    const body = await request.json();
-    const { name, max_destination_rate, daily_spend_limit } = body;
-
-    if (!name) {
-      return NextResponse.json(
-        { success: false, error: 'name is required' },
-        { status: 400 }
-      );
-    }
-
-    const response = await telnyxClient.outboundVoiceProfiles.create({
-      name,
-      max_destination_rate: max_destination_rate || '0.10', // Bloque les destinations > 0.10$
-      daily_spend_limit: daily_spend_limit || '10.00',      // Limite par défaut 10$ / jour
-      billing_group_id: null
-    });
+    const response = await telnyxClient.outboundVoiceProfiles.create(outboundVoiceProfilePayload(await request.json()) as any);
 
     return NextResponse.json({ success: true, profile: response.data });
   } catch (error: any) {
@@ -55,5 +41,33 @@ export async function POST(request: Request) {
       { success: false, error: error.message || 'Failed to create profile' },
       { status: 500 }
     );
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: 'id is required' }, { status: 400 });
+    const client = await getConfiguredTelnyxClient();
+    const response = await client.outboundVoiceProfiles.update(id, outboundVoiceProfilePayload(await request.json()) as any);
+    return NextResponse.json({ success: true, profile: response.data });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to update profile' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const denied = await requireSuperAdminApi();
+    if (denied) return denied;
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ success: false, error: 'id is required' }, { status: 400 });
+    const client = await getConfiguredTelnyxClient();
+    const response = await client.outboundVoiceProfiles.delete(id);
+    return NextResponse.json({ success: true, profile: response.data });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message || 'Failed to delete profile' }, { status: 500 });
   }
 }
