@@ -1,51 +1,181 @@
-name: Cron Jobs Scheduler
+name: Production cron jobs
 
 on:
   schedule:
-    # Lancer toutes les minutes pour app-calls-timeout et flows
-    - cron: '* * * * *'
-  workflow_dispatch: # Permet de lancer manuellement depuis l'interface GitHub
+    # GitHub Actions: fréquence minimale supportée = 5 minutes (UTC).
+    - cron: "*/5 * * * *"
+    # Réconciliation Telnyx toutes les 15 minutes, décalée des heures pleines.
+    - cron: "2,17,32,47 * * * *"
+    # Analyses quotidiennes à 02:23 UTC.
+    - cron: "23 2 * * *"
+    # Renouvellement des minutes incluses le premier jour du mois, à 00:05 UTC.
+    - cron: "5 0 1 * *"
+  workflow_dispatch:
+    inputs:
+      group:
+        description: Groupe de tâches à lancer manuellement
+        required: true
+        default: frequent
+        type: choice
+        options:
+          - frequent
+          - billing
+          - daily
+          - monthly
+          - all
+
+permissions:
+  contents: read
+
+env:
+  PROD_URL: ${{ secrets.PROD_URL }}
+  CRON_SECRET: ${{ secrets.CRON_SECRET }}
 
 jobs:
-  run-minutely-crons:
+  frequent:
+    name: Appels, routage et campagnes (5 min)
+    if: >-
+      github.event.schedule == '*/5 * * * *' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.group == 'frequent' || inputs.group == 'all'))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: production-cron-frequent
+      cancel-in-progress: false
     steps:
-      - name: Ping app-calls-timeout
+      - name: Vérifier la configuration
+        shell: bash
         run: |
-          curl -X GET "${{ secrets.PROD_URL }}/api/cron/app-calls-timeout" \
-          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          set -euo pipefail
+          test -n "$PROD_URL" || { echo "Secret PROD_URL manquant"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "Secret CRON_SECRET manquant"; exit 1; }
+          case "$PROD_URL" in
+            https://*) ;;
+            *) echo "PROD_URL doit commencer par https://"; exit 1 ;;
+          esac
 
-      - name: Ping flows
+      - name: Exécuter les traitements fréquents
+        shell: bash
         run: |
-          curl -X GET "${{ secrets.PROD_URL }}/api/cron/flows" \
-          -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+          set -euo pipefail
 
-  run-5min-crons:
+          call_endpoint() {
+            local method="$1"
+            local path="$2"
+            local output
+            local status
+            output="$(mktemp)"
+
+            for attempt in 1 2 3; do
+              status="$(curl --silent --show-error --location \
+                --connect-timeout 10 --max-time 55 \
+                --output "$output" --write-out "%{http_code}" \
+                --request "$method" \
+                --header "Authorization: Bearer $CRON_SECRET" \
+                --header "Accept: application/json" \
+                "${PROD_URL%/}${path}")" || status="000"
+
+              if [[ "$status" =~ ^2[0-9][0-9]$ ]]; then
+                echo "OK $method $path ($status)"
+                cat "$output"
+                echo
+                rm -f "$output"
+                return 0
+              fi
+
+              echo "Échec $method $path: HTTP $status (tentative $attempt/3)" >&2
+              cat "$output" >&2 || true
+              echo >&2
+              sleep $((attempt * 3))
+            done
+
+            rm -f "$output"
+            return 1
+          }
+
+          # Les webhooks Telnyx restent la voie temps réel.
+          call_endpoint GET  "/api/cron/app-calls-timeout"
+          call_endpoint GET  "/api/cron/pstn-calls-timeout"
+
+          # Filet de récupération : le délai court dépend du worker permanent.
+          call_endpoint POST "/api/workers/pstn-forwarding"
+
+          call_endpoint GET  "/api/cron/flows"
+          call_endpoint GET  "/api/cron/campaign-worker"
+          call_endpoint POST "/api/workers/dialer"
+
+  billing:
+    name: Réconciliation des coûts Telnyx (15 min)
+    if: >-
+      github.event.schedule == '2,17,32,47 * * * *' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.group == 'billing' || inputs.group == 'all'))
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: production-cron-billing
+      cancel-in-progress: false
     steps:
-      - name: Ping campaign-worker
-        # S'exécute uniquement si les minutes actuelles sont un multiple de 5
+      - name: Réconcilier les CDR Telnyx
+        shell: bash
         run: |
-          MINUTE=$(date +%M)
-          if [ $((MINUTE % 5)) -eq 0 ]; then
-            curl -X GET "${{ secrets.PROD_URL }}/api/cron/campaign-worker" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-          else
-            echo "Skipping 5-min cron for minute $MINUTE"
-          fi
+          set -euo pipefail
+          test -n "$PROD_URL" || { echo "Secret PROD_URL manquant"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "Secret CRON_SECRET manquant"; exit 1; }
+          curl --fail-with-body --silent --show-error --location \
+            --retry 2 --retry-delay 5 --retry-all-errors \
+            --connect-timeout 10 --max-time 180 --request POST \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            --header "Accept: application/json" \
+            "${PROD_URL%/}/api/cron/billing-sync"
 
-  run-monthly-crons:
+  daily:
+    name: Analyses prédictives quotidiennes
+    if: >-
+      github.event.schedule == '23 2 * * *' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.group == 'daily' || inputs.group == 'all'))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: production-cron-daily
+      cancel-in-progress: false
     steps:
-      - name: Ping reset-included-minutes
-        # S'exécute uniquement si on est le 1er du mois à 00:00 UTC
+      - name: Mettre à jour les indicateurs prédictifs
+        shell: bash
         run: |
-          DAY=$(date +%d)
-          HOUR=$(date +%H)
-          MINUTE=$(date +%M)
-          if [ "$DAY" -eq "01" ] && [ "$HOUR" -eq "00" ] && [ "$MINUTE" -eq "00" ]; then
-            curl -X GET "${{ secrets.PROD_URL }}/api/cron/reset-included-minutes" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
-          else
-            echo "Skipping monthly cron"
-          fi
+          set -euo pipefail
+          test -n "$PROD_URL" || { echo "Secret PROD_URL manquant"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "Secret CRON_SECRET manquant"; exit 1; }
+          curl --fail-with-body --silent --show-error --location \
+            --retry 2 --retry-delay 5 --retry-all-errors \
+            --connect-timeout 10 --max-time 300 --request GET \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            --header "Accept: application/json" \
+            "${PROD_URL%/}/api/cron/predictive-analytics"
+
+  monthly:
+    name: Renouvellement mensuel des minutes incluses
+    if: >-
+      github.event.schedule == '5 0 1 * *' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.group == 'monthly' || inputs.group == 'all'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: production-cron-monthly
+      cancel-in-progress: false
+    steps:
+      - name: Réinitialiser les compteurs arrivés à échéance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$PROD_URL" || { echo "Secret PROD_URL manquant"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "Secret CRON_SECRET manquant"; exit 1; }
+          curl --fail-with-body --silent --show-error --location \
+            --retry 2 --retry-delay 5 --retry-all-errors \
+            --connect-timeout 10 --max-time 180 --request GET \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            --header "Accept: application/json" \
+            "${PROD_URL%/}/api/cron/reset-included-minutes"
