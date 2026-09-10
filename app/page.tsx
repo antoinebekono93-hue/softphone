@@ -16,7 +16,7 @@ import {
 
 export default function LandingPage() {
   return (
-    <div data-theme="dark" className="min-h-screen flex flex-col bg-slate-950 text-[var(--text-primary)] selection:bg-rose-500/30 font-sans overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-rose-500/30 font-sans overflow-x-hidden">
       {/* CSS personnalisé pour les animations */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee {
@@ -36,7 +36,7 @@ export default function LandingPage() {
       `}} />
 
       {/* 1. Header (Minimalist Navigation) */}
-      <header className="fixed top-0 inset-x-0 h-16 flex items-center justify-between px-6 mx-auto w-full z-50 bg-slate-950/50 backdrop-blur-xl border-b border-white/10">
+      <header className="fixed top-0 inset-x-0 h-16 flex items-center justify-between px-6 mx-auto w-full z-50 bg-[var(--bg-base)]/70 backdrop-blur-xl border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-2 flex-1">
             <div className="w-6 h-6 rounded-md n8n-gradient-bg shadow-[0_0_15px_rgba(255,87,87,0.4)]"></div>
@@ -49,7 +49,7 @@ export default function LandingPage() {
           </nav>
           <div className="flex gap-4 items-center flex-1 justify-end">
             <ThemeToggle />
-            <Link href="/login" className="text-sm font-medium text-[var(--text-primary)] hover:text-gray-600 transition-colors hidden sm:block">
+            <Link href="/login" className="text-sm font-medium text-[var(--text-primary)] hover:text-[var(--text-secondary)] transition-colors hidden sm:block">
               Connexion
             </Link>
             <Link href="/register" className="text-sm font-medium n8n-gradient-bg text-white px-4 py-2 rounded-full transition-transform hover:scale-105 shadow-lg shadow-rose-500/20">

@@ -18,7 +18,7 @@ export default function ProductShowcase() {
           <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Transcriptions IA en direct</h3>
           <p className="text-[var(--text-secondary)] font-medium">Lisez la conversation avant même de décrocher ou générez des résumés d'appels automatiquement.</p>
 
-          <div className="absolute bottom-[-20px] right-8 w-80 h-48 rounded-xl border border-white/10 bg-slate-900/80 backdrop-blur-xl p-4 transform group-hover:-translate-y-4 transition-transform duration-500 shadow-[0_10px_30px_rgba(255,87,87,0.1)]">
+          <div className="absolute bottom-[-20px] right-8 w-80 h-48 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/90 backdrop-blur-xl p-4 transform group-hover:-translate-y-4 transition-transform duration-500 shadow-[0_10px_30px_rgba(255,87,87,0.1)]">
             <div className="flex gap-3 mb-3">
               <div className="w-6 h-6 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-500 text-[10px] font-bold border border-rose-500/30">IA</div>
               <div className="text-xs text-[var(--text-primary)] leading-relaxed font-medium">"Bonjour, j'appelle concernant le devis pour le chantier de rénovation..."</div>
@@ -34,7 +34,7 @@ export default function ProductShowcase() {
         <div className="rounded-[32px] glass-panel-premium p-8 relative overflow-hidden group">
           <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Présence Globale</h3>
           <p className="text-[var(--text-secondary)] mb-8 font-medium">Numéros locaux dans plus de 50 pays.</p>
-          <div className="w-full aspect-square rounded-full border border-white/10 bg-slate-900 flex items-center justify-center relative shadow-inner">
+          <div className="w-full aspect-square rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex items-center justify-center relative shadow-inner">
              <div className="absolute w-full h-full border border-orange-500 rounded-full animate-ping opacity-20"></div>
              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
           </div>
@@ -44,10 +44,10 @@ export default function ProductShowcase() {
         <div className="rounded-[32px] glass-panel-premium p-8 relative overflow-hidden group">
            <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Boîte Partagée</h3>
            <p className="text-[var(--text-secondary)] font-medium">Collaborez sur les SMS et messages vocaux en équipe.</p>
-           <div className="absolute bottom-8 left-8 flex -space-x-4">
-              <div className="w-12 h-12 rounded-full border-2 border-slate-900 bg-gradient-to-tr from-rose-400 to-orange-500 shadow-md"></div>
-              <div className="w-12 h-12 rounded-full border-2 border-slate-900 bg-gradient-to-tr from-violet-400 to-fuchsia-500 shadow-md"></div>
-              <div className="w-12 h-12 rounded-full border-2 border-slate-900 bg-slate-800 backdrop-blur-md flex items-center justify-center text-xs font-bold text-[var(--text-primary)] shadow-md">+3</div>
+<div className="absolute bottom-8 left-8 flex -space-x-4">
+               <div className="w-12 h-12 rounded-full border-2 border-[var(--bg-surface-solid)] bg-gradient-to-tr from-rose-400 to-orange-500 shadow-md"></div>
+               <div className="w-12 h-12 rounded-full border-2 border-[var(--bg-surface-solid)] bg-gradient-to-tr from-violet-400 to-fuchsia-500 shadow-md"></div>
+               <div className="w-12 h-12 rounded-full border-2 border-[var(--bg-surface-solid)] bg-[var(--bg-surface-solid)] backdrop-blur-md flex items-center justify-center text-xs font-bold text-[var(--text-primary)] shadow-md">+3</div>
            </div>
         </div>
 

@@ -19,7 +19,7 @@ export default function HeroSection() {
       </h1>
 
       {/* Subtitle */}
-      <p className="opacity-0 animate-fade-up [animation-delay:200ms] text-lg md:text-xl text-gray-500 max-w-2xl mx-auto mb-10 font-normal leading-relaxed">
+      <p className="opacity-0 animate-fade-up [animation-delay:200ms] text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 font-normal leading-relaxed">
         Rejoignez plus de <span className="font-bold text-[var(--text-primary)]">10 000 entreprises</span> qui font confiance à Antigravity pour leurs communications vocales pilotées par l'IA.
       </p>
 
@@ -28,7 +28,7 @@ export default function HeroSection() {
         <Link href="/register" className="text-base font-semibold n8n-gradient-bg text-white px-8 py-4 rounded-full shadow-lg shadow-rose-500/30 hover:scale-105 transition-all flex items-center gap-2">
           Essai gratuit 14 jours <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </Link>
-        <Link href="/pricing" className="text-base font-semibold text-[var(--text-primary)] bg-slate-900 border border-white/10 hover:bg-slate-800 px-8 py-4 rounded-full transition-all flex items-center gap-2">
+        <Link href="/pricing" className="text-base font-semibold text-[var(--text-primary)] bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] px-8 py-4 rounded-full transition-all flex items-center gap-2">
           Voir les tarifs
         </Link>
         <Link href="/register" className="text-base font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-4 py-4 rounded-full transition-colors flex items-center gap-2">
