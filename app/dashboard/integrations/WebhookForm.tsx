@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { saveWebhookSettings } from "./actions";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
 
 export default function WebhookForm({ initialUrl, initialSecret }: { initialUrl: string | null, initialSecret: string | null }) {
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export default function WebhookForm({ initialUrl, initialSecret }: { initialUrl:
   }
 
   return (
-    <div className="glass-panel rounded-2xl p-6 mt-8">
+    <Card className="p-6 mt-8">
       <h2 className="text-xl font-bold mb-2">Webhooks Sortants (Générique)</h2>
       <p className="text-[var(--text-secondary)] text-sm mb-6">
         Connectez Antigravity à Zapier, Make, Pipedream ou votre propre serveur. Nous enverrons un payload JSON à cette URL pour chaque événement clé (ticket.escalated, message.received, call.completed).
@@ -57,6 +58,6 @@ export default function WebhookForm({ initialUrl, initialSecret }: { initialUrl:
           {loading ? "Enregistrement..." : "Enregistrer le Webhook"}
         </button>
       </form>
-    </div>
+    </Card>
   );
 }

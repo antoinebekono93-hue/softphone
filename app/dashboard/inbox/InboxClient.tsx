@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, User, Bot, AlertTriangle, ShieldCheck, Sparkles, MessageCircle, Camera, Monitor, PhoneCall, Plus, Search, X, Loader2, Phone, PhoneMissed, Voicemail, Clock, Play } from "lucide-react";
+import { MessageSquare, Send, User, Bot, AlertTriangle, ShieldCheck, Sparkles, MessageCircle, Camera, Monitor, PhoneCall, Plus, Search, Loader2, Phone, PhoneMissed, Voicemail, Clock, Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 
 export type InboxEvent = {
   id: string;
@@ -133,7 +136,7 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" /> {new Date(selectedEvent.timestamp).toLocaleString()}
                     </span>
-                    <span>•</span>
+                    <span>—</span>
                     <span>
                       {selectedEvent.direction === 'INBOUND' ? 'Reçu' : 'Envoyé'} via {selectedEvent.direction === 'INBOUND' ? selectedEvent.to : selectedEvent.from}
                     </span>
@@ -152,14 +155,14 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
               <div className="max-w-3xl mx-auto">
                 {/* SMS View */}
                 {(selectedEvent.type === 'SMS' || selectedEvent.type === 'WHATSAPP') && (
-                  <div className="glass-panel p-8 relative">
+                  <Card className="p-8 relative">
                     <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-4 uppercase tracking-wider">
                       {selectedEvent.type === 'WHATSAPP' ? 'Message WhatsApp' : 'Message Texte'}
                     </h4>
                     <p className="text-xl leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
                       {selectedEvent.body}
                     </p>
-                  </div>
+                  </Card>
                 )}
 
                 {/* Call View */}
@@ -181,23 +184,23 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
 
                     <div className="flex gap-4">
                       {selectedEvent.duration !== undefined && selectedEvent.duration > 0 && (
-                        <div className="glass-panel px-6 py-4 flex-1 flex flex-col items-center justify-center text-center">
+                        <Card className="px-6 py-4 flex-1 flex flex-col items-center justify-center text-center">
                           <span className="text-sm text-[var(--text-secondary)] mb-1">Durée</span>
                           <span className="text-2xl font-mono font-bold text-[var(--text-primary)]">
                             {Math.floor(selectedEvent.duration / 60)}:{(selectedEvent.duration % 60).toString().padStart(2, '0')}
                           </span>
-                        </div>
+                        </Card>
                       )}
-                      <div className="glass-panel px-6 py-4 flex-1 flex flex-col items-center justify-center text-center">
+                      <Card className="px-6 py-4 flex-1 flex flex-col items-center justify-center text-center">
                         <span className="text-sm text-[var(--text-secondary)] mb-1">Statut</span>
                         <span className="text-lg font-bold text-[var(--text-primary)]">
                           {selectedEvent.status}
                         </span>
-                      </div>
+                      </Card>
                     </div>
 
                     {selectedEvent.status === 'VOICEMAIL' && (
-                      <div className="glass-panel p-4 flex items-center gap-4">
+                      <Card className="p-4 flex items-center gap-4">
                         <button className="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 hover:scale-105 transition-transform">
                           <Play className="w-5 h-5 ml-1" />
                         </button>
@@ -207,11 +210,11 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
                           </div>
                         </div>
                         <span className="text-sm font-mono text-[var(--text-secondary)]">0:12 / 0:25</span>
-                      </div>
+                      </Card>
                     )}
 
                     {selectedEvent.transcriptionText && (
-                      <div className="glass-panel p-8">
+                      <Card className="p-8">
                         <h4 className="text-sm font-semibold text-[var(--text-secondary)] mb-6 uppercase tracking-wider">
                           Transcription complète
                         </h4>
@@ -231,7 +234,7 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
                             );
                           })}
                         </div>
-                      </div>
+                      </Card>
                     )}
                   </div>
                 )}
@@ -488,12 +491,12 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
         {/* Header */}
         <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-[var(--text-primary)]">Discussions</h2>
-          <button
+          <Button
             onClick={openNewConversationModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold btn-primary-gradient"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold"
           >
             <Plus className="w-3.5 h-3.5" /> Nouveau
-          </button>
+          </Button>
         </div>
 
         {/* Search */}
@@ -516,12 +519,12 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
               <MessageSquare className="w-10 h-10 text-[var(--text-secondary)] opacity-30 mb-3" />
               <p className="text-sm text-[var(--text-secondary)] mb-3">Aucune conversation</p>
-              <button
+              <Button
                 onClick={openNewConversationModal}
-                className="btn-primary-gradient text-xs px-4 py-2 flex items-center gap-1.5"
+                className="text-xs px-4 py-2 flex items-center gap-1.5"
               >
                 <Plus className="w-3.5 h-3.5" /> Démarrer une conversation
-              </button>
+              </Button>
             </div>
           ) : (
             filteredContacts.map(contact => (
@@ -720,12 +723,12 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             <div className="text-center">
               <p className="font-semibold text-[var(--text-primary)] mb-1">Aucune conversation sélectionnée</p>
               <p className="text-sm mb-4">Sélectionnez une conversation ou démarrez-en une nouvelle</p>
-              <button
+              <Button
                 onClick={openNewConversationModal}
-                className="btn-primary-gradient flex items-center gap-2 mx-auto"
+                className="flex items-center gap-2 mx-auto"
               >
                 <Plus className="w-4 h-4" /> Nouvelle conversation
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -748,9 +751,9 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                 <h4 className="font-bold text-xs uppercase tracking-widest text-[var(--text-secondary)] mb-2 flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-rose-400" /> Résumé IA
                 </h4>
-                <div className="glass-panel p-3 text-xs text-[var(--text-secondary)] leading-relaxed rounded-xl border border-[var(--border-subtle)]">
+                <Card className="p-3 text-xs text-[var(--text-secondary)] leading-relaxed rounded-xl border border-[var(--border-subtle)]">
                   {selectedContact.aiSummary || "L'IA n'a pas encore généré de résumé pour ce contact."}
-                </div>
+                </Card>
               </div>
             </div>
           </>
@@ -762,16 +765,8 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
       </div>
 
       {/* NEW CONVERSATION MODAL */}
-      {showNewConvModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-base)] border border-[var(--border-subtle)] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-[var(--border-subtle)] flex items-center justify-between">
-              <h2 className="text-base font-bold text-[var(--text-primary)]">Nouvelle conversation</h2>
-              <button onClick={() => { setShowNewConvModal(false); setContactSearch(""); }} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4">
+      <Modal open={showNewConvModal} onClose={() => { setShowNewConvModal(false); setContactSearch(""); }} title="Nouvelle conversation">
+        <div className="p-4">
               <div className="flex items-center gap-2 bg-[var(--bg-surface)] rounded-xl px-3 py-2.5 border border-[var(--border-subtle)] mb-3">
                 <Search className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
                 <input
@@ -808,10 +803,8 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                   ))
                 )}
               </div>
-            </div>
-          </div>
         </div>
-      )}
+      </Modal>
 
     </div>
   );

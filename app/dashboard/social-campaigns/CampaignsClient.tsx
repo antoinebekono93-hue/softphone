@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Megaphone, Users, MessageSquare, Play, CalendarClock, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/card";
 
 export default function CampaignsClient({ groups, templates, facebookAccounts, initialCampaigns }: any) {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
@@ -78,28 +81,28 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
           </h1>
           <p className="text-[var(--text-secondary)] mt-2">Envoyez des messages groupés via WhatsApp ou Facebook Messenger.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn-primary-gradient px-6 py-3 flex items-center gap-2">
+        <Button onClick={() => setIsModalOpen(true)} className="px-6 py-3 flex items-center gap-2">
           <Play className="w-5 h-5" />
           Lancer une campagne
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="glass-panel p-6 rounded-2xl flex items-center gap-4">
+        <Card className="p-6 flex items-center gap-4 hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div className="p-4 rounded-xl bg-blue-500/10 text-blue-500"><Target className="w-8 h-8" /></div>
           <div><p className="text-[var(--text-secondary)] text-sm">Total Campagnes</p><p className="text-2xl font-bold text-[var(--text-primary)]">{campaigns.length}</p></div>
-        </div>
-        <div className="glass-panel p-6 rounded-2xl flex items-center gap-4">
+        </Card>
+        <Card className="p-6 flex items-center gap-4 hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div className="p-4 rounded-xl bg-emerald-500/10 text-emerald-500"><CheckCircle /></div>
           <div><p className="text-[var(--text-secondary)] text-sm">Messages Envoyés</p><p className="text-2xl font-bold text-[var(--text-primary)]">{campaigns.reduce((acc: number, c: any) => acc + (c.sentCount || 0), 0)}</p></div>
-        </div>
-        <div className="glass-panel p-6 rounded-2xl flex items-center gap-4">
+        </Card>
+        <Card className="p-6 flex items-center gap-4 hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div className="p-4 rounded-xl bg-amber-500/10 text-amber-500"><CalendarClock className="w-8 h-8" /></div>
           <div><p className="text-[var(--text-secondary)] text-sm">Dernière activité</p><p className="text-xl font-bold text-[var(--text-primary)]">{campaigns[0] ? new Date(campaigns[0].createdAt).toLocaleDateString() : 'Jamais'}</p></div>
-        </div>
+        </Card>
       </div>
 
-      <div className="glass-panel rounded-2xl overflow-hidden border border-[var(--border-subtle)]">
+      <Card className="overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -140,13 +143,10 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-2xl p-8 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">Lancer une nouvelle campagne</h2>
+      <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Lancer une nouvelle campagne">
             <form onSubmit={handleCreateCampaign} className="space-y-6">
               <div>
                 <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Nom de la campagne</label>
@@ -266,14 +266,12 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)]">
                   Annuler
                 </button>
-                <button type="submit" disabled={isSubmitting || (channel === 'WHATSAPP' && templates?.length === 0) || (channel === 'MESSENGER' && facebookAccounts?.length === 0)} className="btn-primary-gradient px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20">
+                <Button type="submit" disabled={isSubmitting || (channel === 'WHATSAPP' && templates?.length === 0) || (channel === 'MESSENGER' && facebookAccounts?.length === 0)} className="px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20">
                   {isSubmitting ? 'Envoi en cours...' : 'Envoyer la campagne'}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

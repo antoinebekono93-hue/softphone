@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Phone, Bot, User, Plus, Loader2, Edit2, X } from "lucide-react";
+import { Phone, Bot, User, Plus, Loader2, Edit2 } from "lucide-react";
 import { updateNumber } from "./actions";
 
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 import Link from "next/link";
 
 export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[], users: any[] }) {
@@ -16,6 +19,9 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
   const [forwardTo, setForwardTo] = useState("");
   const [ringSeconds, setRingSeconds] = useState("15");
   const [routingEnabled, setRoutingEnabled] = useState(true);
+  const [voicemailEnabled, setVoicemailEnabled] = useState(false);
+  const [voicemailDelaySeconds, setVoicemailDelaySeconds] = useState("25");
+  const [voicemailGreeting, setVoicemailGreeting] = useState("");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -27,6 +33,9 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
     setForwardTo(num.forwardToE164 || "");
     setRingSeconds(String(num.ringAppSeconds ?? 15));
     setRoutingEnabled(num.incomingRoutingEnabled !== false);
+    setVoicemailEnabled(num.voicemailEnabled === true);
+    setVoicemailDelaySeconds(String(num.voicemailDelaySeconds ?? 25));
+    setVoicemailGreeting(num.voicemailGreeting || "");
     setSaveError(null);
     setIsEditModalOpen(true);
   };
@@ -38,7 +47,15 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
       const routingResponse = await fetch(`/api/phone-numbers/${selectedNumber.id}/routing`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: routingMode, forwardToE164: forwardTo, ringAppSeconds: Number(ringSeconds), isEnabled: routingEnabled }),
+        body: JSON.stringify({
+          mode: routingMode,
+          forwardToE164: forwardTo,
+          ringAppSeconds: Number(ringSeconds),
+          isEnabled: routingEnabled,
+          voicemailEnabled,
+          voicemailDelaySeconds: Number(voicemailDelaySeconds),
+          voicemailGreeting,
+        }),
       });
       const routing = await routingResponse.json();
       if (!routingResponse.ok) throw new Error(routing.error || "Impossible de modifier le routage");
@@ -52,6 +69,9 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
         incomingRoutingEnabled: routing.isEnabled,
         forwardToE164: routing.forwardToE164,
         ringAppSeconds: routing.ringAppSeconds,
+        voicemailEnabled: routing.voicemailEnabled,
+        voicemailDelaySeconds: routing.voicemailDelaySeconds,
+        voicemailGreeting: routing.voicemailGreeting,
       } : n));
       setIsEditModalOpen(false);
     } catch (error) {
@@ -84,7 +104,7 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
            const assignedUser = users.find(u => u.id === num.assignedUserId);
 
            return (
-             <div key={num.id} className="glass-panel p-6 flex flex-col justify-between">
+             <Card key={num.id} className="p-6 flex flex-col justify-between">
                 <div className="flex justify-between items-start mb-6">
                    <div className="w-12 h-12 rounded-2xl bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-primary)]">
                       <Phone className="w-6 h-6" />
@@ -121,23 +141,15 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
                 <div className="mt-4 text-xs text-[var(--text-secondary)]">
                   Routage : <span className="font-semibold text-cyan-400">{num.incomingRoutingEnabled === false ? "Désactivé" : num.incomingRoutingMode || "APP"}</span>
                   {num.forwardToE164 ? <span> → {num.forwardToE164}</span> : null}
-                </div>
-             </div>
+</div>
+             </Card>
            );
         })}
       </div>
 
       {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="glass-panel w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-[var(--border-subtle)] flex items-center justify-between">
-              <h2 className="text-xl font-bold">Configure Number</h2>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-6">
+      <Modal open={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Configure Number">
+        <div className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-semibold mb-2">Friendly Name</label>
                 <input 
@@ -164,6 +176,22 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
                 {routingMode === "APP_THEN_FORWARD" && <label className="block text-sm font-semibold">Sonner dans l’application (5–60 secondes)
                   <input type="number" min="5" max="60" value={ringSeconds} onChange={(e) => setRingSeconds(e.target.value)} className="apple-input mt-2" />
                 </label>}
+                <div className="rounded-xl border border-[var(--border-subtle)] p-4 space-y-3">
+                  <label className="flex items-center gap-2 text-sm font-semibold">
+                    <input type="checkbox" checked={voicemailEnabled} onChange={(e) => setVoicemailEnabled(e.target.checked)} />
+                    Répondeur après non-réponse
+                  </label>
+                  {voicemailEnabled && <>
+                    <label className="block text-sm font-semibold">Délai (10–60 secondes)
+                      <input type="number" min="10" max="60" value={voicemailDelaySeconds} onChange={(e) => setVoicemailDelaySeconds(e.target.value)} className="apple-input mt-2" />
+                    </label>
+                    <label className="block text-sm font-semibold">Message d’accueil
+                      <textarea rows={3} maxLength={1000} value={voicemailGreeting} onChange={(e) => setVoicemailGreeting(e.target.value)} className="apple-input mt-2" placeholder="Message français par défaut si vide" />
+                    </label>
+                    {routingMode !== "APP" && <p className="text-xs text-red-400">Le répondeur nécessite le mode Application uniquement.</p>}
+                    {!selectedNumber?.organization?.pricingPlan?.hasRecording && <p className="text-xs text-red-400">Votre forfait n’inclut pas l’enregistrement des appels.</p>}
+                  </>}
+                </div>
                 {saveError && <p className="text-sm text-red-400">{saveError}</p>}
               </div>
               <div>
@@ -186,17 +214,15 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
                 )}
               </div>
             </div>
-            <div className="p-6 border-t border-[var(--border-subtle)] flex justify-end gap-3">
-              <button onClick={() => setIsEditModalOpen(false)} className="apple-btn bg-transparent border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]">
+            <div className="pt-5 mt-5 border-t border-[var(--border-subtle)] flex justify-end gap-3">
+              <Button onClick={() => setIsEditModalOpen(false)} className="bg-transparent border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]">
                 Cancel
-              </button>
-              <button onClick={handleSaveEdit} disabled={isSaving || !!selectedNumber?.voiceAIAgent} className="apple-btn btn-primary">
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={isSaving || !!selectedNumber?.voiceAIAgent || (voicemailEnabled && (routingMode !== "APP" || !selectedNumber?.organization?.pricingPlan?.hasRecording))}>
                 {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Save Changes"}
-              </button>
-            </div>
-          </div>
+              </Button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

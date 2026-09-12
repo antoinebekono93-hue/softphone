@@ -5,6 +5,8 @@ import { MessageSquare, ArrowLeft, Loader2, Link as LinkIcon, Hash } from "lucid
 import Link from "next/link";
 import { toast } from "sonner";
 import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 type MessagingProfile = {
   id: string;
@@ -98,7 +100,7 @@ export default function MessagingProfileDetailPage() {
   if (!profile) {
     return (
       <div className="p-8 max-w-7xl mx-auto w-full">
-        <h1 className="text-2xl font-bold">Profil introuvable</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Profil introuvable</h1>
         <Link href="/dashboard/sms/profiles" className="text-cyan-500 mt-4 inline-block">Retour</Link>
       </div>
     );
@@ -124,7 +126,7 @@ export default function MessagingProfileDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Profile Info */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="glass-panel p-6">
+          <Card className="p-6">
             <h3 className="text-lg font-bold mb-4 border-b border-[var(--border-subtle)] pb-2">Informations</h3>
             <div className="space-y-4">
               <div>
@@ -140,12 +142,12 @@ export default function MessagingProfileDetailPage() {
                 <span className="text-sm font-medium text-[var(--text-primary)]">{linkedNumbers.length} numéro(s)</span>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right Column: Numbers Management */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="glass-panel p-0 overflow-hidden">
+          <Card className="p-0 overflow-hidden">
             <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)]/30 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold">Numéros Associés</h3>
@@ -184,9 +186,9 @@ export default function MessagingProfileDetailPage() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-panel p-0 overflow-hidden">
+          <Card className="p-0 overflow-hidden">
             <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)]/30">
               <h3 className="text-lg font-bold">Lier d'autres numéros</h3>
               <p className="text-[var(--text-secondary)] text-sm mt-1">Sélectionnez parmi vos autres numéros pour les lier à ce profil.</p>
@@ -213,19 +215,19 @@ export default function MessagingProfileDetailPage() {
                           </div>
                         </div>
                       </div>
-                      <button 
+                      <Button 
                         onClick={() => handleLinkNumber(num.id, num.messagingProfileId)}
                         disabled={linking === num.id}
-                        className="btn-primary-gradient px-4 py-1.5 text-sm rounded-lg flex items-center gap-2"
+                        className="px-4 py-1.5 text-sm rounded-lg flex items-center gap-2"
                       >
                         {linking === num.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><LinkIcon className="w-3 h-3" /> Lier</>}
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { getConfiguredTelnyxClient } from '@/lib/telnyx';
+import { after, NextResponse } from 'next/server';
+import { getConfiguredTelnyxClient, getConfiguredTelnyxPublicKey } from '@/lib/telnyx';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { executeAutomation } from '@/lib/automations';
@@ -9,6 +9,9 @@ import { appCallChannels, PSTN_EVENTS } from '@/lib/app-call-channels';
 import { canonicalizePhoneNumber, phoneNumberLookupCandidates } from '@/lib/phone-number';
 import { activateFulfilledTelnyxOrder } from '@/lib/telnyx-number-purchase';
 import { executePstnForward } from '@/lib/pstn-forwarding';
+import { executePstnVoicemail, startPstnVoicemailGreeting, startPstnVoicemailRecording } from '@/lib/pstn-voicemail';
+
+export const maxDuration = 90;
 
 function decodeClientState(value: unknown): { outboundAttemptId?: string; rateProfile?: string } {
   if (typeof value !== 'string' || value.length === 0 || value.length > 4096) return {};
@@ -79,7 +82,11 @@ async function findManagedPhoneNumber(raw: unknown) {
   if (candidates.length === 0) return null;
   return prisma.phoneNumber.findFirst({
     where: { number: { in: candidates }, status: 'ACTIVE' },
-    include: { aiEmployee: true, assignedUser: { select: { id: true, name: true } } },
+    include: {
+      aiEmployee: true,
+      assignedUser: { select: { id: true, name: true } },
+      organization: { include: { pricingPlan: true } },
+    },
   });
 }
 
@@ -202,12 +209,29 @@ async function processEvent(event: any) {
                 forwardCommandId: crypto.randomUUID(),
                 forwardDueAt: new Date(Date.now() + (phoneNumber.incomingRoutingMode === 'APP_THEN_FORWARD' ? phoneNumber.ringAppSeconds * 1000 : 0)),
               } : {}),
+              ...(phoneNumber.incomingRoutingEnabled &&
+                phoneNumber.incomingRoutingMode === 'APP' &&
+                phoneNumber.voicemailEnabled &&
+                phoneNumber.organization.pricingPlan?.hasRecording ? {
+                  voicemailStatus: 'SCHEDULED',
+                  voicemailCommandId: crypto.randomUUID(),
+                  voicemailDueAt: new Date(Date.now() + phoneNumber.voicemailDelaySeconds * 1000),
+                } : {}),
             },
             include: { reservation: { select: { id: true } } },
           });
 
           const rateProfile = phoneNumber.aiEmployee?.isActive ? 'AI_AGENT' : 'STANDARD';
           if (!await authorizeCallLog({ callLog: createdCallLog, callControlId, rateProfile })) return;
+
+          if (createdCallLog.voicemailStatus === 'SCHEDULED') {
+            // `after` maintient la fonction Vercel en vie après la réponse HTTP.
+            // Le worker/cron conserve la même tâche comme filet de récupération.
+            after(async () => {
+              await wait(phoneNumber.voicemailDelaySeconds * 1000);
+              await executePstnVoicemail(createdCallLog.id);
+            });
+          }
 
           const routingMode = phoneNumber.incomingRoutingEnabled ? phoneNumber.incomingRoutingMode : 'APP';
           if ((routingMode === 'FORWARD' || routingMode === 'APP_THEN_FORWARD') && !phoneNumber.forwardToE164) {
@@ -409,6 +433,14 @@ async function processEvent(event: any) {
         });
       }
 
+      // Le worker d'attente a revendiqué cet appel : cette réponse vient de
+      // notre répondeur, pas du navigateur WebRTC. Le webhook poursuit alors
+      // la machine d'état en lisant le message d'accueil.
+      if (callLog.voicemailStatus === 'STARTING') {
+        await startPstnVoicemailGreeting(callControlId);
+        return;
+      }
+
       const agent = callLog?.phoneNumber?.aiEmployee;
 
       // Only start streaming if there's an active AI Agent
@@ -473,9 +505,14 @@ async function processEvent(event: any) {
         data: {
           status: parentIsForwarding ? 'FORWARDING' : 'IN_PROGRESS',
           ...(callLog.forwardStatus === 'SCHEDULED' ? { forwardStatus: 'CANCELLED' } : {}),
+          ...(callLog.voicemailStatus === 'SCHEDULED' ? { voicemailStatus: 'CANCELLED' } : {}),
           answeredAt: providerEventDate(event)
         }
       });
+    }
+
+    else if (eventType === 'call.speak.ended') {
+      await startPstnVoicemailRecording(callControlId);
     }
 
     else if (eventType === 'call.bridged') {
@@ -554,7 +591,14 @@ async function processEvent(event: any) {
           hangupCause,
           sipHangupCause,
           mosScore,
-          ...(callLog.forwardStatus === 'SCHEDULED' ? { forwardStatus: 'CANCELLED' } : {})
+          ...(callLog.forwardStatus === 'SCHEDULED' ? { forwardStatus: 'CANCELLED' } : {}),
+          ...(callLog.voicemailStatus === 'SCHEDULED' || callLog.voicemailStatus === 'STARTING'
+            ? { voicemailStatus: 'CANCELLED' }
+            : callLog.voicemailStatus === 'GREETING'
+              ? { voicemailStatus: 'FAILED' }
+              : callLog.voicemailStatus === 'RECORDING'
+                ? { voicemailStatus: 'PROCESSING' }
+                : {})
         }
       });
 
@@ -677,6 +721,13 @@ async function processEvent(event: any) {
               PSTN_EVENTS.ENDED,
               { callControlId, status: finalStatus },
             );
+            if (finalStatus === 'NO_ANSWER') {
+              await pusher.trigger(
+                appCallChannels.user(notifyUser.id),
+                PSTN_EVENTS.MISSED,
+                { callControlId, from: callLog.fromNumber, to: callLog.toNumber },
+              );
+            }
             console.log(`[CALL_INCOMING_PUSHER_SENT] ${callControlId} user=${notifyUser.id} event=${PSTN_EVENTS.ENDED}`);
           }
         } catch (notifyErr) {
@@ -689,12 +740,40 @@ async function processEvent(event: any) {
     else if (eventType === 'call.recording.saved') {
       const callControlId = event.payload.call_control_id;
       const recordingUrls = event.payload.recording_urls;
-      const url = recordingUrls?.wav || recordingUrls?.mp3;
-      if (url) {
+      const url = recordingUrls?.mp3 || recordingUrls?.wav;
+      const recordingId = typeof event.payload.recording_id === 'string'
+        ? event.payload.recording_id
+        : (typeof event.payload.id === 'string' ? event.payload.id : null);
+      const callLog = await prisma.callLog.findUnique({
+        where: { telnyxCallControlId: callControlId },
+        include: { phoneNumber: { include: { aiEmployee: true, assignedUser: { select: { id: true, name: true } } } } },
+      });
+      if (callLog && (url || recordingId)) {
+        const isVoicemail = ['RECORDING', 'PROCESSING'].includes(callLog.voicemailStatus || '');
         await prisma.callLog.update({
-          where: { telnyxCallControlId: callControlId },
-          data: { recordingUrl: url }
+          where: { id: callLog.id },
+          data: {
+            ...(url ? { recordingUrl: url } : {}),
+            ...(recordingId ? { voicemailRecordingId: recordingId } : {}),
+            ...(isVoicemail ? { voicemailStatus: 'SAVED' } : {}),
+          },
         });
+        if (isVoicemail) {
+          await terminateProviderCall(callControlId, 'VOICEMAIL_RECORDED');
+          const pn = callLog.phoneNumber;
+          if (pn && !(pn.aiEmployee && pn.aiEmployee.isActive)) {
+            const notifyUser = await resolveNotifyUser(pn);
+            const pusher = notifyUser ? getPusherServer() : null;
+            if (notifyUser && pusher) {
+              await pusher.trigger(appCallChannels.user(notifyUser.id), PSTN_EVENTS.VOICEMAIL, {
+                callControlId,
+                callLogId: callLog.id,
+                from: callLog.fromNumber,
+                to: callLog.toNumber,
+              });
+            }
+          }
+        }
         console.log(`[Telnyx Webhook] Recording saved for ${callControlId}`);
       }
     }
@@ -881,10 +960,11 @@ export async function POST(req: Request) {
 
     const signature = req.headers.get('telnyx-signature-ed25519');
     const timestamp = req.headers.get('telnyx-timestamp');
-    const publicKey = process.env.TELNYX_PUBLIC_KEY;
-
-    if (!publicKey) {
-      console.error('[Telnyx Webhook] TELNYX_PUBLIC_KEY is not configured');
+    let publicKey: string;
+    try {
+      publicKey = await getConfiguredTelnyxPublicKey();
+    } catch {
+      console.error('[Telnyx Webhook] Telnyx public key is not configured in God Mode or environment');
       return new NextResponse('Webhook verification is not configured', { status: 503 });
     }
     if (!signature || !timestamp) {

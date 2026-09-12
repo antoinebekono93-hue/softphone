@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Search, Loader2, GitMerge, DollarSign, Bot, Phone, Play } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 export default function SessionAnalysisClient() {
   const [sessionId, setSessionId] = useState("");
@@ -69,7 +70,7 @@ export default function SessionAnalysisClient() {
   };
 
   return (
-    <div className="glass-panel p-6 flex flex-col h-[500px]">
+    <Card className="p-6 flex flex-col h-[500px]">
       <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2 mb-4">
         <GitMerge className="w-5 h-5 text-violet-400" />
         Analyse de Session IA
@@ -125,6 +126,6 @@ export default function SessionAnalysisClient() {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

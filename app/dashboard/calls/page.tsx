@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Phone, Users, PhoneMissed, Activity, Loader2, PlayCircle, FileText } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 type CallLog = {
   id: string;
@@ -61,19 +62,19 @@ export default function CallsPage() {
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="p-4 md:p-8 border-b border-[var(--border-subtle)]">
+      <div className="p-8 border-b border-[var(--border-subtle)]">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-[var(--text-primary)]">
+            <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
               Intelligence <span className="text-gradient">Vocale</span>
             </h1>
-            <p className="text-[var(--text-secondary)] text-sm md:text-base">Analysez vos appels, consultez les transcriptions et suivez votre capacité réseau.</p>
+            <p className="text-[var(--text-secondary)] text-sm">Analysez vos appels, consultez les transcriptions et suivez votre capacité réseau.</p>
           </div>
         </div>
 
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            <div className="glass-panel p-6 flex items-start justify-between">
+            <Card className="p-6 flex items-start justify-between">
               <div>
                 <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Total Appels</div>
                 <div className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">{stats.totalCalls}</div>
@@ -81,8 +82,8 @@ export default function CallsPage() {
               <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-500 shadow-sm">
                 <Phone className="w-6 h-6" />
               </div>
-            </div>
-            <div className="glass-panel p-6 flex items-start justify-between">
+            </Card>
+            <Card className="p-6 flex items-start justify-between">
               <div>
                 <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Taux Connexion</div>
                 <div className="text-3xl md:text-4xl font-bold text-emerald-500">{stats.connectionRate.toFixed(1)}%</div>
@@ -90,8 +91,8 @@ export default function CallsPage() {
               <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-500 shadow-sm">
                 <Activity className="w-6 h-6" />
               </div>
-            </div>
-            <div className="glass-panel p-6 flex items-start justify-between">
+            </Card>
+            <Card className="p-6 flex items-start justify-between">
               <div>
                 <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Abandonnés</div>
                 <div className="text-3xl md:text-4xl font-bold text-rose-500">{stats.abandonedRate.toFixed(1)}%</div>
@@ -99,8 +100,8 @@ export default function CallsPage() {
               <div className="p-3 bg-rose-500/10 rounded-xl border border-rose-500/20 text-rose-500 shadow-sm">
                 <PhoneMissed className="w-6 h-6" />
               </div>
-            </div>
-            <div className="glass-panel p-6 flex items-start justify-between">
+            </Card>
+            <Card className="p-6 flex items-start justify-between">
               <div>
                 <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Pic Canaux</div>
                 <div className="text-3xl md:text-4xl font-bold text-violet-500">{stats.maxChannels}</div>
@@ -108,7 +109,7 @@ export default function CallsPage() {
               <div className="p-3 bg-violet-500/10 rounded-xl border border-violet-500/20 text-violet-500 shadow-sm">
                 <Users className="w-6 h-6" />
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>
@@ -152,7 +153,7 @@ export default function CallsPage() {
         <div className="w-full md:w-2/3 bg-[var(--bg-base)] overflow-y-auto p-4 md:p-8">
           {selectedCall ? (
             <div className="max-w-3xl mx-auto space-y-6">
-              <div className="glass-panel p-6 shadow-sm">
+              <Card className="p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
                   {selectedCall.direction === "INBOUND" ? selectedCall.fromNumber : selectedCall.toNumber}
                 </h2>
@@ -165,10 +166,10 @@ export default function CallsPage() {
                     <Activity className="w-4 h-4" /> Durée: {formatDuration(selectedCall.duration)}
                   </span>
                 </div>
-              </div>
+              </Card>
 
               {selectedCall.aiSummary ? (
-                <div className="glass-panel relative overflow-hidden p-6 shadow-sm border border-cyan-500/30">
+                <Card className="relative overflow-hidden p-6 shadow-sm border border-cyan-500/30">
                   <div className="absolute -right-4 -top-4 w-32 h-32 bg-cyan-500/10 blur-3xl rounded-full"></div>
                   <div className="relative z-10">
                     <div className="flex items-center gap-2 text-cyan-500 font-bold mb-4">
@@ -177,15 +178,15 @@ export default function CallsPage() {
                     </div>
                     <p className="text-[var(--text-primary)] leading-relaxed text-sm">{selectedCall.aiSummary}</p>
                   </div>
-                </div>
+                </Card>
               ) : (
-                <div className="glass-panel p-6 text-center text-sm text-[var(--text-secondary)] border-dashed">
+                <Card className="p-6 text-center text-sm text-[var(--text-secondary)] border-dashed">
                   Aucun résumé IA disponible pour cet appel.
-                </div>
+                </Card>
               )}
 
               {selectedCall.transcriptionText && (
-                <div className="glass-panel p-6 shadow-sm">
+                <Card className="p-6 shadow-sm">
                   <div className="flex items-center gap-2 text-[var(--text-primary)] font-bold mb-6 pb-4 border-b border-[var(--border-subtle)]">
                     <FileText className="w-5 h-5 text-cyan-500" />
                     Transcription de la conversation
@@ -203,7 +204,7 @@ export default function CallsPage() {
                       )
                     })}
                   </div>
-                </div>
+                </Card>
               )}
             </div>
           ) : (

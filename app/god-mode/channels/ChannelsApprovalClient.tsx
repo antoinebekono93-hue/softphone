@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MessageSquare, Smartphone, CheckCircle, XCircle, Settings } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 export function ChannelsApprovalClient() {
   const [requests, setRequests] = useState([
@@ -15,7 +16,7 @@ export function ChannelsApprovalClient() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">Rich Messaging Approvals</h1>
         <p className="text-[var(--text-secondary)]">Review and provision WhatsApp and RCS requests from your tenants.</p>
@@ -81,12 +82,12 @@ export function ChannelsApprovalClient() {
         </table>
       </div>
 
-      <div className="mt-8 glass-panel p-6 rounded-2xl">
+      <Card className="mt-8 p-6">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">How Provisioning Works (Telnyx Hosted)</h3>
         <p className="text-sm text-[var(--text-secondary)] mb-4">
           When you click <strong>Provision</strong>, your platform will call the Telnyx API to link the tenant's number to your WhatsApp Business Account (WABA) or Telnyx RCS Agent. Once verified by Meta/Google, the client can use the Unified Messaging API to send rich media.
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -7,6 +7,25 @@
   --color-cyan-400: var(--text-secondary);
   --color-cyan-500: var(--accent-primary);
   --color-cyan-600: var(--accent-primary);
+
+  /* Inspiré des tokens shadcn → mappés sur la palette maison (corrige les classes orphelines) */
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--bg-surface);
+  --color-card-foreground: var(--text-primary);
+  --color-muted: var(--bg-surface-hover);
+  --color-muted-foreground: var(--text-secondary);
+  --color-input: var(--border-subtle);
+  --color-border: var(--border-subtle);
+  --color-ring: var(--accent-primary);
+  --color-primary: var(--accent-primary);
+  --color-primary-foreground: var(--accent-foreground);
+  --color-secondary: var(--bg-surface-hover);
+  --color-secondary-foreground: var(--text-secondary);
+  --color-accent: var(--accent-primary);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: #ffffff;
 }
 
 :root {

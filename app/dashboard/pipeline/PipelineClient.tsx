@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { GripVertical, Plus, DollarSign, User, Phone, CheckCircle, XCircle, FileText, Send, Trash2, MessageSquare, PhoneCall } from "lucide-react";
+import { GripVertical, Plus, DollarSign, User, Phone, CheckCircle, FileText, Send, Trash2, MessageSquare, PhoneCall } from "lucide-react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Modal, Drawer } from "@/components/ui/modal";
 
 const STAGES = [
   { id: "NEW", title: "Nouveau", color: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
@@ -184,10 +187,10 @@ export default function PipelineClient({ initialOpportunities, contacts }: { ini
   return (
     <div className="h-full flex flex-col gap-4">
       <div className="flex justify-end mb-2 px-2">
-        <button onClick={() => setIsNewModalOpen(true)} className="btn-primary-gradient px-4 py-2 flex items-center gap-2 rounded-xl text-sm font-bold shadow-sm">
+        <Button onClick={() => setIsNewModalOpen(true)} className="px-4 py-2 flex items-center gap-2 rounded-xl text-sm font-bold shadow-sm">
           <Plus className="w-4 h-4" />
           Nouvelle Opportunité
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
@@ -197,7 +200,7 @@ export default function PipelineClient({ initialOpportunities, contacts }: { ini
             const totalValue = stageOpps.reduce((acc, opp) => acc + (opp.expectedRevenue || 0), 0);
 
             return (
-              <div key={stage.id} className="min-w-[320px] w-[320px] flex flex-col glass-panel rounded-2xl border border-[var(--border-subtle)] overflow-hidden">
+              <Card key={stage.id} className="min-w-[320px] w-[320px] flex flex-col overflow-hidden">
                 <div className={`p-4 border-b border-[var(--border-subtle)] flex items-center justify-between`}>
                   <div className="flex items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold border ${stage.color}`}>
@@ -262,170 +265,150 @@ export default function PipelineClient({ initialOpportunities, contacts }: { ini
                     </div>
                   )}
                 </Droppable>
-              </div>
+              </Card>
             );
           })}
         </DragDropContext>
       </div>
 
-      {/* New Opportunity Modal */}
-      {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-2xl p-8 max-w-lg w-full shadow-2xl">
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">Nouvelle Opportunité</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Titre de l'opportunité</label>
-                <input 
-                  type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
-                  className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
-                  placeholder="Ex: Achat de 50 licences"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Revenu attendu (XAF)</label>
-                <input 
-                  type="number" required value={formData.expectedRevenue} onChange={e => setFormData({...formData, expectedRevenue: parseFloat(e.target.value) || 0})}
-                  className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
-                  min="0"
-                />
-              </div>
+      <Modal open={isNewModalOpen} onClose={() => setIsNewModalOpen(false)} title="Nouvelle Opportunité" size="md">
+        <form onSubmit={handleCreate} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Titre de l'opportunité</label>
+            <input 
+              type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+              className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+              placeholder="Ex: Achat de 50 licences"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Revenu attendu (XAF)</label>
+            <input 
+              type="number" required value={formData.expectedRevenue} onChange={e => setFormData({...formData, expectedRevenue: parseFloat(e.target.value) || 0})}
+              className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+              min="0"
+            />
+          </div>
 
-              <div>
-                <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Contact associé (Optionnel)</label>
-                <select 
-                  value={formData.contactId} onChange={e => setFormData({...formData, contactId: e.target.value})}
-                  className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
-                >
-                  <option value="">-- Aucun --</option>
-                  {contacts.map(c => (
-                    <option key={c.id} value={c.id}>{c.name || c.phone}</option>
-                  ))}
-                </select>
-              </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Contact associé (Optionnel)</label>
+            <select 
+              value={formData.contactId} onChange={e => setFormData({...formData, contactId: e.target.value})}
+              className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
+            >
+              <option value="">-- Aucun --</option>
+              {contacts.map(c => (
+                <option key={c.id} value={c.id}>{c.name || c.phone}</option>
+              ))}
+            </select>
+          </div>
 
-              <div className="flex gap-4 mt-8">
-                <button type="button" onClick={() => setIsNewModalOpen(false)} className="flex-1 py-3 px-4 rounded-xl text-sm font-bold bg-[var(--bg-surface-hover)] text-[var(--text-primary)] hover:bg-[var(--border-subtle)] transition-colors">
-                  Annuler
+          <div className="flex justify-end gap-3 pt-5 mt-5 border-t border-[var(--border-subtle)]">
+            <Button type="button" variant="secondary" onClick={() => setIsNewModalOpen(false)}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Création..." : "Créer"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Drawer open={isDetailModalOpen && !!detailedOpp} onClose={() => setIsDetailModalOpen(false)} title="Détails de l'opportunité" side="right" className="max-w-2xl">
+        <div className="space-y-8">
+          {/* Infos & Edition */}
+          <Card className="p-6">
+            <form onSubmit={handleUpdateDetail} className="space-y-4">
+              <div className="flex justify-between items-start gap-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Titre</label>
+                  <input 
+                    type="text" value={detailedOpp.name} 
+                    onChange={(e) => setDetailedOpp({...detailedOpp, name: e.target.value})}
+                    className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded p-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 mb-1">Revenu (XAF)</label>
+                  <input 
+                    type="number" value={detailedOpp.expectedRevenue} 
+                    onChange={(e) => setDetailedOpp({...detailedOpp, expectedRevenue: e.target.value})}
+                    className="w-32 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded p-2 text-sm"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={handleDelete} className="px-3 py-1 text-xs text-rose-500 hover:bg-rose-500/10 rounded transition-colors flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" /> Supprimer
                 </button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 btn-primary-gradient py-3 px-4 rounded-xl text-sm font-bold shadow-sm disabled:opacity-50">
-                  {isSubmitting ? "Création..." : "Créer"}
-                </button>
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  Enregistrer
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+          </Card>
 
-      {/* Opportunity Detail Modal / Slide-over */}
-      {isDetailModalOpen && detailedOpp && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--bg-base)] w-full max-w-2xl h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="flex items-center justify-between p-6 border-b border-[var(--border-subtle)]">
-              <h2 className="text-xl font-bold">Détails de l'opportunité</h2>
-              <button onClick={() => setIsDetailModalOpen(false)} className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-[var(--bg-surface-hover)]">
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-              
-              {/* Infos & Edition */}
-              <div className="glass-panel p-6 rounded-2xl">
-                <form onSubmit={handleUpdateDetail} className="space-y-4">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <label className="block text-xs font-bold text-gray-500 mb-1">Titre</label>
-                      <input 
-                        type="text" value={detailedOpp.name} 
-                        onChange={(e) => setDetailedOpp({...detailedOpp, name: e.target.value})}
-                        className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded p-2 text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 mb-1">Revenu (XAF)</label>
-                      <input 
-                        type="number" value={detailedOpp.expectedRevenue} 
-                        onChange={(e) => setDetailedOpp({...detailedOpp, expectedRevenue: e.target.value})}
-                        className="w-32 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded p-2 text-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button type="button" onClick={handleDelete} className="px-3 py-1 text-xs text-rose-500 hover:bg-rose-500/10 rounded transition-colors flex items-center gap-1">
-                      <Trash2 className="w-3 h-3" /> Supprimer
-                    </button>
-                    <button type="submit" disabled={isSubmitting} className="btn-primary-gradient px-4 py-1.5 rounded text-xs font-bold disabled:opacity-50">
-                      Enregistrer
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Contact associé */}
-              {detailedOpp.contact && (
-                <div>
-                  <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center gap-2"><User className="w-4 h-4"/> Contact Associé</h3>
-                  <div className="bg-[var(--bg-surface-hover)] rounded-xl p-4 border border-[var(--border-subtle)]">
-                    <p className="font-bold mb-1">{detailedOpp.contact.name || "Inconnu"}</p>
-                    <p className="text-sm text-gray-400 mb-4">{detailedOpp.contact.phone}</p>
-                    
-                    {/* Historique rapide du contact (appels récents) */}
-                    {detailedOpp.contact.callLogs?.length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
-                        <p className="text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><PhoneCall className="w-3 h-3"/> Derniers appels</p>
-                        <div className="space-y-2">
-                          {detailedOpp.contact.callLogs.slice(0, 3).map((log: any) => (
-                            <div key={log.id} className="text-xs bg-[var(--bg-surface-solid)] p-2 rounded flex justify-between">
-                              <span className={log.status === 'NO_ANSWER' ? 'text-rose-500' : 'text-emerald-500'}>{log.status}</span>
-                              <span className="text-gray-500">{new Date(log.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Notes Internes (Générées par l'IA ou manuelles) */}
-              <div>
-                <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center gap-2"><FileText className="w-4 h-4"/> Notes Internes (Source & Historique)</h3>
+          {/* Contact associé */}
+          {detailedOpp.contact && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center gap-2"><User className="w-4 h-4"/> Contact Associé</h3>
+              <div className="bg-[var(--bg-surface-hover)] rounded-xl p-4 border border-[var(--border-subtle)]">
+                <p className="font-bold mb-1">{detailedOpp.contact.name || "Inconnu"}</p>
+                <p className="text-sm text-gray-400 mb-4">{detailedOpp.contact.phone}</p>
                 
-                {/* Add new note */}
-                <form onSubmit={handleAddNote} className="mb-4 relative">
-                  <input 
-                    type="text" 
-                    placeholder="Ajouter une note manuelle..." 
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg py-3 pl-4 pr-12 text-sm focus:border-emerald-500 outline-none"
-                  />
-                  <button type="submit" disabled={isSubmitting || !newNote.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-500 text-white rounded-md disabled:opacity-50 hover:bg-emerald-600 transition-colors">
-                    <Send className="w-4 h-4" />
-                  </button>
-                </form>
-
-                {/* List of notes */}
-                <div className="space-y-3">
-                  {detailedOpp.internalNotes?.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">Aucune note pour le moment.</p>
-                  ) : (
-                    detailedOpp.internalNotes?.map((note: any) => (
-                      <div key={note.id} className="bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl p-4">
-                        <p className="text-sm text-[var(--text-primary)] mb-2 whitespace-pre-wrap">{note.content}</p>
-                        <span className="text-xs text-gray-500">{new Date(note.createdAt).toLocaleString()}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
+                {/* Historique rapide du contact (appels récents) */}
+                {detailedOpp.contact.callLogs?.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+                    <p className="text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><PhoneCall className="w-3 h-3"/> Derniers appels</p>
+                    <div className="space-y-2">
+                      {detailedOpp.contact.callLogs.slice(0, 3).map((log: any) => (
+                        <div key={log.id} className="text-xs bg-[var(--bg-surface-solid)] p-2 rounded flex justify-between">
+                          <span className={log.status === 'NO_ANSWER' ? 'text-rose-500' : 'text-emerald-500'}>{log.status}</span>
+                          <span className="text-gray-500">{new Date(log.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+            </div>
+          )}
 
+          {/* Notes Internes (Générées par l'IA ou manuelles) */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-400 uppercase mb-3 flex items-center gap-2"><FileText className="w-4 h-4"/> Notes Internes (Source & Historique)</h3>
+            
+            {/* Add new note */}
+            <form onSubmit={handleAddNote} className="mb-4 relative">
+              <input 
+                type="text" 
+                placeholder="Ajouter une note manuelle..." 
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg py-3 pl-4 pr-12 text-sm focus:border-emerald-500 outline-none"
+              />
+              <button type="submit" disabled={isSubmitting || !newNote.trim()} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-500 text-white rounded-md disabled:opacity-50 hover:bg-emerald-600 transition-colors">
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+
+            {/* List of notes */}
+            <div className="space-y-3">
+              {detailedOpp.internalNotes?.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">Aucune note pour le moment.</p>
+              ) : (
+                detailedOpp.internalNotes?.map((note: any) => (
+                  <div key={note.id} className="bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl p-4">
+                    <p className="text-sm text-[var(--text-primary)] mb-2 whitespace-pre-wrap">{note.content}</p>
+                    <span className="text-xs text-gray-500">{new Date(note.createdAt).toLocaleString()}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
-      )}
+      </Drawer>
     </div>
   );
 }

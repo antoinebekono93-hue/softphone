@@ -8,6 +8,33 @@ const phoneMetadata = ((metadataImport as any).default ?? metadataImport) as {
 
 export const INCOMING_ROUTING_MODES = ["APP", "FORWARD", "APP_THEN_FORWARD"] as const;
 export type IncomingRoutingMode = (typeof INCOMING_ROUTING_MODES)[number];
+export type ForwardingPlanCapability = "hasCallRouting" | "hasTransfer";
+
+export function forwardingPlanAvailability(plan?: {
+  hasCallRouting?: boolean | null;
+  hasTransfer?: boolean | null;
+} | null) {
+  const missingCapabilities: ForwardingPlanCapability[] = [];
+  if (!plan?.hasCallRouting) missingCapabilities.push("hasCallRouting");
+  if (!plan?.hasTransfer) missingCapabilities.push("hasTransfer");
+  return { allowed: missingCapabilities.length === 0, missingCapabilities };
+}
+
+export function forwardingPlanDenialPayload(plan?: {
+  id: string;
+  name: string;
+  hasCallRouting?: boolean | null;
+  hasTransfer?: boolean | null;
+} | null) {
+  const availability = forwardingPlanAvailability(plan);
+  if (availability.allowed) return null;
+  return {
+    error: "Le forfait actuel n’inclut pas toutes les fonctions nécessaires au transfert d’appels.",
+    code: "FORWARDING_NOT_INCLUDED" as const,
+    plan: plan ? { id: plan.id, name: plan.name } : null,
+    missingCapabilities: availability.missingCapabilities,
+  };
+}
 
 export function incomingRouteInstruction(mode: IncomingRoutingMode) {
   return {

@@ -1,6 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Line, LineChart } from "recharts";
+import { Card } from "@/components/ui/card";
 
 type ChartData = {
   date: string;
@@ -11,7 +12,7 @@ type ChartData = {
 export default function AnalyticsCharts({ data }: { data: ChartData[] }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-      <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)]">
+      <Card className="p-6 rounded-3xl">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-6">Volume d'Interactions (30 Jours)</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -29,9 +30,9 @@ export default function AnalyticsCharts({ data }: { data: ChartData[] }) {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </Card>
 
-      <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)]">
+      <Card className="p-6 rounded-3xl">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-6">Tendance d'Utilisation</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -49,7 +50,7 @@ export default function AnalyticsCharts({ data }: { data: ChartData[] }) {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

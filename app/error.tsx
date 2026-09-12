@@ -27,7 +27,7 @@ export default function Error({
         Quelque chose s'est mal passé. L'erreur a été signalée à notre équipe.
       </p>
       <div className="flex gap-4">
-        <Button onClick={reset} className="btn-primary-gradient">
+        <Button onClick={reset}>
           Réessayer
         </Button>
         <Button variant="outline" onClick={() => window.location.href = "/dashboard"}>

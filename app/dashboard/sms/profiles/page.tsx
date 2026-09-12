@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { MessageSquare, Plus, Loader2, ArrowLeft, MoreVertical, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 type MessagingProfile = {
   id: string;
@@ -114,16 +116,16 @@ export default function MessagingProfilesPage() {
           </h1>
           <p className="text-[var(--text-secondary)]">Gérez vos profils pour l'envoi et la réception de SMS/MMS via Telnyx.</p>
         </div>
-        <button 
+        <Button 
           onClick={() => setIsCreating(true)}
-          className="btn-primary-gradient px-6 py-2.5 flex items-center gap-2"
+          className="px-6 py-2.5 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" /> Créer un Profil
-        </button>
+        </Button>
       </div>
 
       {isCreating && (
-        <div className="glass-panel p-6 mb-8 border-cyan-500/30 shadow-[0_0_30px_rgba(0,212,255,0.1)]">
+        <Card className="p-6 mb-8 border-cyan-500/30 shadow-[0_0_30px_rgba(0,212,255,0.1)]">
           <h2 className="text-xl font-bold mb-4">Nouveau Profil de Messagerie</h2>
           <form onSubmit={handleCreateProfile} className="space-y-6">
             <div className="w-full">
@@ -183,19 +185,19 @@ export default function MessagingProfilesPage() {
               >
                 Annuler
               </button>
-              <button 
+              <Button 
                 type="submit" 
                 disabled={creatingSubmitting}
-                className="btn-primary-gradient px-8 py-3 flex items-center gap-2"
+                className="px-8 py-3 flex items-center gap-2"
               >
                 {creatingSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : "Créer le profil"}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
-      <div className="glass-panel overflow-hidden">
+      <Card className="overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center p-20 text-[var(--text-secondary)]">
             <Loader2 className="w-10 h-10 animate-spin text-cyan-500 mb-4" />
@@ -252,7 +254,7 @@ export default function MessagingProfilesPage() {
             </table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

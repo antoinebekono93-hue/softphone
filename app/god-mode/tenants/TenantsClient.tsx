@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { updateTenant, impersonateTenant } from "./actions";
+import { Card } from "@/components/ui/card";
 
 type Tenant = any;
 type Plan = any;
@@ -64,7 +65,7 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
         </button>
       </div>
 
-      <div className="glass-panel border-none rounded-2xl overflow-hidden shadow-2xl relative">
+      <Card className="border-none overflow-hidden shadow-2xl relative">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--bg-surface-hover)] border-b border-[var(--border-subtle)] text-[var(--text-secondary)]">
             <tr>
@@ -206,7 +207,7 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
             </form>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { MessageSquare, Settings, DollarSign, Activity, Globe, Hash, Zap, ShieldAlert } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function GodModeMessagingPage() {
   const [smartEncoding, setSmartEncoding] = useState(false);
   const [spendLimit, setSpendLimit] = useState(500);
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)] flex items-center gap-3">
            <MessageSquare className="text-cyan-500" />
@@ -19,16 +21,16 @@ export default function GodModeMessagingPage() {
 
       {/* KPIs Prioritaires */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="glass-panel p-6 rounded-2xl flex flex-col relative overflow-hidden">
+        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <Activity className="w-12 h-12" />
            </div>
            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Messages Envoyés</span>
            <span className="text-4xl font-bold text-[var(--text-primary)]">1,245,090</span>
            <span className="text-sm text-emerald-500 mt-2 font-medium">+12% ce mois</span>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-2xl flex flex-col relative overflow-hidden">
+        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <ShieldAlert className="w-12 h-12" />
            </div>
@@ -38,9 +40,9 @@ export default function GodModeMessagingPage() {
               <span className="text-[var(--text-secondary)]">0.6% Échoué</span>
               <span className="text-[var(--text-secondary)]">1.0% In-Flight</span>
            </div>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-2xl flex flex-col relative overflow-hidden">
+        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <Globe className="w-12 h-12" />
            </div>
@@ -59,12 +61,12 @@ export default function GodModeMessagingPage() {
                  <span className="text-[var(--text-secondary)] font-mono">$450</span>
               </div>
            </div>
-        </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
          {/* Configuration: Messaging Profiles */}
-         <div className="glass-panel p-8 rounded-2xl">
+         <Card className="p-8 rounded-2xl hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <Settings className="text-cyan-500" />
                Profils de Messagerie (Messaging Profiles)
@@ -87,13 +89,13 @@ export default function GodModeMessagingPage() {
                   <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold rounded-full">Actif</span>
                </div>
             </div>
-            <button className="mt-6 w-full btn-primary-gradient py-3 text-sm font-bold">
+            <Button className="mt-6 w-full" size="lg">
                + Créer un nouveau Profil
-            </button>
-         </div>
+            </Button>
+         </Card>
 
          {/* Outils de Réduction de Coûts */}
-         <div className="glass-panel p-8 rounded-2xl flex flex-col">
+         <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <DollarSign className="text-emerald-500" />
                Outils de Réduction de Coûts
@@ -137,11 +139,11 @@ export default function GodModeMessagingPage() {
                   </div>
                </div>
             </div>
-         </div>
+         </Card>
       </div>
 
       {/* Fonctionnalités avancées : Number Pool */}
-      <div className="glass-panel p-8 rounded-2xl">
+      <Card className="p-8 rounded-2xl hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
          <div className="flex justify-between items-center mb-6">
             <div>
                <h2 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
@@ -150,7 +152,7 @@ export default function GodModeMessagingPage() {
                </h2>
                <p className="text-sm text-[var(--text-secondary)] mt-1">Distribuez les campagnes sur plusieurs numéros pour éviter le filtrage opérateur (Geo-Match & Sticky Sender).</p>
             </div>
-            <button className="btn-primary-gradient px-4 py-2 text-sm">Gérer les Pools</button>
+            <Button size="sm">Gérer les Pools</Button>
          </div>
          
          <div className="overflow-x-auto">
@@ -179,7 +181,7 @@ export default function GodModeMessagingPage() {
                </tbody>
             </table>
          </div>
-      </div>
+      </Card>
     </div>
   );
 }

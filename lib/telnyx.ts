@@ -37,6 +37,18 @@ export async function getConfiguredTelnyxApiKey() {
   return apiKey;
 }
 
+/** Public Ed25519 key used to authenticate Telnyx webhooks. God Mode is the
+ * source of truth and TELNYX_PUBLIC_KEY remains a deployment fallback. */
+export async function getConfiguredTelnyxPublicKey() {
+  const settings = await prisma.systemSettings.findUnique({
+    where: { id: 'default' },
+    select: { telnyxPublicKey: true },
+  });
+  const publicKey = settings?.telnyxPublicKey?.trim() || process.env.TELNYX_PUBLIC_KEY?.trim();
+  if (!publicKey) throw new Error('Telnyx public key is not configured');
+  return publicKey;
+}
+
 export async function getConfiguredTelnyxClient() {
   const apiKey = await getConfiguredTelnyxApiKey();
   if (!configuredTelnyxInstance || configuredTelnyxApiKey !== apiKey) {

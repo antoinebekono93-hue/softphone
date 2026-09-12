@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Loader2, MessageSquare, MapPin, DollarSign, Activity, BarChart2, Plus, X, Send } from "lucide-react";
+import { Loader2, MessageSquare, MapPin, DollarSign, Activity, BarChart2, Plus, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/card";
 
 type SmsMessage = {
   id: string;
@@ -123,46 +126,46 @@ export default function SmsDashboardClient({
           </h1>
           <p className="text-[var(--text-secondary)] text-sm md:text-base">Gérez vos envois groupés, suivez la délivrabilité et analysez les coûts.</p>
         </div>
-        <button 
+        <Button 
           onClick={() => setIsCampaignModalOpen(true)}
-          className="w-full md:w-auto btn-primary-gradient px-6 py-3"
+          className="w-full md:w-auto px-6 py-3"
         >
           <Plus className="w-5 h-5" />
           Nouvelle Campagne
-        </button>
+        </Button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-        <div className="glass-panel p-6 flex items-start justify-between">
+        <Card className="p-6 flex items-start justify-between hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Total Messages</div>
             <div className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">{stats.totalMessages}</div>
           </div>
           <div className="p-3 bg-[var(--bg-surface-hover)] rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] shadow-sm"><MessageSquare className="w-6 h-6" /></div>
-        </div>
+        </Card>
         
-        <div className="glass-panel p-6 flex items-start justify-between relative overflow-hidden">
+        <Card className="p-6 flex items-start justify-between relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/20 blur-2xl rounded-full"></div>
           <div className="relative z-10">
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Délivrabilité</div>
             <div className="text-3xl md:text-4xl font-bold text-emerald-500">{stats.deliverabilityRate.toFixed(1)}%</div>
           </div>
           <div className="relative z-10 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-500 shadow-sm"><Activity className="w-6 h-6" /></div>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 flex items-start justify-between">
+        <Card className="p-6 flex items-start justify-between hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Coût Total (Wallet)</div>
             <div className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">${stats.totalCost.toFixed(2)}</div>
           </div>
           <div className="p-3 bg-[var(--bg-surface-hover)] rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] shadow-sm"><DollarSign className="w-6 h-6" /></div>
-        </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
         {/* Analyse Géographique */}
-        <div className="lg:col-span-1 glass-panel p-6 flex flex-col">
+        <Card className="lg:col-span-1 p-6 flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <h3 className="font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
             <MapPin className="w-4 h-4 text-cyan-500" /> Dépenses par Pays
           </h3>
@@ -180,10 +183,10 @@ export default function SmsDashboardClient({
             ))}
             {stats.countries.length === 0 && <p className="text-sm text-[var(--text-secondary)] text-center mt-8">Aucune donnée géographique</p>}
           </div>
-        </div>
+        </Card>
 
         {/* Logs Table */}
-        <div className="lg:col-span-3 glass-panel flex flex-col overflow-hidden">
+        <Card className="lg:col-span-3 flex flex-col overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           {/* Actionable Filters */}
           <div className="p-4 border-b border-[var(--border-subtle)] flex flex-wrap gap-3 items-center bg-[var(--bg-surface-solid)]/30">
             <div className="flex items-center gap-2 hidden sm:flex">
@@ -264,25 +267,13 @@ export default function SmsDashboardClient({
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Campaign Modal */}
-      {isCampaignModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsCampaignModalOpen(false)}></div>
-          <div className="relative w-full max-w-2xl bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden animate-slideUp flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-[var(--border-subtle)] flex justify-between items-center bg-[var(--bg-base)]">
-              <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-cyan-400" /> Nouvelle Campagne SMS
-              </h2>
-              <button onClick={() => setIsCampaignModalOpen(false)} className="text-[var(--text-secondary)] hover:text-white p-1">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+      <Modal open={isCampaignModalOpen} onClose={() => setIsCampaignModalOpen(false)} title={<><MessageSquare className="w-5 h-5 text-cyan-400" /> Nouvelle Campagne SMS</>} size="lg">
             <form onSubmit={handleSendCampaign} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-              <div className="p-6 space-y-6 flex-1">
+              <div className="space-y-6 flex-1">
                 
                 {/* Destinataires */}
                 <div>
@@ -359,7 +350,7 @@ export default function SmsDashboardClient({
                 )}
               </div>
 
-              <div className="p-6 border-t border-[var(--border-subtle)] flex gap-3 justify-end bg-[var(--bg-base)] shrink-0">
+              <div className="pt-5 mt-5 border-t border-[var(--border-subtle)] flex gap-3 justify-end">
                 <button 
                   type="button" 
                   onClick={() => setIsCampaignModalOpen(false)}
@@ -367,19 +358,17 @@ export default function SmsDashboardClient({
                 >
                   Annuler
                 </button>
-                <button 
+                <Button 
                   type="submit" 
                   disabled={isSending || selectedContacts.length === 0 || campaignMessage.trim() === ''}
-                  className="btn-primary-gradient px-6 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 flex items-center gap-2"
                 >
                   {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   {isSending ? 'Envoi...' : 'Envoyer la Campagne'}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, DollarSign, Activity } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 export default function UsageReportClient() {
   const [data, setData] = useState<any[]>([]);
@@ -25,7 +26,7 @@ export default function UsageReportClient() {
   }, []);
 
   return (
-    <div className="glass-panel p-6 flex flex-col h-full">
+    <Card className="p-6 flex flex-col h-full">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
@@ -68,6 +69,6 @@ export default function UsageReportClient() {
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

@@ -17,6 +17,8 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Plus, Save, ArrowLeft, Settings2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // Import Custom Nodes and Sidebar
 import TriggerNode from "./nodes/TriggerNode";
@@ -141,10 +143,10 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
            <button className="px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]">
              Paramètres Globaux
            </button>
-           <button onClick={handleSaveFlow} className="btn-primary-gradient px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
-             <Save className="w-4 h-4" />
-             Sauvegarder
-           </button>
+            <Button onClick={handleSaveFlow} className="px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              Sauvegarder
+            </Button>
         </div>
       </div>
       
@@ -327,14 +329,14 @@ export default function FlowBuilderClient({ initialFlows }: { initialFlows: any[
             <h2 className="text-2xl font-bold text-[var(--text-primary)]">Séquences WhatsApp</h2>
             <p className="text-[var(--text-secondary)] mt-1">Créez des scénarios d'automatisation visuels (Flows).</p>
           </div>
-          <button onClick={handleCreateFlow} className="btn-primary-gradient px-6 py-3 flex items-center gap-2">
+          <Button onClick={handleCreateFlow} className="px-6 py-3 flex items-center gap-2">
             <Plus className="w-5 h-5" />
             Nouvelle Séquence
-          </button>
+          </Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {flows.map(flow => (
-            <div key={flow.id} onClick={() => setSelectedFlow(flow)} className="glass-panel p-6 rounded-2xl cursor-pointer hover:border-emerald-500 transition-colors border border-[var(--border-subtle)]">
+            <Card key={flow.id} onClick={() => setSelectedFlow(flow)} className="p-6 cursor-pointer hover:border-emerald-500 transition-colors">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-lg text-[var(--text-primary)]">{flow.name}</h3>
                 <span className={`px-2 py-1 text-xs font-bold rounded-md ${flow.isActive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-gray-500'}`}>
@@ -342,7 +344,7 @@ export default function FlowBuilderClient({ initialFlows }: { initialFlows: any[
                 </span>
               </div>
               <p className="text-sm text-[var(--text-secondary)]">Dernière modification : {new Date(flow.updatedAt).toLocaleDateString()}</p>
-            </div>
+            </Card>
           ))}
           {flows.length === 0 && (
              <div className="col-span-full p-12 text-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-subtle)] rounded-2xl bg-[var(--bg-surface)]">

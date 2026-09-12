@@ -15,13 +15,13 @@ export async function getSystemSettings() {
     where: { id: "default" },
     // Keep the Telnyx console operational even while an unrelated pricing
     // migration is waiting to be deployed.
-    select: { id: true, telnyxApiKey: true, telnyxConnectionId: true },
+    select: { id: true, telnyxApiKey: true, telnyxPublicKey: true, telnyxConnectionId: true },
   });
 
   if (!settings) {
     settings = await prisma.systemSettings.create({
       data: { id: "default" },
-      select: { id: true, telnyxApiKey: true, telnyxConnectionId: true },
+      select: { id: true, telnyxApiKey: true, telnyxPublicKey: true, telnyxConnectionId: true },
     });
   }
 
@@ -29,6 +29,7 @@ export async function getSystemSettings() {
     id: settings.id,
     telnyxConnectionId: settings.telnyxConnectionId,
     telnyxApiKeyConfigured: Boolean(settings.telnyxApiKey?.trim() || process.env.TELNYX_API_KEY?.trim()),
+    telnyxPublicKeyConfigured: Boolean(settings.telnyxPublicKey?.trim() || process.env.TELNYX_PUBLIC_KEY?.trim()),
   };
 }
 
@@ -48,6 +49,22 @@ export async function saveTelnyxApiKey(apiKey: string) {
     where: { id: "default" },
     update: { telnyxApiKey: normalized },
     create: { id: "default", telnyxApiKey: normalized },
+    select: { id: true },
+  });
+  revalidatePath("/god-mode/telnyx");
+  return { success: true };
+}
+
+export async function saveTelnyxPublicKey(publicKey: string) {
+  await requireSuperAdmin();
+  const normalized = publicKey.trim();
+  if (!/^[A-Za-z0-9+/_=-]{32,512}$/.test(normalized)) {
+    return { error: "La clé publique Ed25519 Telnyx est invalide." };
+  }
+  await prisma.systemSettings.upsert({
+    where: { id: "default" },
+    update: { telnyxPublicKey: normalized },
+    create: { id: "default", telnyxPublicKey: normalized },
     select: { id: true },
   });
   revalidatePath("/god-mode/telnyx");
@@ -133,7 +150,8 @@ export async function updateCredentialConnection(connectionId: string, settings:
   outbound?: {
     outbound_voice_profile_id: string | null;
     channel_limit: number | null;
-    ani_override: "always" | "normal" | "never";
+    ani_override: string | null;
+    ani_override_type: "always" | "normal" | "never";
     call_parking_enabled: boolean;
     instant_ringback_enabled: boolean;
     generate_ringback_tone: boolean;
@@ -433,6 +451,103 @@ export async function fetchRecentMessages() {
     return { data: data.data };
   } catch (e: any) {
     return { error: e.message };
+  }
+}
+
+type VoiceAuditLevel = "PASS" | "WARNING" | "BLOCKER";
+
+/** Read-only production audit. It compares the code-controlled configuration,
+ * the selected Telnyx connection and every active locally managed number. */
+export async function fetchVoiceProductionAudit() {
+  await requireSuperAdmin();
+  try {
+    const [apiKey, settings, numbers] = await Promise.all([
+      configuredApiKey(),
+      prisma.systemSettings.findUnique({
+        where: { id: "default" },
+        select: { telnyxConnectionId: true, telnyxPublicKey: true },
+      }),
+      prisma.phoneNumber.findMany({
+        where: { status: "ACTIVE", telnyxId: { not: { startsWith: "mock-" } } },
+        select: {
+          id: true, number: true, telnyxId: true, incomingRoutingEnabled: true,
+          incomingRoutingMode: true, forwardToE164: true,
+        },
+        orderBy: { number: "asc" },
+      }),
+    ]);
+    const connectionId = settings?.telnyxConnectionId?.trim() || process.env.TELNYX_SIP_CONNECTION_ID?.trim();
+    const publicKeyConfigured = Boolean(settings?.telnyxPublicKey?.trim() || process.env.TELNYX_PUBLIC_KEY?.trim());
+    const checks: Array<{ key: string; label: string; level: VoiceAuditLevel; detail: string }> = [];
+    checks.push({
+      key: "public-key", label: "Signature des webhooks", level: publicKeyConfigured ? "PASS" : "BLOCKER",
+      detail: publicKeyConfigured ? "Clé publique Ed25519 configurée." : "Ajoutez la clé publique Telnyx dans God Mode : les webhooks sont actuellement refusés.",
+    });
+    if (!connectionId) {
+      checks.push({ key: "connection", label: "Connexion vocale", level: "BLOCKER", detail: "Aucune connexion Telnyx sélectionnée." });
+      return { data: { checkedAt: new Date().toISOString(), checks, numbers: [], deliveries: [] } };
+    }
+
+    const connectionResponse = await fetch(`https://api.telnyx.com/v2/credential_connections/${connectionId}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }, cache: "no-store",
+    });
+    if (!connectionResponse.ok) {
+      checks.push({ key: "connection", label: "Connexion vocale", level: "BLOCKER", detail: `Connexion introuvable ou inaccessible chez Telnyx (HTTP ${connectionResponse.status}).` });
+      return { data: { checkedAt: new Date().toISOString(), checks, numbers: [], deliveries: [] } };
+    }
+    const connection = (await connectionResponse.json()).data;
+    checks.push({ key: "connection", label: "Connexion vocale", level: connection.active !== false ? "PASS" : "BLOCKER", detail: connection.active !== false ? `${connection.connection_name || connection.user_name || connectionId} est active.` : "La connexion sélectionnée est désactivée chez Telnyx." });
+    checks.push({ key: "webhook-primary", label: "Webhook vocal primaire", level: /^https:\/\//i.test(connection.webhook_event_url || "") ? "PASS" : "BLOCKER", detail: connection.webhook_event_url || "URL HTTPS absente." });
+    checks.push({ key: "webhook-version", label: "Version webhook", level: connection.webhook_api_version === "2" ? "PASS" : "BLOCKER", detail: connection.webhook_api_version === "2" ? "API v2 active." : "Passez impérativement le webhook en API v2." });
+    checks.push({ key: "webhook-failover", label: "Webhook de secours", level: /^https:\/\//i.test(connection.webhook_event_failover_url || "") ? "PASS" : "WARNING", detail: connection.webhook_event_failover_url || "Aucune URL de secours : un incident Vercel peut faire perdre des événements d'appel." });
+    checks.push({ key: "call-cost", label: "Coût dans les webhooks", level: connection.call_cost_in_webhooks === true ? "PASS" : "BLOCKER", detail: connection.call_cost_in_webhooks === true ? "Actif pour la facturation réelle." : "Inactif chez Telnyx : le coût opérateur ne sera pas disponible." });
+    checks.push({ key: "outbound-profile", label: "Profil d'appels sortants", level: connection.outbound?.outbound_voice_profile_id ? "PASS" : "BLOCKER", detail: connection.outbound?.outbound_voice_profile_id || "Aucun profil sortant associé : les appels PSTN sortants peuvent être refusés." });
+    const pusherConfigured = Boolean(process.env.PUSHER_APP_ID && process.env.PUSHER_SECRET && process.env.NEXT_PUBLIC_PUSHER_KEY && process.env.NEXT_PUBLIC_PUSHER_CLUSTER);
+    checks.push({ key: "realtime", label: "Notification des appels entrants", level: pusherConfigured ? "PASS" : "BLOCKER", detail: pusherConfigured ? "Canal temps réel Pusher configuré." : "Pusher est incomplet : le navigateur ne recevra pas la notification serveur." });
+
+    const telnyx = await getConfiguredTelnyxClient();
+    const numberResults: Array<Record<string, unknown>> = [];
+    for (let offset = 0; offset < numbers.length; offset += 10) {
+      const chunk = numbers.slice(offset, offset + 10);
+      const audited = await Promise.all(chunk.map(async (number) => {
+        try {
+          const [details, voice] = await Promise.all([
+            telnyx.phoneNumbers.retrieve(number.telnyxId),
+            telnyx.phoneNumbers.voice.retrieve(number.telnyxId),
+          ]);
+          const connectionMatches = details.data?.connection_id === connectionId;
+          const nativeForwardingEnabled = Boolean(voice.data?.call_forwarding?.call_forwarding_enabled);
+          const localRouteValid = !number.incomingRoutingEnabled || number.incomingRoutingMode === "APP" || Boolean(number.forwardToE164);
+          return { ...number, providerStatus: details.data?.status ?? null, connectionMatches, nativeForwardingEnabled, localRouteValid, healthy: connectionMatches && !nativeForwardingEnabled && localRouteValid };
+        } catch (error: any) {
+          return { ...number, healthy: false, error: error?.message || "Numéro inaccessible chez Telnyx." };
+        }
+      }));
+      numberResults.push(...audited);
+    }
+    const brokenNumbers = numberResults.filter((number) => number.healthy !== true);
+    checks.push({
+      key: "numbers", label: "Rattachement des numéros entrants", level: brokenNumbers.length ? "BLOCKER" : "PASS",
+      detail: brokenNumbers.length ? `${brokenNumbers.length}/${numberResults.length} numéro(s) exigent une réparation.` : `${numberResults.length} numéro(s) rattaché(s) au backend, transfert Telnyx natif désactivé.`,
+    });
+
+    const deliveryResponse = await fetch("https://api.telnyx.com/v2/webhook_deliveries?page[size]=25", {
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" }, cache: "no-store",
+    });
+    const deliveriesPayload = deliveryResponse.ok ? await deliveryResponse.json() : { data: [] };
+    const deliveries = (Array.isArray(deliveriesPayload.data) ? deliveriesPayload.data : [])
+      .filter((delivery: any) => String(delivery.webhook?.event_type || "").startsWith("call"))
+      .slice(0, 15)
+      .map((delivery: any) => ({
+        id: delivery.id, status: delivery.status, eventType: delivery.webhook?.event_type || "unknown",
+        startedAt: delivery.started_at, finishedAt: delivery.finished_at,
+        responseStatus: delivery.response?.status ?? null, errors: delivery.errors || [],
+      }));
+    const failedDeliveries = deliveries.filter((delivery: any) => delivery.status !== "delivered");
+    checks.push({ key: "deliveries", label: "Livraison récente des webhooks vocaux", level: failedDeliveries.length ? "BLOCKER" : "PASS", detail: failedDeliveries.length ? `${failedDeliveries.length} livraison(s) vocale(s) récente(s) en échec.` : `${deliveries.length} livraison(s) vocale(s) récente(s) sans échec visible.` });
+    return { data: { checkedAt: new Date().toISOString(), checks, numbers: numberResults, deliveries } };
+  } catch (error: any) {
+    return { error: error?.message || "Audit vocal impossible." };
   }
 }
 

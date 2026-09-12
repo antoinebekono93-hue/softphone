@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import { Card } from "@/components/ui/card";
 import { 
   saveTelnyxApiKey, 
+  saveTelnyxPublicKey,
   fetchTelnyxBalance,
   fetchMessagingProfiles,
   fetchCallControlApps,
@@ -21,11 +23,14 @@ import {
   repairApplicationNumberRouting,
   listVoiceUsers,
   setUserVoiceAccess,
+  fetchVoiceProductionAudit,
 } from "./actions";
 
 export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
   const [newApiKey, setNewApiKey] = useState("");
   const [apiKeyConfigured, setApiKeyConfigured] = useState(Boolean(initialSettings?.telnyxApiKeyConfigured));
+  const [newPublicKey, setNewPublicKey] = useState("");
+  const [publicKeyConfigured, setPublicKeyConfigured] = useState(Boolean(initialSettings?.telnyxPublicKeyConfigured));
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -57,7 +62,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     inboundChannelLimit: "10", inboundCodecs: "OPUS,G722,PCMU,PCMA", aniFormat: "+E.164", dnisFormat: "+e164",
     generateInboundRingback: true, shakenStir: true, simultaneousRinging: "enabled", prack: true,
     timeout1xx: "10", timeout2xx: "20", outboundChannelLimit: "10", outboundProfileId: "",
-    aniOverride: "normal", callParking: true, instantRingback: true, generateOutboundRingback: true,
+    aniOverrideNumber: "", aniOverrideType: "normal", callParking: true, instantRingback: true, generateOutboundRingback: true,
     localization: "US", jitterEnabled: true, jitterMin: "60", jitterMax: "200", rtcpCapture: false,
     rtcpPort: "rtcp-mux", rtcpFrequency: "10", conversationPersistence: false, t38Passthrough: false,
     t38ReinviteSource: "customer", iosPushCredentialId: "", androidPushCredentialId: "",
@@ -77,6 +82,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
 
   // Diagnostics State
   const [recentMessages, setRecentMessages] = useState<any[]>([]);
+  const [voiceAudit, setVoiceAudit] = useState<any | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const handleSaveKey = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +94,31 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
       setApiKeyConfigured(true);
       loadTelnyxData();
     });
+  };
+
+  const handleSavePublicKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    startTransition(async () => {
+      const result = await saveTelnyxPublicKey(newPublicKey);
+      if (result?.error) return setError(result.error);
+      setNewPublicKey("");
+      setPublicKeyConfigured(true);
+      setError(null);
+    });
+  };
+
+  const handleVoiceAudit = async () => {
+    setAuditLoading(true);
+    setError(null);
+    try {
+      const result = await fetchVoiceProductionAudit();
+      if (result.error) throw new Error(result.error);
+      setVoiceAudit(result.data);
+    } catch (auditError: any) {
+      setError(auditError.message);
+    } finally {
+      setAuditLoading(false);
+    }
   };
 
   const loadTelnyxData = async () => {
@@ -203,7 +235,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
       timeout2xx: String(connection.inbound?.timeout_2xx_secs ?? 20),
       outboundChannelLimit: String(connection.outbound?.channel_limit ?? 10),
       outboundProfileId: connection.outbound?.outbound_voice_profile_id || "",
-      aniOverride: connection.outbound?.ani_override || "normal",
+      aniOverrideNumber: connection.outbound?.ani_override || "",
+      aniOverrideType: connection.outbound?.ani_override_type || "normal",
       callParking: Boolean(connection.outbound?.call_parking_enabled),
       instantRingback: Boolean(connection.outbound?.instant_ringback_enabled),
       generateOutboundRingback: Boolean(connection.outbound?.generate_ringback_tone),
@@ -280,7 +313,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
         outbound: {
           outbound_voice_profile_id: voiceOptions.outboundProfileId || null,
           channel_limit: voiceOptions.outboundChannelLimit === "" ? null : Number(voiceOptions.outboundChannelLimit),
-          ani_override: voiceOptions.aniOverride,
+          ani_override: voiceOptions.aniOverrideNumber || null,
+          ani_override_type: voiceOptions.aniOverrideType,
           call_parking_enabled: voiceOptions.callParking,
           instant_ringback_enabled: voiceOptions.instantRingback,
           generate_ringback_tone: voiceOptions.generateOutboundRingback,
@@ -449,7 +483,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
 
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+          <Card className="border-none shadow-2xl p-6">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
               Master API Key
@@ -483,9 +517,30 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 Save & Connect
               </button>
             </form>
-          </div>
+            <div className="my-6 border-t border-[var(--border-subtle)]" />
+            <form onSubmit={handleSavePublicKey} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  Clé publique Ed25519 des webhooks
+                </label>
+                <input
+                  type="password"
+                  value={newPublicKey}
+                  onChange={(event) => setNewPublicKey(event.target.value)}
+                  placeholder={publicKeyConfigured ? "Configurée — saisir pour remplacer" : "Copiez la clé publique Telnyx"}
+                  className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-cyan-500"
+                />
+                <p className="mt-2 text-xs text-[var(--text-secondary)]">
+                  Cette clé authentifie chaque événement entrant avant tout routage ou facturation.
+                </p>
+              </div>
+              <button type="submit" disabled={isPending || !newPublicKey.trim()} className="px-4 py-2 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 rounded-lg text-sm font-semibold disabled:opacity-50">
+                Enregistrer la clé publique
+              </button>
+            </form>
+          </Card>
 
-          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+          <Card className="border-none shadow-2xl p-6">
              <h2 className="text-xl font-bold mb-4">Account Status</h2>
              {loadingData ? (
                <div className="flex items-center justify-center h-32">
@@ -514,13 +569,13 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                  Enter your API key to fetch account status.
                </div>
              )}
-          </div>
+          </Card>
         </div>
       )}
 
       {activeTab === 'outbound' && (
         <div className="space-y-6">
-          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+          <Card className="border-none shadow-2xl p-6">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-xl font-bold">Outbound Voice Profiles</h2>
@@ -632,9 +687,9 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+          <Card className="border-none shadow-2xl p-6">
             <div className="mb-6">
               <h2 className="text-xl font-bold">Connections & Applications (Assign Profile)</h2>
               <p className="text-sm text-[var(--text-secondary)] mt-1">Assign an Outbound Profile to your SIP Connections or Voice APIs to authorize outbound calling.</p>
@@ -684,13 +739,13 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {activeTab === 'routing' && (
         <div className="space-y-6">
-          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+          <Card className="border-none shadow-2xl p-6">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
               <div>
                 <h2 className="text-xl font-bold">Téléphonie WebRTC & routage entrant</h2>
@@ -764,7 +819,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 <h3 className="font-bold">Appels sortants</h3>
                 <label className="block text-xs text-[var(--text-secondary)]">Profil sortant<select value={voiceOptions.outboundProfileId} onChange={(e) => setVoiceOptions({ ...voiceOptions, outboundProfileId: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="">Aucun</option>{outboundProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select></label>
                 <div className="grid grid-cols-2 gap-2"><label className="block text-xs text-[var(--text-secondary)]">Canaux<input type="number" min="1" value={voiceOptions.outboundChannelLimit} onChange={(e) => setVoiceOptions({ ...voiceOptions, outboundChannelLimit: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label><label className="block text-xs text-[var(--text-secondary)]">Localisation<input maxLength={2} value={voiceOptions.localization} onChange={(e) => setVoiceOptions({ ...voiceOptions, localization: e.target.value.toUpperCase() })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-2" /></label></div>
-                <label className="block text-xs text-[var(--text-secondary)]">Politique Caller ID<select value={voiceOptions.aniOverride} onChange={(e) => setVoiceOptions({ ...voiceOptions, aniOverride: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="normal">Normale</option><option value="always">Toujours remplacer</option><option value="never">Ne jamais remplacer</option></select></label>
+                <label className="block text-xs text-[var(--text-secondary)]">Numéro Caller ID forcé (E.164)<input value={voiceOptions.aniOverrideNumber} onChange={(e) => setVoiceOptions({ ...voiceOptions, aniOverrideNumber: e.target.value })} placeholder="+12025550123" className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2" /></label>
+                <label className="block text-xs text-[var(--text-secondary)]">Politique Caller ID<select value={voiceOptions.aniOverrideType} onChange={(e) => setVoiceOptions({ ...voiceOptions, aniOverrideType: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="normal">Normale</option><option value="always">Toujours remplacer</option><option value="never">Ne jamais remplacer</option></select></label>
                 <label className="block text-xs text-[var(--text-secondary)]">Source réinvite T.38<select value={voiceOptions.t38ReinviteSource} onChange={(e) => setVoiceOptions({ ...voiceOptions, t38ReinviteSource: e.target.value })} className="mt-1 w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-3 py-2"><option value="customer">Client</option><option value="telnyx">Telnyx</option></select></label>
                 <div className="space-y-2 text-xs"><label className="block"><input type="checkbox" checked={voiceOptions.callParking} onChange={(e) => setVoiceOptions({ ...voiceOptions, callParking: e.target.checked })} /> Parking Call Control</label><label className="block"><input type="checkbox" checked={voiceOptions.instantRingback} onChange={(e) => setVoiceOptions({ ...voiceOptions, instantRingback: e.target.checked })} /> Ringback instantané</label><label className="block"><input type="checkbox" checked={voiceOptions.generateOutboundRingback} onChange={(e) => setVoiceOptions({ ...voiceOptions, generateOutboundRingback: e.target.checked })} /> Générer la tonalité</label></div>
                 <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-300">Le coût d’appel dans les webhooks reste toujours activé pour protéger la facturation.</div>
@@ -774,9 +830,9 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
               <button onClick={saveVoiceRouting} disabled={isPending} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg disabled:opacity-50">Enregistrer le routage vocal</button>
               {routingMessage && <span className="text-sm text-[var(--text-secondary)]">{routingMessage}</span>}
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-panel border-none rounded-2xl shadow-2xl overflow-hidden">
+          <Card className="border-none shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] flex justify-between items-center">
               <h2 className="text-xl font-bold">Messaging Profiles (SMS/MMS)</h2>
               <span className="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs font-bold rounded-full">{messagingProfiles.length} Profiles</span>
@@ -807,9 +863,9 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 <p className="text-[var(--text-secondary)] text-sm">No messaging profiles found.</p>
               )}
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-panel border-none rounded-2xl shadow-2xl overflow-hidden">
+          <Card className="border-none shadow-2xl overflow-hidden">
             <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] flex justify-between items-center">
               <h2 className="text-xl font-bold">Call Control Applications (Voice)</h2>
               <span className="px-3 py-1 bg-purple-500/20 text-purple-400 text-xs font-bold rounded-full">{callApps.length} Apps</span>
@@ -881,12 +937,12 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 <p className="text-[var(--text-secondary)] text-sm">No Call Control Applications found.</p>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {activeTab === 'credentials' && (
-        <div className="glass-panel border-none rounded-2xl shadow-2xl overflow-hidden">
+        <Card className="border-none shadow-2xl overflow-hidden">
           <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)]">
             <h2 className="text-xl font-bold">Identités WebRTC par utilisateur</h2>
             <p className="text-sm text-[var(--text-secondary)] mt-1">Chaque utilisateur reçoit son propre credential Telnyx et seulement un JWT temporaire côté navigateur. La clé maître reste sur le serveur.</p>
@@ -912,12 +968,12 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {activeTab === 'numbers' && (
         <div className="space-y-6">
-          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+          <Card className="border-none shadow-2xl p-6">
             <h2 className="text-xl font-bold mb-4">Search Global Numbers</h2>
             <div className="flex gap-4 items-end mb-6">
               <div className="flex-1 max-w-xs">
@@ -1018,13 +1074,75 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {activeTab === 'diagnostics' && (
         <div className="space-y-6">
-          <div className="glass-panel border-none rounded-2xl shadow-2xl p-6">
+          <Card className="border-none shadow-2xl p-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-xl font-bold">Audit téléphonique de production</h2>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">Contrôle en direct la connexion, les webhooks, le profil sortant, les notifications et chaque numéro Telnyx.</p>
+              </div>
+              <button onClick={handleVoiceAudit} disabled={auditLoading || !apiKeyConfigured} className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-sm font-semibold disabled:opacity-50">
+                {auditLoading ? "Audit en cours…" : "Lancer l’audit réel"}
+              </button>
+            </div>
+            {!voiceAudit ? (
+              <p className="text-sm text-[var(--text-secondary)]">L’audit interroge Telnyx sans modifier la configuration.</p>
+            ) : (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                  {voiceAudit.checks.map((check: any) => (
+                    <div key={check.key} className={`rounded-xl border p-4 ${check.level === "PASS" ? "border-emerald-500/30 bg-emerald-500/10" : check.level === "WARNING" ? "border-amber-500/30 bg-amber-500/10" : "border-red-500/30 bg-red-500/10"}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold text-sm">{check.label}</span>
+                        <span className={`text-xs font-bold ${check.level === "PASS" ? "text-emerald-400" : check.level === "WARNING" ? "text-amber-300" : "text-red-400"}`}>{check.level === "PASS" ? "OK" : check.level === "WARNING" ? "À améliorer" : "Bloquant"}</span>
+                      </div>
+                      <p className="mt-2 text-xs text-[var(--text-secondary)] break-words">{check.detail}</p>
+                    </div>
+                  ))}
+                </div>
+                {voiceAudit.numbers.some((number: any) => !number.healthy) && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Numéros à réparer</h3>
+                    <div className="space-y-2">
+                      {voiceAudit.numbers.filter((number: any) => !number.healthy).map((number: any) => (
+                        <div key={number.id} className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs">
+                          <span className="font-mono font-semibold">{number.number}</span>
+                          <span className="ml-3 text-[var(--text-secondary)]">{number.error || (!number.connectionMatches ? "mauvaise connexion Telnyx" : number.nativeForwardingEnabled ? "transfert Telnyx natif encore actif" : "routage local incomplet")}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {voiceAudit.deliveries.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Dernières livraisons vocales Telnyx</h3>
+                    <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-[var(--bg-surface-hover)] text-[var(--text-secondary)]"><tr><th className="px-3 py-2">Événement</th><th className="px-3 py-2">Date</th><th className="px-3 py-2">HTTP</th><th className="px-3 py-2">État</th></tr></thead>
+                        <tbody className="divide-y divide-white/5">
+                          {voiceAudit.deliveries.map((delivery: any) => (
+                            <tr key={delivery.id}>
+                              <td className="px-3 py-2 font-mono">{delivery.eventType}</td>
+                              <td className="px-3 py-2 text-[var(--text-secondary)]">{delivery.startedAt ? new Date(delivery.startedAt).toLocaleString() : "—"}</td>
+                              <td className="px-3 py-2">{delivery.responseStatus ?? "—"}</td>
+                              <td className={`px-3 py-2 font-semibold ${delivery.status === "delivered" ? "text-emerald-400" : "text-red-400"}`}>{delivery.status}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-[var(--text-secondary)]">Dernier contrôle : {new Date(voiceAudit.checkedAt).toLocaleString()}</p>
+              </div>
+            )}
+          </Card>
+          <Card className="border-none shadow-2xl p-6">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2">
@@ -1105,7 +1223,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

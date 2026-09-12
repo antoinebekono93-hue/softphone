@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Brain, Search, Trash2, Tag, Clock, Zap, BookOpen } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 interface Memory {
   id: string;
@@ -73,7 +74,7 @@ export default function RAGMemoryPage() {
           <Brain className="w-6 h-6 text-violet-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Mémoire Hermes</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">Mémoire Hermes</h1>
           <p className="text-sm text-muted-foreground">Base de connaissances sémantique des agents IA — procédures auto-apprises</p>
         </div>
       </div>
@@ -87,7 +88,7 @@ export default function RAGMemoryPage() {
         ].map(s => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="rounded-2xl border border-border bg-card p-5 flex items-center gap-4">
+            <Card key={s.label} className="p-5 flex items-center gap-4">
               <div className={`w-10 h-10 rounded-xl bg-${s.color}-500/10 border border-${s.color}-500/20 flex items-center justify-center`}>
                 <Icon className={`w-5 h-5 text-${s.color}-400`} />
               </div>
@@ -95,13 +96,13 @@ export default function RAGMemoryPage() {
                 <div className="text-2xl font-bold">{s.value}</div>
                 <div className="text-xs text-muted-foreground">{s.label}</div>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
 
       {/* Search Bar */}
-      <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+      <Card className="p-6 space-y-4">
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Recherche Sémantique</h2>
         <div className="flex gap-3">
           <div className="relative flex-1">
@@ -126,7 +127,7 @@ export default function RAGMemoryPage() {
         <p className="text-xs text-muted-foreground">
           La recherche utilise la similarité cosine sur les embeddings OpenAI pour trouver les procédures les plus pertinentes.
         </p>
-      </div>
+      </Card>
 
       {/* Results */}
       {searched && (
@@ -135,17 +136,17 @@ export default function RAGMemoryPage() {
             {memories.length > 0 ? `${memories.length} résultat(s) trouvé(s)` : 'Aucun résultat'}
           </h2>
           {memories.length === 0 && !loading && (
-            <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
+            <Card className="p-12 text-center text-muted-foreground">
               <Brain className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm">Aucune mémoire correspondante trouvée.</p>
               <p className="text-xs mt-1">Les mémoires se génèrent automatiquement quand un agent résout un problème.</p>
-            </div>
+            </Card>
           )}
           {memories.map(mem => {
             const Icon = TYPE_ICONS[mem.type] || Brain;
             const colorClass = TYPE_COLORS[mem.type] || TYPE_COLORS.SKILL;
             return (
-              <div key={mem.id} className="rounded-2xl border border-border bg-card p-5 space-y-3 hover:border-violet-500/30 transition-all">
+              <Card key={mem.id} className="p-5 space-y-3 hover:border-violet-500/30 transition-all">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg border ${colorClass}`}>
@@ -185,7 +186,7 @@ export default function RAGMemoryPage() {
                     ))}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>

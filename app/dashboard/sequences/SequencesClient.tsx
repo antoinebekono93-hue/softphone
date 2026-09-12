@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Plus, Search, CalendarClock, Settings, Trash2, Loader2, Play, Pause } from "lucide-react";
 import Link from "next/link";
 import { createSequence, updateSequence, deleteSequence } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Card } from "@/components/ui/card";
 
 export function SequencesClient({ initialSequences }: { initialSequences: any[] }) {
   const [sequences, setSequences] = useState(initialSequences);
@@ -56,16 +59,16 @@ export function SequencesClient({ initialSequences }: { initialSequences: any[] 
             Créez des campagnes "Drip" multi-canales pour engager vos prospects dans le temps.
           </p>
         </div>
-        <button 
+        <Button 
           onClick={() => setIsModalOpen(true)}
-          className="btn-primary-gradient flex items-center gap-2"
+          className="flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
           Créer une Séquence
-        </button>
+        </Button>
       </div>
 
-      <div className="glass-panel p-4 mb-6">
+      <Card className="p-4 mb-6">
          <div className="flex items-center gap-3">
            <Search className="w-5 h-5 text-[var(--text-secondary)]" />
            <input 
@@ -75,17 +78,17 @@ export function SequencesClient({ initialSequences }: { initialSequences: any[] 
              onChange={(e) => setSearchQuery(e.target.value)}
              className="bg-transparent border-none outline-none w-full text-[var(--text-primary)]"
            />
-         </div>
-      </div>
+</div>
+       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredSequences.length === 0 ? (
-           <div className="col-span-full py-12 text-center text-[var(--text-secondary)] glass-panel">
+           <Card className="col-span-full py-12 text-center text-[var(--text-secondary)]">
               Aucune séquence trouvée. Créez-en une pour commencer.
-           </div>
+           </Card>
         ) : (
           filteredSequences.map((seq: any) => (
-            <div key={seq.id} className="glass-panel p-6 flex flex-col hover:border-[var(--accent-cyan)] transition-colors">
+            <Card key={seq.id} className="p-6 flex flex-col hover:border-[var(--accent-cyan)]">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-[var(--text-primary)]">{seq.name}</h3>
@@ -126,60 +129,52 @@ export function SequencesClient({ initialSequences }: { initialSequences: any[] 
                    <Trash2 className="w-4 h-4" />
                  </button>
               </div>
-            </div>
+            </Card>
           ))
         )}
       </div>
 
-      {/* Create Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-[var(--border-subtle)]">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">Nouvelle Séquence</h2>
+      <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Nouvelle Séquence" size="sm">
+        <form onSubmit={handleCreate}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Nom de la séquence</label>
+              <input 
+                type="text" required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)]"
+                placeholder="Ex: Relance Nouveaux Inscrits"
+              />
             </div>
-            <form onSubmit={handleCreate}>
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Nom de la séquence</label>
-                  <input 
-                    type="text" required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)]"
-                    placeholder="Ex: Relance Nouveaux Inscrits"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Description</label>
-                  <textarea 
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] min-h-[80px] resize-none"
-                    placeholder="Objectif de cette séquence..."
-                  />
-                </div>
-              </div>
-              <div className="p-6 border-t border-[var(--border-subtle)] flex justify-end gap-3 bg-[var(--bg-surface)]">
-                <button 
-                   type="button"
-                   onClick={() => setIsModalOpen(false)} 
-                   className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]"
-                >
-                  Annuler
-                </button>
-                <button 
-                   type="submit"
-                   disabled={isSaving || !name.trim()} 
-                   className="btn-primary-gradient flex items-center justify-center min-w-[100px]"
-                >
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
-                </button>
-              </div>
-            </form>
+            <div>
+              <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Description</label>
+              <textarea 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] min-h-[80px] resize-none"
+                placeholder="Objectif de cette séquence..."
+              />
+            </div>
           </div>
-        </div>
-      )}
+          <div className="flex justify-end gap-3 pt-5 mt-5 border-t border-[var(--border-subtle)]">
+            <button 
+               type="button"
+               onClick={() => setIsModalOpen(false)} 
+               className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]"
+            >
+              Annuler
+            </button>
+            <Button 
+               type="submit"
+               disabled={isSaving || !name.trim()} 
+               className="flex items-center justify-center min-w-[100px]"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

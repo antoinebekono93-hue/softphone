@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, Globe, ShoppingCart, Loader2, Phone, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/card";
 import { COUNTRIES } from "@/lib/countries";
 
 type AvailableNumber = {
@@ -103,7 +104,7 @@ export default function BuyNumberPage() {
       </div>
 
       {/* Advanced Search Filters */}
-      <div className="glass-panel p-6 mb-8 flex flex-col gap-6">
+      <Card className="p-6 mb-8 flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex flex-col">
             <label className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Pays (Code ISO)</label>
@@ -198,7 +199,7 @@ export default function BuyNumberPage() {
             <Search className="w-4 h-4" /> Rechercher
           </button>
         </div>
-      </div>
+      </Card>
 
       {errorMsg && (
         <div className="p-4 mb-8 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium">
@@ -222,7 +223,7 @@ export default function BuyNumberPage() {
              </div>
           ) : (
             numbers.map((num) => (
-              <div key={num.phone_number} className="glass-panel p-6 relative overflow-hidden flex flex-col group hover:border-cyan-500/30 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,212,255,0.1)]">
+              <Card key={num.phone_number} className="p-6 relative overflow-hidden flex flex-col group hover:border-cyan-500/30 hover:shadow-[0_0_30px_rgba(0,212,255,0.1)]">
                 <div className="flex justify-between items-start mb-6">
                   <div className="p-3 bg-[var(--bg-surface-hover)] rounded-xl border border-[var(--border-subtle)] group-hover:bg-cyan-500/10 group-hover:border-cyan-500/20 transition-colors">
                     <Phone className="w-6 h-6 text-[var(--text-primary)] group-hover:text-cyan-400 transition-colors" />
@@ -258,7 +259,7 @@ export default function BuyNumberPage() {
                     <><ShoppingCart className="w-4 h-4" /> Acheter ce numéro</>
                   )}
                 </button>
-              </div>
+              </Card>
             ))
           )}
         </div>

@@ -56,10 +56,10 @@ model User {
   // Unique au niveau de l'organisation (pas globalement).
   // Un utilisateur peut être joint par username ou extension
   // SANS disposer d'un numéro Telnyx assigné.
-  callUsername  String?
-  callExtension String?
-  isCallable    Boolean @default(true)
-  telnyxTelephonyCredentialId String? @unique
+  callUsername                 String?
+  callExtension                String?
+  isCallable                   Boolean @default(true)
+  telnyxTelephonyCredentialId  String? @unique
   telnyxCredentialConnectionId String?
 
   createdAt      DateTime         @default(now())
@@ -170,29 +170,34 @@ model MessagingProfile {
 }
 
 model PhoneNumber {
-  id                 String            @id @default(cuid())
-  number             String            @unique
-  friendlyName       String?
-  telnyxId           String            @unique
-  country            String?
-  status             String            @default("ACTIVE")
-  organizationId     String
-  assignedUserId     String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  messagingProfileId String?
+  id                     String            @id @default(cuid())
+  number                 String            @unique
+  friendlyName           String?
+  telnyxId               String            @unique
+  country                String?
+  status                 String            @default("ACTIVE")
+  organizationId         String
+  assignedUserId         String?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  messagingProfileId     String?
   // Routage entrant piloté par notre backend (jamais par le portail Telnyx).
-  incomingRoutingMode    String  @default("APP")
-  incomingRoutingEnabled Boolean @default(true)
+  incomingRoutingMode    String            @default("APP")
+  incomingRoutingEnabled Boolean           @default(true)
   forwardToE164          String?
-  ringAppSeconds         Int     @default(15)
-  callLogs           CallLog[]
-  campaigns          Campaign[]
-  assignedUser       User?             @relation("AssignedUser", fields: [assignedUserId], references: [id])
-  messagingProfile   MessagingProfile? @relation(fields: [messagingProfileId], references: [id])
-  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  smsMessages        SmsMessage[]
-  aiEmployee         AIEmployee?
+  ringAppSeconds         Int               @default(15)
+  // Répondeur applicatif : le backend répond après le délai, lit le message,
+  // puis démarre un enregistrement Telnyx. Limité au routage APP.
+  voicemailEnabled       Boolean           @default(false)
+  voicemailDelaySeconds  Int               @default(25)
+  voicemailGreeting      String?           @db.Text
+  callLogs               CallLog[]
+  campaigns              Campaign[]
+  assignedUser           User?             @relation("AssignedUser", fields: [assignedUserId], references: [id])
+  messagingProfile       MessagingProfile? @relation(fields: [messagingProfileId], references: [id])
+  organization           Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  smsMessages            SmsMessage[]
+  aiEmployee             AIEmployee?
 
   @@index([organizationId])
   @@index([number])
@@ -262,53 +267,58 @@ model ContactGroup {
 }
 
 model CallLog {
-  id                  String           @id @default(cuid())
-  telnyxCallControlId String           @unique
-  direction           String
-  status              String           @default("INITIATED")
-  fromNumber          String
-  toNumber            String
-  duration            Int              @default(0)
-  recordingUrl        String?
-  transcriptionText   String?
-  transcript          Json?
-  qaScore             Int?
-  qaFeedback          String?
-  aiSummary           String?
-  organizationId      String
-  userId              String?
-  phoneNumberId       String?
-  contactId           String?
-  startedAt           DateTime         @default(now())
-  answeredAt          DateTime?
-  endedAt             DateTime?
-  amdResult           String?
-  hangupCause         String?
-  mosScore            Float?
-  sipHangupCause      String?
-  cost                Decimal?         @db.Decimal(12, 4)
-  billedAmount        Decimal?         @db.Decimal(12, 4)
-  providerCost        Decimal?         @db.Decimal(12, 6)
-  providerCurrency    String?
+  id                    String           @id @default(cuid())
+  telnyxCallControlId   String           @unique
+  direction             String
+  status                String           @default("INITIATED")
+  fromNumber            String
+  toNumber              String
+  duration              Int              @default(0)
+  recordingUrl          String?
+  transcriptionText     String?
+  transcript            Json?
+  qaScore               Int?
+  qaFeedback            String?
+  aiSummary             String?
+  organizationId        String
+  userId                String?
+  phoneNumberId         String?
+  contactId             String?
+  startedAt             DateTime         @default(now())
+  answeredAt            DateTime?
+  endedAt               DateTime?
+  amdResult             String?
+  hangupCause           String?
+  mosScore              Float?
+  sipHangupCause        String?
+  cost                  Decimal?         @db.Decimal(12, 4)
+  billedAmount          Decimal?         @db.Decimal(12, 4)
+  providerCost          Decimal?         @db.Decimal(12, 6)
+  providerCurrency      String?
   providerBilledSeconds Int?
-  providerReconciledAt DateTime?
-  billedAt            DateTime?
-  isBilled            Boolean          @default(false)
-  planIdAtCallTime    String?
-  callPurpose         String           @default("PSTN")
-  parentCallLogId     String?          @unique
-  forwardStatus       String?
-  forwardDueAt        DateTime?
-  forwardToE164       String?
-  forwardCommandId    String?          @unique
-  forwardStartedAt    DateTime?
-  contact             Contact?         @relation(fields: [contactId], references: [id])
-  organization        Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  phoneNumber         PhoneNumber?     @relation(fields: [phoneNumberId], references: [id])
-  user                User?            @relation(fields: [userId], references: [id])
-  reservation         CallReservation?
-  parentCallLog       CallLog?         @relation("ForwardedCallLeg", fields: [parentCallLogId], references: [id])
-  forwardedCallLog    CallLog?         @relation("ForwardedCallLeg")
+  providerReconciledAt  DateTime?
+  billedAt              DateTime?
+  isBilled              Boolean          @default(false)
+  planIdAtCallTime      String?
+  callPurpose           String           @default("PSTN")
+  parentCallLogId       String?          @unique
+  forwardStatus         String?
+  forwardDueAt          DateTime?
+  forwardToE164         String?
+  forwardCommandId      String?          @unique
+  forwardStartedAt      DateTime?
+  voicemailStatus       String?
+  voicemailDueAt        DateTime?
+  voicemailCommandId    String?          @unique
+  voicemailStartedAt    DateTime?
+  voicemailRecordingId  String?
+  contact               Contact?         @relation(fields: [contactId], references: [id])
+  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  phoneNumber           PhoneNumber?     @relation(fields: [phoneNumberId], references: [id])
+  user                  User?            @relation(fields: [userId], references: [id])
+  reservation           CallReservation?
+  parentCallLog         CallLog?         @relation("ForwardedCallLeg", fields: [parentCallLogId], references: [id])
+  forwardedCallLog      CallLog?         @relation("ForwardedCallLeg")
 
   @@index([organizationId])
   @@index([userId])
@@ -319,6 +329,7 @@ model CallLog {
   @@index([organizationId, isBilled])
   @@index([providerReconciledAt])
   @@index([forwardStatus, forwardDueAt])
+  @@index([voicemailStatus, voicemailDueAt])
   @@index([callPurpose])
 }
 
@@ -568,12 +579,12 @@ model WalletTransaction {
 }
 
 model WebhookEvent {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   provider       String
   eventId        String
   type           String
   organizationId String?
-  processedAt    DateTime  @default(now())
+  processedAt    DateTime @default(now())
 
   @@unique([provider, eventId])
   @@index([provider])
@@ -704,6 +715,10 @@ model SystemSettings {
   phoneNumberRate             Decimal  @default(1.00) @db.Decimal(12, 4)
   eSimRate                    Decimal  @default(5.00) @db.Decimal(12, 4)
   telnyxApiKey                String?
+  // Clé publique Ed25519 utilisée pour vérifier les webhooks Telnyx.
+  // Elle n'est pas secrète, mais reste centralisée dans God Mode afin que
+  // l'exécution Vercel ne dépende pas obligatoirement d'une variable manuelle.
+  telnyxPublicKey             String?
   telnyxConnectionId          String?
   updatedAt                   DateTime @updatedAt
   phoneNumberMarkupFixed      Decimal  @default(0.0) @db.Decimal(12, 4)
@@ -754,16 +769,16 @@ model SequenceEnrollment {
 }
 
 model NumberOrder {
-  id             String       @id @default(cuid())
-  telnyxOrderId  String       @unique
-  type           String
-  status         String       @default("pending")
-  phoneNumbers   String?
-  organizationId String
+  id              String       @id @default(cuid())
+  telnyxOrderId   String       @unique
+  type            String
+  status          String       @default("pending")
+  phoneNumbers    String?
+  organizationId  String
   requestedUserId String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
   @@index([status])

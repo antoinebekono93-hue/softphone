@@ -28,8 +28,8 @@ export default async function AITeamPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold text-[var(--text-primary)]">Mon Équipe IA</h1>
-        <p className="text-[var(--text-secondary)] mt-2">Gérez vos employés virtuels. Assignez-leur des rôles (WhatsApp, Appels) pour automatiser votre support client et vos ventes.</p>
+        <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">Mon Équipe IA</h1>
+        <p className="text-[var(--text-secondary)] mt-2 text-sm">Gérez vos employés virtuels. Assignez-leur des rôles (WhatsApp, Appels) pour automatiser votre support client et vos ventes.</p>
       </div>
 
       <Suspense fallback={<div className="flex justify-center p-12"><div className="w-8 h-8 rounded-full border-4 border-[var(--accent-primary)] border-t-transparent animate-spin"></div></div>}>

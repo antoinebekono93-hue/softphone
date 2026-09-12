@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Upload, Link as LinkIcon, FileText, Trash2, Loader2, Brain, Globe, Database, Sparkles } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function KnowledgeBaseModal({ onClose, employeeId, employeeName }: { onClose: () => void, employeeId: string, employeeName?: string }) {
   const [documents, setDocuments] = useState<any[]>([]);

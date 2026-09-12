@@ -15,7 +15,8 @@ export async function getNumbers() {
       where: { organizationId: session.user.organizationId },
       include: {
         aiEmployee: true,
-        assignedUser: true
+        assignedUser: true,
+        organization: { include: { pricingPlan: true } },
       },
       orderBy: { createdAt: 'desc' }
     });

@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import { PhoneCall, Activity, PhoneMissed, Users, Settings, Radio, Bot, Mic } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function GodModeVoicePage() {
   const [webhookUrl, setWebhookUrl] = useState("https://api.antigravity.io/v1/telnyx/webhook");
   const [opusEnabled, setOpusEnabled] = useState(true);
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)] flex items-center gap-3">
            <PhoneCall className="text-cyan-500" />
@@ -19,42 +21,42 @@ export default function GodModeVoicePage() {
 
       {/* KPIs Prioritaires */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="glass-panel p-6 rounded-2xl flex flex-col relative overflow-hidden">
+        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <PhoneCall className="w-10 h-10" />
            </div>
            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Appels Total</span>
            <span className="text-3xl font-bold text-[var(--text-primary)]">48,210</span>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-2xl flex flex-col relative overflow-hidden">
+        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <Activity className="w-10 h-10" />
            </div>
            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Taux de Connexion</span>
            <span className="text-3xl font-bold text-emerald-500">89.2%</span>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-2xl flex flex-col relative overflow-hidden">
+        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <PhoneMissed className="w-10 h-10" />
            </div>
            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Appels Abandonnés</span>
            <span className="text-3xl font-bold text-rose-500">3.4%</span>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-2xl flex flex-col relative overflow-hidden">
+        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <Users className="w-10 h-10" />
            </div>
            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Pic Simultané</span>
            <span className="text-3xl font-bold text-cyan-500">142</span>
-        </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
          {/* Configuration de l'Application Vocale */}
-         <div className="glass-panel p-8 rounded-2xl flex flex-col">
+         <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <Settings className="text-violet-500" />
                Configuration d'Application (Voice API)
@@ -108,13 +110,13 @@ export default function GodModeVoicePage() {
                </div>
             </div>
 
-            <button className="mt-6 w-full btn-primary-gradient py-3 text-sm font-bold">
+            <Button className="mt-6 w-full" size="lg">
                Sauvegarder la Configuration
-            </button>
-         </div>
+            </Button>
+         </Card>
 
          {/* Automatisation IA & SVI */}
-         <div className="glass-panel p-8 rounded-2xl flex flex-col">
+         <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <Bot className="text-emerald-500" />
                Automatisation IA & SVI
@@ -162,7 +164,7 @@ export default function GodModeVoicePage() {
                   </div>
                </div>
             </div>
-         </div>
+         </Card>
       </div>
     </div>
   );

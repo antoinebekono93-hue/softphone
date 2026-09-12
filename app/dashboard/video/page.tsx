@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Video, Plus, Users, Key, Loader2, Play } from "lucide-react";
 import Link from "next/link";
+import { Card } from "@/components/ui/card";
 
 export default function VideoDashboard() {
   const [rooms, setRooms] = useState<any[]>([]);
@@ -68,7 +69,7 @@ export default function VideoDashboard() {
         </button>
       </div>
 
-      <div className="glass-panel overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="p-0 overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-[var(--bg-surface-solid)]/30 border-b border-[var(--border-subtle)] text-[var(--text-secondary)]">
@@ -124,7 +125,7 @@ export default function VideoDashboard() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

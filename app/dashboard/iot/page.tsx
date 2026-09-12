@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, X, Loader2, QrCode, CheckSquare, Settings2, ShieldAlert, Wifi } from "lucide-react";
+import { Plus, Loader2, QrCode, CheckSquare, Settings2, ShieldAlert, Wifi } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { Tabs } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 
 type SimCard = {
   id: string;
@@ -127,26 +131,26 @@ export default function IotDashboardPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto relative">
+    <div className="p-8 max-w-7xl mx-auto relative">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-[var(--text-primary)]">
+          <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
             Connectivité <span className="text-gradient">IoT & eSIM</span>
           </h1>
-          <p className="text-[var(--text-secondary)] text-sm md:text-base">
+          <p className="text-[var(--text-secondary)] text-sm">
             Gérez votre flotte eSIM globale, fixez des limites de coûts et gérez vos cartes en masse.
           </p>
         </div>
-        <button 
+        <Button 
           onClick={() => setIsModalOpen(true)}
-          className="w-full md:w-auto btn-primary-gradient"
+          className="w-full md:w-auto"
         >
           <Plus className="w-5 h-5" /> Commander SIM
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-        <div className="glass-panel p-6 flex items-start justify-between">
+        <Card className="p-6 flex items-start justify-between">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">SIM Actives</div>
             <div className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">{sims.filter(s => s.status === 'enabled').length}</div>
@@ -154,9 +158,9 @@ export default function IotDashboardPage() {
           <div className="p-3 bg-[var(--bg-surface-hover)] rounded-xl border border-[var(--border-subtle)] text-[var(--text-secondary)] shadow-sm">
             <Wifi className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
         
-        <div className="glass-panel p-6 flex items-start justify-between relative overflow-hidden">
+        <Card className="p-6 flex items-start justify-between relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-cyan-500/20 blur-2xl rounded-full"></div>
           <div className="relative z-10">
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Volume Data (Ce mois)</div>
@@ -164,9 +168,9 @@ export default function IotDashboardPage() {
               {sims.reduce((acc, sim) => acc + sim.dataUsedMB, 0).toFixed(1)} <span className="text-lg font-medium">MB</span>
             </div>
           </div>
-        </div>
+        </Card>
         
-        <div className="glass-panel p-6 flex items-start justify-between">
+        <Card className="p-6 flex items-start justify-between">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Cartes sous Alertes</div>
             <div className="text-3xl md:text-4xl font-bold text-amber-500 flex items-center gap-2">
@@ -176,30 +180,23 @@ export default function IotDashboardPage() {
           <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 text-amber-500 shadow-sm">
             <ShieldAlert className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
       </div>
 
-      <div className="flex border-b border-[var(--border-subtle)] mb-6">
-        <button
-          onClick={() => setActiveTab("fleet")}
-          className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "fleet" ? "border-cyan-500 text-cyan-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          }`}
-        >
-          Flotte Connectée
-        </button>
-        <button
-          onClick={() => setActiveTab("network")}
-          className={`px-6 py-3 text-sm font-semibold border-b-2 transition-colors ${
-            activeTab === "network" ? "border-cyan-500 text-cyan-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          }`}
-        >
-          Réseau & Sécurité
-        </button>
-      </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as "fleet" | "network")}
+        variant="underline"
+        className="mb-6"
+        aria-label="Sections IoT"
+        tabs={[
+          { id: "fleet", label: "Flotte Connectée" },
+          { id: "network", label: "Réseau & Sécurité" },
+        ]}
+      />
 
       {activeTab === "fleet" && (
-        <div className="glass-panel flex flex-col overflow-hidden shadow-sm">
+        <Card className="flex flex-col overflow-hidden shadow-sm">
           {selectedIds.length > 0 ? (
           <div className="bg-cyan-500/10 border-b border-cyan-500/20 p-4 flex items-center justify-between">
             <div className="text-cyan-500 font-semibold text-sm flex items-center gap-2">
@@ -329,12 +326,12 @@ export default function IotDashboardPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
       )}
 
       {activeTab === "network" && (
         <div className="space-y-6">
-          <div className="glass-panel p-6">
+          <Card className="p-6">
             <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Adresses IP Publiques</h2>
             <p className="text-sm text-[var(--text-secondary)] mb-6">
               Attribuez une IP publique statique à vos cartes SIM pour y accéder depuis l'extérieur (SSH, Serveurs Web).
@@ -395,10 +392,10 @@ export default function IotDashboardPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="glass-panel p-6">
+            <Card className="p-6">
               <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Politiques de Trafic</h2>
               <p className="text-sm text-[var(--text-secondary)] mb-6">
                 Créez des listes blanches/noires pour restreindre les domaines ou les IP auxquels vos appareils peuvent accéder.
@@ -416,9 +413,9 @@ export default function IotDashboardPage() {
               >
                 + Nouvelle Politique de Liste Blanche
               </button>
-            </div>
+            </Card>
 
-            <div className="glass-panel p-6 border-violet-500/30">
+            <Card className="p-6 border-violet-500/30">
               <h2 className="text-xl font-bold text-violet-400 mb-2">Passerelles Privées (PWG)</h2>
               <p className="text-sm text-[var(--text-secondary)] mb-6">
                 Acheminez tout le trafic de vos SIMs vers votre réseau d'entreprise via un VPN Cloud (VRF/MPLS).
@@ -433,18 +430,14 @@ export default function IotDashboardPage() {
               >
                 Demander une configuration PWG
               </button>
-            </div>
+            </Card>
           </div>
         </div>
       )}
 
       {/* Limit Modal */}
-      {limitModalSim && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="glass-panel bg-[var(--bg-surface-solid)] rounded-2xl p-6 w-full max-w-sm shadow-2xl relative border border-[var(--border-subtle)] animate-in zoom-in-95">
-            <button onClick={() => setLimitModalSim(null)} className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"><X className="w-5 h-5" /></button>
-            <h2 className="text-xl font-bold mb-1 text-[var(--text-primary)] flex items-center gap-2"><ShieldAlert className="w-5 h-5 text-amber-500" /> Contrôle des Coûts</h2>
-            <p className="text-sm text-[var(--text-secondary)] mb-6">Sécurisez la consommation de la SIM <strong>{limitModalSim.name}</strong>.</p>
+      <Modal open={!!limitModalSim} onClose={() => setLimitModalSim(null)} title="Contrôle des Coûts">
+            <p className="text-sm text-[var(--text-secondary)] mb-6">Sécurisez la consommation de la SIM <strong>{limitModalSim?.name}</strong>.</p>
             
             <div className="space-y-5">
               <div>
@@ -464,22 +457,14 @@ export default function IotDashboardPage() {
                 </div>
               </label>
 
-              <button onClick={saveLimit} disabled={savingLimit} className="w-full py-2.5 btn-primary-gradient rounded-lg font-semibold flex justify-center items-center">
+              <Button onClick={saveLimit} disabled={savingLimit} className="w-full py-2.5 rounded-lg font-semibold flex justify-center items-center">
                 {savingLimit ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enregistrer'}
-              </button>
-            </div>
-          </div>
+              </Button>
         </div>
-      )}
+      </Modal>
 
       {/* Order Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="glass-panel bg-[var(--bg-surface-solid)] rounded-2xl p-6 w-full max-w-md shadow-2xl relative border border-[var(--border-subtle)] animate-in zoom-in-95">
-            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-            <h2 className="text-xl font-bold mb-1 text-[var(--text-primary)]">Commander une SIM</h2>
+      <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Commander une SIM">
             <p className="text-sm text-[var(--text-secondary)] mb-6">Le montant sera déduit de votre Wallet.</p>
 
             <form onSubmit={handleOrder} className="space-y-4">
@@ -506,29 +491,21 @@ export default function IotDashboardPage() {
                 </div>
               </div>
 
-              <button disabled={ordering} type="submit" className="w-full mt-4 py-2.5 btn-primary-gradient rounded-lg font-semibold flex justify-center items-center">
+              <Button disabled={ordering} type="submit" className="w-full mt-4 py-2.5 rounded-lg font-semibold flex justify-center items-center">
                 {ordering ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmer et Payer'}
-              </button>
+              </Button>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* QR Code Modal */}
-      {selectedLpa && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in">
-          <div className="glass-panel bg-[var(--bg-surface-solid)] rounded-2xl p-8 w-full max-w-sm shadow-2xl relative flex flex-col items-center text-center border border-[var(--border-subtle)] animate-in zoom-in-95">
-            <button onClick={() => setSelectedLpa(null)} className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"><X className="w-5 h-5" /></button>
-            <h2 className="text-xl font-bold mb-2 text-[var(--text-primary)]">Scanner pour activer</h2>
+      <Modal open={!!selectedLpa} onClose={() => setSelectedLpa(null)} title="Scanner pour activer">
             <div className="w-48 h-48 bg-white rounded-lg border-2 border-dashed border-[var(--border-subtle)] flex items-center justify-center mb-6">
                <QrCode className="w-40 h-40 text-black" />
             </div>
             <div className="text-xs text-[var(--text-primary)] font-mono bg-[var(--bg-surface-hover)] p-3 rounded-lg w-full break-all border border-[var(--border-subtle)]">
               {selectedLpa}
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

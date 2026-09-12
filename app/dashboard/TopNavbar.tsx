@@ -18,8 +18,10 @@ export function TopNavbar({
   // Determine active module based on URL
   const getActiveModule = () => {
     if (pathname.includes("/dashboard/sms")) return "sms";
+    if (pathname.includes("/dashboard/social-campaigns")) return "social";
+    if (pathname.includes("/dashboard/campaigns")) return "voice";
     if (pathname.includes("/dashboard/whatsapp")) return "whatsapp";
-    if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice") || pathname.includes("/dashboard/tts")) return "ai";
+    if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice-lab") || pathname.includes("/dashboard/tts")) return "ai";
     return "phone"; // Default
   };
 

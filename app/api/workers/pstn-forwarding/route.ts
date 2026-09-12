@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processDuePstnForwards } from "@/lib/pstn-forwarding";
+import { processDuePstnVoicemails } from "@/lib/pstn-voicemail";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
-    return NextResponse.json(await processDuePstnForwards());
+    const [forwarding, voicemail] = await Promise.all([processDuePstnForwards(), processDuePstnVoicemails()]);
+    return NextResponse.json({ forwarding, voicemail });
   } catch (error) {
     console.error("[PSTN Forward Worker]", error);
     return NextResponse.json({ error: "FORWARD_WORKER_FAILED" }, { status: 500 });

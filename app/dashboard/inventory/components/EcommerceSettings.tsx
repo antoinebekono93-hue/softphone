@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function EcommerceSettings({ initialStore, orgId }: { initialStore: any, orgId: string }) {
   const [platform, setPlatform] = useState(initialStore?.platform || "SHOPIFY");

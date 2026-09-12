@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { MessageSquarePlus, Clock, CheckCircle2, AlertCircle, FileText, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Modal } from "@/components/ui/modal";
 
 export default function TemplatesClient({ initialTemplates, hasAccount }: { initialTemplates: any[], hasAccount: boolean }) {
   const [templates, setTemplates] = useState(initialTemplates);
@@ -67,14 +70,14 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
 
   if (!hasAccount) {
     return (
-      <div className="glass-panel p-8 text-center rounded-2xl border-rose-500/30">
+      <Card className="p-8 text-center border-rose-500/30">
         <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Compte WhatsApp non connecté</h2>
         <p className="text-[var(--text-secondary)] mb-6">Vous devez d'abord lier votre compte WhatsApp Business pour créer des modèles.</p>
-        <button onClick={() => router.push('/dashboard/whatsapp/connect')} className="btn-primary-gradient px-6 py-3">
+        <Button onClick={() => router.push('/dashboard/whatsapp/connect')} className="px-6 py-3">
           Connecter WhatsApp
-        </button>
-      </div>
+        </Button>
+      </Card>
     );
   }
 
@@ -87,10 +90,10 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
           </h1>
           <p className="text-[var(--text-secondary)] mt-2">Créez et gérez vos modèles approuvés par Meta pour initier des conversations.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn-primary-gradient px-6 py-3 flex items-center gap-2">
+        <Button onClick={() => setIsModalOpen(true)} className="px-6 py-3 flex items-center gap-2">
           <MessageSquarePlus className="w-5 h-5" />
           Nouveau Modèle
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -100,7 +103,7 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
           const buttons = components.find((c:any) => c.type === 'BUTTONS')?.buttons || [];
           
           return (
-            <div key={template.id} className="glass-panel p-6 rounded-2xl flex flex-col h-full border border-[var(--border-subtle)]">
+            <Card key={template.id} className="p-6 flex flex-col h-full">
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-bold text-lg text-[var(--text-primary)]">{template.name}</h3>
@@ -128,7 +131,7 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           )
         })}
         {templates.length === 0 && (
@@ -139,10 +142,7 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-2xl p-8 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">Créer un modèle interactif</h2>
+      <Modal open={isModalOpen} onClose={() => setIsModalOpen(false)} title="Créer un modèle interactif">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Nom du modèle</label>
@@ -214,14 +214,12 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-xl font-bold text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)]">
                   Annuler
                 </button>
-                <button type="submit" disabled={isSubmitting} className="btn-primary-gradient px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20">
+                <Button type="submit" disabled={isSubmitting} className="px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/20">
                   {isSubmitting ? 'Soumission...' : 'Soumettre à Meta'}
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import KanbanBoard from "./KanbanBoard";
 import RecordView from "./RecordView";
 
@@ -102,13 +105,11 @@ export default function CrmApp() {
         </div>
         
         <div className="flex gap-3">
-          <button className="px-4 py-2 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm rounded-lg text-sm font-bold text-gray-700 transition-colors">
-            Filtres
-          </button>
+          <Button variant="secondary">Filtres</Button>
           {!selectedRecordId && (
-            <button onClick={() => openNewOpportunityModal("NEW")} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg text-sm font-bold shadow-md shadow-blue-500/20 transition-all">
+            <Button variant="gradient" onClick={() => openNewOpportunityModal("NEW")}>
               + Nouvelle Opportunité
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -133,52 +134,39 @@ export default function CrmApp() {
         )}
       </div>
 
-      {/* Modal Nouvelle Opportunité */}
-      {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900">Créer une opportunité</h2>
-              <p className="text-sm text-gray-500 mt-1">Étape: {newModalStage}</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Nom de l'opportunité</label>
-                <input 
-                  type="text" 
-                  value={newOppName}
-                  onChange={e => setNewOppName(e.target.value)}
-                  placeholder="Ex: Contrat ABC"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Revenu Espéré (€)</label>
-                <input 
-                  type="number" 
-                  value={newOppRevenue}
-                  onChange={e => setNewOppRevenue(Number(e.target.value))}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-            </div>
-            <div className="p-6 bg-gray-50 flex justify-end gap-3">
-              <button 
-                onClick={() => setShowNewModal(false)} 
-                className="px-5 py-2.5 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors"
-              >
-                Annuler
-              </button>
-              <button 
-                onClick={submitNewOpportunity} 
-                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20"
-              >
-                Créer
-              </button>
-            </div>
+      <Modal
+        open={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        title="Créer une opportunité"
+        description={`Étape: ${newModalStage}`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowNewModal(false)}>Annuler</Button>
+            <Button onClick={submitNewOpportunity}>Créer</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Nom de l'opportunité</label>
+            <Input
+              type="text"
+              value={newOppName}
+              onChange={(e) => setNewOppName(e.target.value)}
+              placeholder="Ex: Contrat ABC"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[var(--text-secondary)] mb-2">Revenu Espéré (€)</label>
+            <Input
+              type="number"
+              value={newOppRevenue}
+              onChange={(e) => setNewOppRevenue(Number(e.target.value))}
+            />
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

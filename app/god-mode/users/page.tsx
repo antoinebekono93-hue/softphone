@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Card } from "@/components/ui/card";
 
 export default async function GlobalUsersPage() {
   const users = await prisma.user.findMany({
@@ -22,7 +23,7 @@ export default async function GlobalUsersPage() {
         </button>
       </div>
 
-      <div className="glass-panel border-none rounded-2xl overflow-hidden shadow-2xl">
+      <Card className="border-none overflow-hidden shadow-2xl">
         <table className="w-full text-left text-sm">
           <thead className="bg-[var(--bg-surface-hover)] border-b border-[var(--border-subtle)] text-[var(--text-secondary)]">
             <tr>
@@ -95,7 +96,7 @@ export default async function GlobalUsersPage() {
              <p>No users found in the database.</p>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

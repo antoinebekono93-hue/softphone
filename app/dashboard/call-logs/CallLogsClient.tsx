@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Clock, Play, FileText, Bot, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
   const [logs, setLogs] = useState(initialLogs);
@@ -53,7 +55,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
           </div>
         </div>
 
-        <div className="glass-panel overflow-hidden">
+        <Card className="overflow-hidden">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface-hover)]">
@@ -139,7 +141,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
               )}
             </tbody>
           </table>
-        </div>
+        </Card>
       </div>
 
       {/* Details Side Panel (Drawer) */}
@@ -178,7 +180,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                    <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2 mb-3">
                       <div className="w-4 h-4 rounded-full border-2 border-amber-500 flex items-center justify-center"><span className="text-[10px] text-amber-500 font-bold">i</span></div> Diagnostics
                    </h3>
-                   <div className="glass-panel p-4 text-sm leading-relaxed text-[var(--text-primary)] grid grid-cols-2 gap-4">
+                   <Card className="p-4 text-sm leading-relaxed text-[var(--text-primary)] grid grid-cols-2 gap-4">
                       {selectedLog.mosScore && (
                         <div>
                           <p className="text-[var(--text-secondary)] text-xs uppercase mb-1">Quality (MOS)</p>
@@ -197,7 +199,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                           <p className="font-bold">{selectedLog.sipHangupCause}</p>
                         </div>
                       )}
-                   </div>
+                   </Card>
                 </div>
               )}
 
@@ -206,13 +208,13 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                  <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2 mb-3">
                     <Bot className="w-4 h-4 text-cyan-500" /> AI Summary
                  </h3>
-                 <div className="glass-panel p-4 text-sm leading-relaxed text-[var(--text-primary)]">
+                 <Card className="p-4 text-sm leading-relaxed text-[var(--text-primary)]">
                     {selectedLog.aiSummary ? (
                       selectedLog.aiSummary
                     ) : (
                       <span className="text-[var(--text-secondary)] italic">AI summary not available for this call.</span>
                     )}
-                 </div>
+                 </Card>
               </div>
 
               {/* Transcription Section */}
@@ -220,16 +222,16 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                  <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2 mb-3">
                     <FileText className="w-4 h-4 text-violet-500" /> Transcription
                  </h3>
-                 <div className="glass-panel p-4 text-sm leading-relaxed text-[var(--text-primary)] max-h-64 overflow-y-auto">
+                 <Card className="p-4 text-sm leading-relaxed text-[var(--text-primary)] max-h-64 overflow-y-auto">
                     {selectedLog.transcriptionText ? (
                       <div className="whitespace-pre-wrap">{selectedLog.transcriptionText}</div>
                     ) : selectedLog.recordingUrl ? (
                       <div className="flex flex-col items-start gap-3">
                         <span className="text-[var(--text-secondary)] italic">Transcription not available yet, but an audio recording is present.</span>
-                        <button
+                        <Button
                           onClick={() => handleTranscribe(selectedLog.id)}
                           disabled={isTranscribing}
-                          className="btn-primary flex items-center gap-2 py-1.5 px-3 text-xs"
+                          className="flex items-center gap-2 py-1.5 px-3 text-xs"
                         >
                           {isTranscribing ? (
                             <>
@@ -242,12 +244,12 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                               Transcribe Audio
                             </>
                           )}
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <span className="text-[var(--text-secondary)] italic">Transcription not available for this call.</span>
                     )}
-                 </div>
+                 </Card>
               </div>
 
               {/* Recording (Placeholder) */}
@@ -255,13 +257,13 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                  <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2 mb-3">
                     <Play className="w-4 h-4 text-emerald-500" /> Recording
                  </h3>
-                 <div className="glass-panel p-4 flex items-center gap-4">
+                 <Card className="p-4 flex items-center gap-4">
                     {selectedLog.recordingUrl ? (
                        <audio controls src={selectedLog.recordingUrl} className="w-full" />
                     ) : (
                        <span className="text-sm text-[var(--text-secondary)] italic">Recording not available.</span>
                     )}
-                 </div>
+                 </Card>
               </div>
            </div>
         </div>

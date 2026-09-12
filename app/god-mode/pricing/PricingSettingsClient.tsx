@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Save, Loader2, DollarSign, Percent, TrendingUp, PhoneCall, MessageSquare, Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { updatePricingSettings } from "./actions";
 
@@ -43,7 +45,7 @@ export function PricingSettingsClient({ initialSettings }: { initialSettings: an
   return (
     <div className="space-y-8">
       {/* Phone Numbers Margin */}
-      <div className="glass-panel p-6 rounded-2xl border border-[var(--border-subtle)]">
+      <Card className="p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
             <TrendingUp className="w-5 h-5" />
@@ -89,10 +91,10 @@ export function PricingSettingsClient({ initialSettings }: { initialSettings: an
             </p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Consumption Rates */}
-      <div className="glass-panel p-6 rounded-2xl border border-[var(--border-subtle)]">
+      <Card className="p-6">
         <h2 className="text-xl font-bold mb-2">Tarification de consommation</h2>
         <p className="text-sm text-[var(--text-secondary)] mb-6">Le débit est appliqué côté serveur à chaque seconde terminée, après confirmation Telnyx de la fin d'appel.</p>
 
@@ -152,17 +154,17 @@ export function PricingSettingsClient({ initialSettings }: { initialSettings: an
           </div>
 
         </div>
-      </div>
+      </Card>
 
       <div className="flex justify-end">
-        <button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={loading}
-          className="apple-btn btn-primary flex items-center gap-2 shadow-[0_0_20px_rgba(0,212,255,0.3)]"
+          className="shadow-[0_0_20px_rgba(0,212,255,0.3)]"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
           Enregistrer les tarifs
-        </button>
+        </Button>
       </div>
 
     </div>

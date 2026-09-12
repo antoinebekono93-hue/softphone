@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Search, Globe, ShoppingCart, Loader2, Phone, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 type AvailableNumber = {
   phone_number: string;
@@ -186,10 +187,10 @@ export default function BuyNumberPage() {
             </div>
           </div>
           
-          <button onClick={searchNumbers} disabled={loading} className="btn-primary-gradient px-8 py-2.5 h-[42px] flex items-center justify-center gap-2 w-full lg:w-auto shrink-0">
+          <Button onClick={searchNumbers} disabled={loading} className="flex items-center justify-center gap-2 w-full lg:w-auto shrink-0">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             Rechercher
-          </button>
+          </Button>
         </div>
       </div>
 

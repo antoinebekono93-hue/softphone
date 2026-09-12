@@ -2,27 +2,30 @@
 
 import { useState } from "react";
 import { ShieldCheck, Plus, CheckCircle, Activity, LayoutList, ListOrdered, FileCode2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
 
 export default function VerifyOtpPage() {
   const [activeTab, setActiveTab] = useState("profiles");
 
   return (
-    <div className="p-4 md:p-8 max-w-6xl mx-auto w-full">
+    <div className="p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-[var(--text-primary)]">
+          <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
             Sécurité & <span className="text-gradient">Vérification OTP</span>
           </h1>
-          <p className="text-[var(--text-secondary)] text-sm md:text-base">Sécurisez les applications de votre entreprise avec l'authentification à deux facteurs (2FA) par SMS ou Appel.</p>
+          <p className="text-[var(--text-secondary)] text-sm">Sécurisez les applications de votre entreprise avec l'authentification à deux facteurs (2FA) par SMS ou Appel.</p>
         </div>
-        <button className="w-full md:w-auto btn-primary-gradient flex items-center justify-center gap-2">
+        <Button className="w-full md:w-auto flex items-center justify-center gap-2">
           <Plus className="w-5 h-5" />
           Nouveau Profil OTP
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-        <div className="glass-panel p-6 flex items-start justify-between">
+        <Card className="p-6 flex items-start justify-between hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Vérifications (Ce mois)</div>
             <div className="text-3xl md:text-4xl font-bold text-[var(--text-primary)]">1,420</div>
@@ -30,8 +33,8 @@ export default function VerifyOtpPage() {
           <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-500 shadow-sm">
             <Activity className="w-6 h-6" />
           </div>
-        </div>
-        <div className="glass-panel p-6 flex items-start justify-between">
+        </Card>
+        <Card className="p-6 flex items-start justify-between hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Taux de succès</div>
             <div className="text-3xl md:text-4xl font-bold text-emerald-500">94.5%</div>
@@ -39,8 +42,8 @@ export default function VerifyOtpPage() {
           <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-500 shadow-sm">
             <CheckCircle className="w-6 h-6" />
           </div>
-        </div>
-        <div className="glass-panel p-6 flex items-start justify-between">
+        </Card>
+        <Card className="p-6 flex items-start justify-between hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
           <div>
             <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-wider mb-2">Coût Sécurité Estimé</div>
             <div className="text-3xl md:text-4xl font-bold text-cyan-500">$42.60</div>
@@ -48,30 +51,22 @@ export default function VerifyOtpPage() {
           <div className="p-3 bg-cyan-500/10 rounded-xl border border-cyan-500/20 text-cyan-500 shadow-sm">
             <ShieldCheck className="w-6 h-6" />
           </div>
-        </div>
+        </Card>
       </div>
 
-      <div className="glass-panel flex flex-col overflow-hidden">
-        <div className="flex border-b border-[var(--border-subtle)] overflow-x-auto">
-          <button 
-            className={`px-6 py-4 text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'profiles' ? 'text-cyan-500 border-b-2 border-cyan-500 bg-[var(--bg-surface-hover)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]'}`}
-            onClick={() => setActiveTab('profiles')}
-          >
-            <LayoutList className="w-4 h-4" /> Profils de Vérification
-          </button>
-          <button 
-            className={`px-6 py-4 text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'logs' ? 'text-cyan-500 border-b-2 border-cyan-500 bg-[var(--bg-surface-hover)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]'}`}
-            onClick={() => setActiveTab('logs')}
-          >
-            <ListOrdered className="w-4 h-4" /> Logs & Requêtes
-          </button>
-          <button 
-            className={`px-6 py-4 text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-colors ${activeTab === 'api' ? 'text-cyan-500 border-b-2 border-cyan-500 bg-[var(--bg-surface-hover)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]'}`}
-            onClick={() => setActiveTab('api')}
-          >
-            <FileCode2 className="w-4 h-4" /> Intégration API
-          </button>
-        </div>
+      <Card className="flex flex-col overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as "profiles" | "logs" | "api")}
+          variant="underline"
+          aria-label="Sections de vérification"
+          className="overflow-x-auto"
+          tabs={[
+            { id: "profiles", label: (<span className="flex items-center gap-2"><LayoutList className="w-4 h-4" /> Profils de Vérification</span>) },
+            { id: "logs", label: (<span className="flex items-center gap-2"><ListOrdered className="w-4 h-4" /> Logs & Requêtes</span>) },
+            { id: "api", label: (<span className="flex items-center gap-2"><FileCode2 className="w-4 h-4" /> Intégration API</span>) },
+          ]}
+        />
 
         <div className="p-0 overflow-x-auto">
           {activeTab === 'profiles' && (
@@ -143,7 +138,7 @@ console.log("OTP Envoyé !", data);`}</code>
              </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

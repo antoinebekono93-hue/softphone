@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Plus, Workflow, Zap, MoreVertical, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { revalidatePath } from "next/cache";
 
 export default async function AutomationsPage() {
@@ -65,14 +67,14 @@ export default async function AutomationsPage() {
         </div>
         
         <form action={createWorkflow}>
-          <button type="submit" className="btn-primary-gradient px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg hover:shadow-cyan-500/20 transition-all">
+          <Button type="submit" className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg hover:shadow-cyan-500/20 transition-all">
             <Plus className="w-4 h-4" /> Nouveau Workflow
-          </button>
+          </Button>
         </form>
       </div>
 
       {workflows.length === 0 ? (
-        <div className="glass-panel p-12 rounded-3xl text-center border border-dashed border-[var(--border-subtle)]">
+        <Card className="p-12 text-center border-dashed">
           <div className="w-16 h-16 rounded-full bg-cyan-500/10 flex items-center justify-center mx-auto mb-4">
             <Workflow className="w-8 h-8 text-cyan-500" />
           </div>
@@ -83,11 +85,11 @@ export default async function AutomationsPage() {
               Créer mon premier flux
             </button>
           </form>
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {workflows.map(wf => (
-            <div key={wf.id} className="glass-panel rounded-2xl p-6 hover:shadow-xl transition-all border border-[var(--border-subtle)] group">
+            <Card key={wf.id} className="p-6 hover:shadow-xl group">
               <div className="flex justify-between items-start mb-4">
                 <div className={`p-2 rounded-lg ${wf.isActive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-gray-500/10 text-gray-500'}`}>
                   <Zap className="w-5 h-5" />
@@ -111,7 +113,7 @@ export default async function AutomationsPage() {
                   <span className="bg-[var(--bg-surface-hover)] px-2 py-1 rounded">Éditer &rarr;</span>
                 </div>
               </Link>
-            </div>
+            </Card>
           ))}
         </div>
       )}

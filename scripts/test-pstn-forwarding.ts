@@ -3,6 +3,8 @@ import {
   canManageIncomingRouting,
   clampForwardDuration,
   evaluateForwardDestination,
+  forwardingPlanAvailability,
+  forwardingPlanDenialPayload,
   incomingRouteInstruction,
   normalizeIncomingRouting,
   shouldClaimForward,
@@ -41,8 +43,35 @@ assert.equal(wouldCreateForwardLoop("+12025550100", "+237699112233", routes), fa
 assert.equal(canManageIncomingRouting({ userId: "a", userOrganizationId: "org-a", numberOrganizationId: "org-b", assignedUserId: "a" }), false);
 assert.equal(canManageIncomingRouting({ userId: "a", userOrganizationId: "org-a", numberOrganizationId: "org-a", assignedUserId: "a" }), true);
 assert.equal(canManageIncomingRouting({ userId: "admin", userOrganizationId: "org-a", numberOrganizationId: "org-a", assignedUserId: "a", role: "ADMIN" }), true);
+assert.equal(canManageIncomingRouting({ userId: "root", userOrganizationId: "org-a", numberOrganizationId: "org-b", isSuperAdmin: true }), true);
 assert.equal(clampForwardDuration(10), 60);
 assert.equal(clampForwardDuration(3600), 3600);
 assert.equal(clampForwardDuration(99999), 14400);
+
+assert.deepEqual(forwardingPlanAvailability(null), {
+  allowed: false,
+  missingCapabilities: ["hasCallRouting", "hasTransfer"],
+});
+assert.deepEqual(forwardingPlanAvailability({ hasCallRouting: true, hasTransfer: false }), {
+  allowed: false,
+  missingCapabilities: ["hasTransfer"],
+});
+assert.deepEqual(forwardingPlanAvailability({ hasCallRouting: true, hasTransfer: true }), {
+  allowed: true,
+  missingCapabilities: [],
+});
+assert.deepEqual(
+  forwardingPlanDenialPayload({ id: "starter", name: "Starter", hasCallRouting: false, hasTransfer: true }),
+  {
+    error: "Le forfait actuel n’inclut pas toutes les fonctions nécessaires au transfert d’appels.",
+    code: "FORWARDING_NOT_INCLUDED",
+    plan: { id: "starter", name: "Starter" },
+    missingCapabilities: ["hasCallRouting"],
+  },
+);
+assert.equal(
+  forwardingPlanDenialPayload({ id: "pro", name: "Pro", hasCallRouting: true, hasTransfer: true }),
+  null,
+);
 
 console.log("PASS  PSTN forwarding routing, timing, policy, isolation, loop and duration guards");

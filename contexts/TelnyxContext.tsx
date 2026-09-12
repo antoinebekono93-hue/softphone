@@ -456,6 +456,22 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
+    channel.bind(PSTN_EVENTS.MISSED, (data: any) => {
+      toast.info(`Appel manqué de ${data.from || "numéro inconnu"}`);
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("Appel manqué", { body: data.from || "Numéro inconnu" });
+      }
+      window.dispatchEvent(new CustomEvent("softphone:missed-call", { detail: data }));
+    });
+
+    channel.bind(PSTN_EVENTS.VOICEMAIL, (data: any) => {
+      toast.success(`Nouveau message vocal de ${data.from || "numéro inconnu"}`);
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("Nouveau message vocal", { body: data.from || "Numéro inconnu" });
+      }
+      window.dispatchEvent(new CustomEvent("softphone:voicemail", { detail: data }));
+    });
+
     // ── Reconcilation (scénario I) : page ouverte APRÈS l'arrivée de l'appel ──
     // Retrouve un appel entrant INITIATED routé vers cet utilisateur. Elle ne crée
     // JAMAIS d'état ACTIVE : seules les notifications SDK le déclarent.

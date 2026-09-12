@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import CampaignBuilder from "./CampaignBuilder";
 
 export default function CampaignDashboard() {
@@ -41,13 +43,10 @@ export default function CampaignDashboard() {
           <h1 className="text-3xl font-extrabold mb-2 text-gray-900 tracking-tight">Campagnes Marketing</h1>
           <p className="text-gray-500">Gérez vos diffusions WhatsApp et analysez vos performances.</p>
         </div>
-        <button
-          onClick={() => setIsBuilding(true)}
-          className="btn btn-primary px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all flex items-center gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        <Button variant="gradient" onClick={() => setIsBuilding(true)} className="flex items-center gap-2 h-12 px-6">
+          <Plus className="w-5 h-5" />
           Créer une campagne
-        </button>
+        </Button>
       </div>
 
       {/* AI Insights Card */}

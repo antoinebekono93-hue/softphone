@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { MessageSquare, PhoneCall, Clock, CheckCircle2, AlertCircle, Bot, Zap, Coins } from 'lucide-react';
 import AnalyticsCharts from './AnalyticsCharts';
+import { Card } from "@/components/ui/card";
 
 export const metadata = {
   title: 'Centre de Commandement Analytique | Antigravity',
@@ -123,7 +124,7 @@ export default async function AnalyticsPage() {
 
       {/* KPI CARDS */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden">
+        <Card className="p-6 rounded-3xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10"><MessageSquare className="w-16 h-16" /></div>
           <p className="text-[var(--text-secondary)] font-medium mb-1">Volume d'Interactions</p>
           <div className="text-4xl font-black text-[var(--text-primary)] tracking-tight">{totalInteractions}</div>
@@ -131,35 +132,35 @@ export default async function AnalyticsPage() {
             <span className="text-cyan-500">{totalMessages} SMS/WA</span>
             <span className="text-violet-500">{totalCalls} Appels</span>
           </div>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden">
+        <Card className="p-6 rounded-3xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle2 className="w-16 h-16 text-emerald-500" /></div>
           <p className="text-[var(--text-secondary)] font-medium mb-1">Résolution Autonome</p>
           <div className="text-4xl font-black text-emerald-500 tracking-tight">{resolutionRate}%</div>
           <p className="mt-4 text-sm text-[var(--text-secondary)]">Des conversations gérées sans intervention humaine.</p>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden">
+        <Card className="p-6 rounded-3xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10"><Clock className="w-16 h-16 text-amber-500" /></div>
           <p className="text-[var(--text-secondary)] font-medium mb-1">Temps Humain Sauvé</p>
           <div className="text-4xl font-black text-amber-500 tracking-tight">{timeSavedHours}h</div>
           <p className="mt-4 text-sm text-[var(--text-secondary)]">Heures de travail automatisées par l'IA.</p>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] relative overflow-hidden bg-gradient-to-br from-cyan-500/10 to-violet-500/10">
+        <Card className="p-6 rounded-3xl relative overflow-hidden bg-gradient-to-br from-cyan-500/10 to-violet-500/10">
           <div className="absolute top-0 right-0 p-4 opacity-10"><Coins className="w-16 h-16 text-cyan-500" /></div>
           <p className="text-[var(--text-secondary)] font-medium mb-1">Économies (ROI)</p>
           <div className="text-4xl font-black text-cyan-400 tracking-tight">+{netRoi}€</div>
           <p className="mt-4 text-sm text-[var(--text-secondary)]">Valeur nette générée (Coût Salarial estimé - Coût API).</p>
-        </div>
+        </Card>
       </div>
 
       {/* CHARTS */}
       <AnalyticsCharts data={chartData} />
 
       {/* AGENT LEADERBOARD */}
-      <div className="glass-panel rounded-3xl border border-[var(--border-subtle)] overflow-hidden">
+      <Card className="rounded-3xl overflow-hidden">
         <div className="p-6 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex items-center justify-between">
           <h3 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
             <Bot className="text-cyan-500" /> Performances par Agent IA (Appels)
@@ -201,7 +202,7 @@ export default async function AnalyticsPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
     </div>
   );

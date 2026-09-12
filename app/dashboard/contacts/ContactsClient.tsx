@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { Search, Plus, X, Loader2, Building, Mail, Phone, Trash2, Folder, Download, Upload, Users } from "lucide-react";
+import { Search, Plus, Loader2, Building, Mail, Phone, Trash2, Folder, Download, Upload, Users } from "lucide-react";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { createContact, updateContact, deleteContact, createContactGroup, deleteContactGroup, importContacts } from "./actions";
 import Papa from "papaparse";
@@ -283,17 +286,17 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
             >
               <Download className="w-4 h-4" /> Exporter
             </button>
-            <button 
+            <Button 
               onClick={() => openModal()}
-              className="btn-primary-gradient flex items-center gap-2"
+              className="flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Ajouter
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="glass-panel overflow-hidden flex-1 flex flex-col">
+        <Card className="overflow-hidden flex-1 flex flex-col">
           <div className="p-4 border-b border-[var(--border-subtle)] flex items-center gap-3 shrink-0">
              <Search className="w-5 h-5 text-[var(--text-secondary)]" />
              <input 
@@ -403,22 +406,16 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* Contact Form Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-              <div className="p-6 border-b border-[var(--border-subtle)] flex items-center justify-between shrink-0">
-                <h2 className="text-xl font-bold text-[var(--text-primary)]">
-                   {selectedContact ? "Modifier Contact" : "Nouveau Contact"}
-                </h2>
-                <button onClick={() => setIsModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
+        <Modal
+          open={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          title={selectedContact ? "Modifier Contact" : "Nouveau Contact"}
+          size="lg"
+        >
+          <form id="contact-form" onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Nom complet</label>
                     <input 
@@ -505,84 +502,75 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                     </label>
                   </div>
                 </form>
-              </div>
-              <div className="p-6 border-t border-[var(--border-subtle)] flex justify-between items-center shrink-0 bg-[var(--bg-surface)]">
-                {selectedContact ? (
-                   <button 
-                     type="button"
-                     onClick={handleDelete}
-                     disabled={isDeleting || isSaving}
-                     className="px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 border border-red-500/30 text-red-500 hover:bg-red-500/10 transition-colors"
-                   >
-                      {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                      Supprimer
-                   </button>
-                ) : <div></div>}
-  
-                <div className="flex gap-3">
-                  <button 
-                     type="button"
-                     onClick={() => setIsModalOpen(false)} 
-                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors bg-[var(--bg-surface)]"
-                  >
-                    Annuler
-                  </button>
-                  <button 
-                     type="submit"
-                     form="contact-form"
-                     disabled={isSaving || isDeleting} 
-                     className="btn-primary-gradient min-w-[100px] flex justify-center items-center"
-                  >
-                    {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer"}
-                  </button>
-                </div>
-              </div>
+          <div className="flex justify-between items-center pt-5 mt-5 border-t border-[var(--border-subtle)]">
+            {selectedContact ? (
+               <Button
+                 type="button"
+                 variant="destructive"
+                 onClick={handleDelete}
+                 disabled={isDeleting || isSaving}
+               >
+                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  Supprimer
+               </Button>
+            ) : <div></div>}
+
+            <div className="flex gap-3">
+              <Button
+                 type="button"
+                 variant="outline"
+                 onClick={() => setIsModalOpen(false)}
+              >
+                Annuler
+              </Button>
+              <Button
+                 type="submit"
+                 form="contact-form"
+                 disabled={isSaving || isDeleting}
+                 className="min-w-[100px] flex justify-center items-center"
+              >
+                {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer"}
+              </Button>
             </div>
           </div>
-        )}
+        </Modal>
 
         {/* Group Creation Modal */}
-        {isGroupModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-6 border-b border-[var(--border-subtle)] flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[var(--text-primary)]">Nouveau Groupe</h2>
-                <button onClick={() => setIsGroupModalOpen(false)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <form onSubmit={handleCreateGroup}>
-                <div className="p-6">
-                  <label className="block text-sm font-semibold mb-2 text-[var(--text-secondary)]">Nom du groupe</label>
-                  <input 
-                    type="text" 
-                    required
-                    value={newGroupName}
-                    onChange={(e) => setNewGroupName(e.target.value)}
-                    className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
-                    placeholder="Ex: VIP, Prospects..."
-                  />
-                </div>
-                <div className="p-6 border-t border-[var(--border-subtle)] flex justify-end gap-3 bg-[var(--bg-surface)]">
-                  <button 
-                     type="button"
-                     onClick={() => setIsGroupModalOpen(false)} 
-                     className="px-4 py-2 rounded-xl text-sm font-semibold border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-colors bg-[var(--bg-surface)]"
-                  >
-                    Annuler
-                  </button>
-                  <button 
-                     type="submit"
-                     disabled={isSavingGroup || !newGroupName.trim()} 
-                     className="btn-primary-gradient flex items-center justify-center min-w-[100px]"
-                  >
-                    {isSavingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
-                  </button>
-                </div>
-              </form>
-            </div>
+        <Modal
+          open={isGroupModalOpen}
+          onClose={() => setIsGroupModalOpen(false)}
+          title="Nouveau Groupe"
+          size="sm"
+        >
+          <form id="group-form" onSubmit={handleCreateGroup}>
+            <label className="block text-sm font-semibold mb-2 text-[var(--text-secondary)]">Nom du groupe</label>
+            <input
+              type="text"
+              required
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-cyan)] focus:ring-1 focus:ring-[var(--accent-cyan)] transition-colors"
+              placeholder="Ex: VIP, Prospects..."
+            />
+          </form>
+          <div className="flex justify-end gap-3 pt-5 mt-5 border-t border-[var(--border-subtle)]">
+            <Button
+               type="button"
+               variant="outline"
+               onClick={() => setIsGroupModalOpen(false)}
+            >
+              Annuler
+            </Button>
+            <Button
+               type="submit"
+               form="group-form"
+               disabled={isSavingGroup || !newGroupName.trim()}
+               className="flex items-center justify-center min-w-[100px]"
+            >
+              {isSavingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : "Créer"}
+            </Button>
           </div>
-        )}
+        </Modal>
 
       </div>
     </div>

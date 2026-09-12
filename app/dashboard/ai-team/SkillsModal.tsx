@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, Plus, Trash2, Webhook, Wrench, Loader2 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { getAgentSkills, createAgentSkill, deleteAgentSkill } from "../ai-employees/skills-actions";
 
 export default function SkillsModal({ onClose, employeeId, employeeName }: { onClose: () => void, employeeId: string, employeeName?: string }) {

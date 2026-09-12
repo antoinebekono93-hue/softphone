@@ -15,7 +15,7 @@ const connection = credentialConnectionPayload({
     codecs: ["opus", "PCMU", "malicious-codec"],
     channel_limit: 12,
   },
-  outbound: { ani_override: "always", localization: "fr" },
+  outbound: { ani_override: "+12025550123", ani_override_type: "always", localization: "fr" },
   rtcp_settings: { port: "rtcp-mux", capture_enabled: true, report_frequency_secs: 10 },
   jitter_buffer: { enable_jitter_buffer: true, jitterbuffer_msec_min: 60, jitterbuffer_msec_max: 200 },
 });
@@ -24,6 +24,8 @@ assert.deepEqual((connection.inbound as any).codecs, ["OPUS", "PCMU"]);
 assert.equal((connection.inbound as any).ani_number_format, "+e164");
 assert.equal((connection.inbound as any).dnis_number_format, undefined);
 assert.equal((connection.outbound as any).localization, "FR");
+assert.equal((connection.outbound as any).ani_override, "+12025550123");
+assert.equal((connection.outbound as any).ani_override_type, "always");
 
 const callControl = callControlApplicationPayload({
   application_name: "Production router",
@@ -46,6 +48,10 @@ const outbound = outboundVoiceProfilePayload({
 assert.deepEqual(outbound.whitelisted_destinations, ["FR", "BE"]);
 assert.equal(outbound.daily_spend_limit, "100.00");
 
+assert.throws(
+  () => credentialConnectionPayload({ outbound: { ani_override: "always", ani_override_type: "always" } }),
+  /ANI_OVERRIDE_E164_INVALID/,
+);
 assert.throws(
   () => credentialConnectionPayload({ webhook_event_url: "http://voice.example.com/webhook" }),
   /HTTPS_REQUIRED/,

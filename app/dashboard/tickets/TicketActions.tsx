@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { CheckCircle2, Star } from "lucide-react";
 
 export default function TicketActions({ 

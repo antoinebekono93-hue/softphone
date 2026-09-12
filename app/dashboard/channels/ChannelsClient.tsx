@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MessageSquare, Smartphone, CheckCircle, ShieldAlert, Cpu } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 export function ChannelsClient({ numbers }: { numbers: any[] }) {
   const [requesting, setRequesting] = useState<string | null>(null);
@@ -24,7 +25,7 @@ export function ChannelsClient({ numbers }: { numbers: any[] }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* WhatsApp Card */}
-        <div className="glass-panel p-6 rounded-2xl border-t-4 border-t-[#25D366]">
+        <Card className="p-6 border-t-4 border-t-[#25D366]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-[#25D366]/10 text-[#25D366] flex items-center justify-center">
               <MessageSquare className="w-5 h-5" />
@@ -40,10 +41,10 @@ export function ChannelsClient({ numbers }: { numbers: any[] }) {
           <div className="text-xs font-bold text-[#25D366] bg-[#25D366]/10 px-3 py-1 rounded-full inline-block">
             Powered by Telnyx Messaging API
           </div>
-        </div>
+        </Card>
 
         {/* RCS Card */}
-        <div className="glass-panel p-6 rounded-2xl border-t-4 border-t-blue-500">
+        <Card className="p-6 border-t-4 border-t-blue-500">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
               <Smartphone className="w-5 h-5" />
@@ -59,7 +60,7 @@ export function ChannelsClient({ numbers }: { numbers: any[] }) {
           <div className="text-xs font-bold text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full inline-block">
             Early Access (Beta)
           </div>
-        </div>
+        </Card>
       </div>
 
       <h3 className="text-xl font-bold text-[var(--text-primary)] mb-4">Your Phone Numbers</h3>

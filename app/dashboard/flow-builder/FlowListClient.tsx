@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, GitMerge, MoreVertical } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export function FlowListClient({ initialFlows }: { initialFlows: any[] }) {
   const [flows, setFlows] = useState(initialFlows);

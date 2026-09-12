@@ -4,6 +4,7 @@ import { Phone, Users, Wallet, Activity, Brain, AlertCircle, Clock, Zap } from "
 import { prisma } from "@/lib/prisma";
 import { DashboardCharts } from "./DashboardCharts";
 import Link from "next/link";
+import { Card } from "@/components/ui/card";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -131,7 +132,7 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Stats Cards */}
-        <div className="glass-panel p-6 flex flex-col gap-2 relative overflow-hidden">
+        <Card className="p-6 flex flex-col gap-2 relative overflow-hidden">
           <div className="flex justify-between items-start z-10">
             <p className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Volume Global (Jour)</p>
             <div className="p-2 bg-blue-500/10 rounded-lg text-blue-500"><Activity className="w-4 h-4" /></div>
@@ -140,9 +141,9 @@ export default async function DashboardPage() {
             <p className="text-3xl font-extrabold text-[var(--text-primary)]">{callsToday + smsToday}</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">{callsToday} appels • {smsToday} SMS</p>
           </div>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 flex flex-col gap-2 relative overflow-hidden">
+        <Card className="p-6 flex flex-col gap-2 relative overflow-hidden">
           <div className="flex justify-between items-start z-10">
             <p className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Tickets Ouverts</p>
             <div className="p-2 bg-rose-500/10 rounded-lg text-rose-500"><AlertCircle className="w-4 h-4" /></div>
@@ -151,9 +152,9 @@ export default async function DashboardPage() {
             <p className="text-3xl font-extrabold text-rose-500">{openTickets.length}</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">Nécessitent une intervention humaine</p>
           </div>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 flex flex-col gap-2 relative overflow-hidden">
+        <Card className="p-6 flex flex-col gap-2 relative overflow-hidden">
           <div className="flex justify-between items-start z-10">
             <p className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Coût Estimé (Jour)</p>
             <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500"><Zap className="w-4 h-4" /></div>
@@ -162,9 +163,9 @@ export default async function DashboardPage() {
             <p className="text-3xl font-extrabold text-[var(--text-primary)]">${estimatedCost.toFixed(2)}</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">OpenAI + Telnyx combinés</p>
           </div>
-        </div>
+        </Card>
 
-        <div className="glass-panel p-6 flex flex-col gap-2 relative overflow-hidden">
+        <Card className="p-6 flex flex-col gap-2 relative overflow-hidden">
           <div className="flex justify-between items-start z-10">
             <p className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Solde Wallet</p>
             <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-500"><Wallet className="w-4 h-4" /></div>
@@ -173,12 +174,12 @@ export default async function DashboardPage() {
             <p className="text-3xl font-extrabold text-[var(--text-primary)]">${org?.walletBalance?.toFixed(2) || "0.00"}</p>
             <p className="text-xs text-[var(--text-secondary)] mt-1">Budget disponible</p>
           </div>
-        </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* End of Day Report for Agents */}
-        <div className="lg:col-span-2 glass-panel p-6 flex flex-col">
+        <Card className="lg:col-span-2 p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
               <Brain className="w-5 h-5 text-purple-500" />
@@ -227,10 +228,10 @@ export default async function DashboardPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* Escalation Tickets */}
-        <div className="glass-panel p-6 flex flex-col">
+        <Card className="p-6 flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-rose-500" />
@@ -265,7 +266,7 @@ export default async function DashboardPage() {
               ))
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       <DashboardCharts data={chartData} activities={[]} />

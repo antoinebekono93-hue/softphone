@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Megaphone, Plus, Users, Send, CheckCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { createCampaign } from "./actions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function CampaignsClient({ campaigns, numbers, contacts }: { campaigns: any[], numbers: any[], contacts: any[] }) {
   const [isCreating, setIsCreating] = useState(false);
@@ -37,16 +39,16 @@ export function CampaignsClient({ campaigns, numbers, contacts }: { campaigns: a
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">Campaigns</h1>
           <p className="text-[var(--text-secondary)]">Broadcast messages to your audience using SMS or WhatsApp.</p>
         </div>
-        <button 
+        <Button 
           onClick={() => setIsCreating(!isCreating)}
-          className="apple-btn btn-primary flex items-center gap-2"
+          className="flex items-center gap-2"
         >
           {isCreating ? "Cancel" : <><Plus className="w-4 h-4" /> New Campaign</>}
-        </button>
+        </Button>
       </div>
 
       {isCreating && (
-        <div className="glass-panel p-6 rounded-2xl mb-8 animate-in slide-in-from-top-4 fade-in">
+        <Card className="p-6 mb-8 animate-in slide-in-from-top-4 fade-in">
           <h2 className="text-xl font-bold text-[var(--text-primary)] mb-6">Create New Campaign</h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -112,16 +114,16 @@ export function CampaignsClient({ campaigns, numbers, contacts }: { campaigns: a
             </div>
 
             <div className="flex justify-end">
-              <button 
+              <Button 
                 type="submit" 
                 disabled={loading || formData.contactIds.length === 0}
-                className="apple-btn btn-primary flex items-center gap-2"
+                className="flex items-center gap-2"
               >
                 {loading ? "Launching..." : <><Send className="w-4 h-4" /> Launch Campaign</>}
-              </button>
+              </Button>
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -153,14 +155,14 @@ export function CampaignsClient({ campaigns, numbers, contacts }: { campaigns: a
         ))}
         
         {campaigns.length === 0 && !isCreating && (
-          <div className="col-span-full text-center p-12 glass-panel rounded-2xl">
+          <Card className="col-span-full text-center p-12">
             <Megaphone className="w-12 h-12 text-[var(--text-secondary)] mx-auto mb-4 opacity-50" />
             <h3 className="text-lg font-bold text-[var(--text-primary)] mb-2">No Campaigns Yet</h3>
             <p className="text-[var(--text-secondary)] mb-6">Create your first broadcast to engage your CRM contacts.</p>
-            <button onClick={() => setIsCreating(true)} className="apple-btn btn-primary inline-flex items-center gap-2">
+            <Button onClick={() => setIsCreating(true)} className="inline-flex items-center gap-2">
               <Plus className="w-4 h-4" /> Create Campaign
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </div>
     </div>

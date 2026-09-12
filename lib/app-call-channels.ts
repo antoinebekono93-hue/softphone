@@ -39,4 +39,6 @@ export const PSTN_EVENTS = {
   ACCEPTED: "pstn:accepted", // -> user : appel accepté (mise à jour état)
   REJECTED: "pstn:rejected", // -> user : appel refusé
   ENDED: "pstn:ended", // -> user : appel terminé
+  MISSED: "pstn:missed", // -> user : appel entrant manqué sans message
+  VOICEMAIL: "pstn:voicemail", // -> user : nouveau message vocal disponible
 } as const;

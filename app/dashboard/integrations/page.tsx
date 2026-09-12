@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { Card } from "@/components/ui/card";
 import WebhookForm from "./WebhookForm";
 
 export const metadata = {
@@ -35,7 +36,7 @@ export default async function IntegrationsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {integrations.map((app) => (
-          <div key={app.id} className="glass-panel rounded-2xl p-6 flex flex-col hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)] transition-shadow">
+          <Card key={app.id} className="p-6 flex flex-col hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_30px_rgba(255,255,255,0.05)] transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-[var(--text-primary)] font-bold text-xl ${app.color}`}>
                 {app.name[0]}
@@ -55,7 +56,7 @@ export default async function IntegrationsPage() {
             <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
               <a href="#" className="text-sm text-[cyan-500] hover:underline font-medium">Learn more</a>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
       

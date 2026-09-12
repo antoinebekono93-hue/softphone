@@ -2,6 +2,7 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Activity, Phone, MessageSquare, Sparkles } from 'lucide-react';
+import { Card } from "@/components/ui/card";
 
 type ChartData = {
   date: string;
@@ -21,7 +22,7 @@ export function DashboardCharts({ data, activities }: { data: ChartData[], activ
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
       {/* Main Chart */}
-      <div className="lg:col-span-2 glass-panel p-6 rounded-2xl flex flex-col">
+      <Card className="lg:col-span-2 p-6 flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-6 flex items-center gap-2">
           <Activity className="w-5 h-5 text-blue-500" />
           Volume de Communications (7 derniers jours)
@@ -51,10 +52,10 @@ export function DashboardCharts({ data, activities }: { data: ChartData[], activ
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </Card>
 
       {/* Live Feed */}
-      <div className="glass-panel p-6 rounded-2xl flex flex-col">
+      <Card className="p-6 flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
         <h3 className="text-lg font-bold text-[var(--text-primary)] mb-6">Flux d'Activité en Direct</h3>
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
           {activities.length === 0 ? (
@@ -77,7 +78,7 @@ export function DashboardCharts({ data, activities }: { data: ChartData[], activ
             ))
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

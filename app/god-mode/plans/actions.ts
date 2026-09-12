@@ -11,10 +11,16 @@ export async function createOrUpdatePlan(data: {
   monthlyPrice: number;
   includedMinutes: number;
   includedSms: number;
+  hasTransfer: boolean;
+  hasCallRouting: boolean;
   features: string[];
 }) {
   await requireSuperAdmin();
-  const { id, name, monthlyPrice, includedMinutes, includedSms, features } = data;
+  const { id, name, monthlyPrice, includedMinutes, includedSms, hasTransfer, hasCallRouting, features } = data;
+  // Un transfert PSTN exige aussi que le moteur de routage soit inclus.
+  // Cette normalisation serveur protège également les anciens clients.
+  const routingEnabled = hasCallRouting === true;
+  const transferEnabled = routingEnabled && hasTransfer === true;
 
   let plan;
   if (id) {
@@ -26,6 +32,8 @@ export async function createOrUpdatePlan(data: {
         monthlyPrice,
         includedMinutes,
         includedSms,
+        hasTransfer: transferEnabled,
+        hasCallRouting: routingEnabled,
       },
     });
     // Update features (delete all and recreate for simplicity)
@@ -41,6 +49,8 @@ export async function createOrUpdatePlan(data: {
         monthlyPrice,
         includedMinutes,
         includedSms,
+        hasTransfer: transferEnabled,
+        hasCallRouting: routingEnabled,
         features: {
           create: features.map(f => ({ name: f })),
         }

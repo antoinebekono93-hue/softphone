@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Plus, Settings, Play, Phone, Bot, Users, Voicemail, Save, X, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 // Basic Types for our IVR Node system
 type NodeType = "GREETING" | "MENU" | "TRANSFER_AI" | "TRANSFER_TEAM" | "VOICEMAIL" | "HANGUP";
@@ -166,13 +167,13 @@ export default function IvrBuilderClient({ initialNodes }: { initialNodes: IvrNo
 
         {/* Floating Actions */}
         <div className="absolute bottom-8 right-8 flex gap-4 z-20">
-          <button 
+          <Button 
             onClick={saveIvr}
             disabled={isSaving}
-            className="btn-primary-gradient px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_20px_rgba(0,212,255,0.3)] disabled:opacity-50"
+            className="px-6 py-3 rounded-xl flex items-center gap-2 shadow-[0_0_20px_rgba(0,212,255,0.3)] disabled:opacity-50"
           >
             <Save className="w-4 h-4" /> {isSaving ? 'Enregistrement...' : 'Publier le SVI'}
-          </button>
+          </Button>
         </div>
       </div>
 

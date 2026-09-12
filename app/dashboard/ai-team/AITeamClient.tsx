@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Bot, Phone, MessageSquare, Briefcase, Settings2, Trash2, Brain, Headset, Calendar, Sparkles, MessageCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import KnowledgeBaseModal from "./KnowledgeBaseModal";
 import SkillsModal from "./SkillsModal";
 import { Wrench } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 const AI_TEMPLATES = [
   {
@@ -325,7 +326,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
           {dbTemplates.map((template) => {
             const Icon = template.icon || Bot;
             return (
-              <div key={template.id} className="glass-panel rounded-3xl border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full relative overflow-hidden">
+              <Card key={template.id} className="rounded-3xl hover:border-[var(--accent-primary)]/50 transition-all group flex flex-col h-full relative overflow-hidden">
                 <div className="relative w-full h-48 sm:h-56 shrink-0">
                   {template.avatarUrl ? (
                     <img 
@@ -376,7 +377,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                   Recruter ce profil
                 </button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -384,7 +385,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
 
       {/* VIEW: CONFIGURE */}
       {view === 'configure' && (
-        <div className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
+        <Card className="p-6 rounded-3xl animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-8 pb-6 border-b border-[var(--border-subtle)]">
             {selectedTemplate?.avatarUrl ? (
               <img 
@@ -487,7 +488,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
               Confirmer le recrutement
             </button>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* VIEW: LIST */}
@@ -496,7 +497,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
           {employees.map((emp: any) => {
             const template = dbTemplates.find(t => t.id === emp.templateId);
             return (
-            <div key={emp.id} className="glass-panel p-6 rounded-3xl border border-[var(--border-subtle)] relative group">
+            <Card key={emp.id} className="p-6 rounded-3xl relative group">
               <div className="flex gap-4 items-start">
                 {template?.avatarUrl ? (
                   <img 
@@ -592,7 +593,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                   </button>
                 </div>
               </div>
-            </div>
+            </Card>
             );
           })}
 

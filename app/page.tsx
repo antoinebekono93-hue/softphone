@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import MarketingHeader from "@/components/marketing/MarketingHeader";
 import {
   HeroSection,
   TrustBar,
@@ -35,29 +35,8 @@ export default function LandingPage() {
         }
       `}} />
 
-      {/* 1. Header (Minimalist Navigation) */}
-      <header className="fixed top-0 inset-x-0 h-16 flex items-center justify-between px-6 mx-auto w-full z-50 bg-[var(--bg-base)]/70 backdrop-blur-xl border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
-          <div className="flex items-center gap-2 flex-1">
-            <div className="w-6 h-6 rounded-md n8n-gradient-bg shadow-[0_0_15px_rgba(255,87,87,0.4)]"></div>
-            <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">Antigravity</span>
-          </div>
-          <nav className="hidden md:flex gap-8 text-sm font-bold text-[var(--text-secondary)]">
-            <Link href="#solutions" className="hover:text-[var(--text-primary)] transition-colors">Solutions</Link>
-            <Link href="#features" className="hover:text-[var(--text-primary)] transition-colors">Fonctionnalités</Link>
-            <Link href="#integrations" className="hover:text-[var(--text-primary)] transition-colors">Intégrations</Link>
-          </nav>
-          <div className="flex gap-4 items-center flex-1 justify-end">
-            <ThemeToggle />
-            <Link href="/login" className="text-sm font-medium text-[var(--text-primary)] hover:text-[var(--text-secondary)] transition-colors hidden sm:block">
-              Connexion
-            </Link>
-            <Link href="/register" className="text-sm font-medium n8n-gradient-bg text-white px-4 py-2 rounded-full transition-transform hover:scale-105 shadow-lg shadow-rose-500/20">
-              Essai Gratuit
-            </Link>
-          </div>
-        </div>
-      </header>
+      {/* 1. Header */}
+      <MarketingHeader />
 
       {/* 2. Hero */}
       <HeroSection />

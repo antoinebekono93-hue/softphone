@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Card } from "@/components/ui/card";
 
 export const metadata = {
   title: "Overview | God Mode",
@@ -34,7 +35,7 @@ export default async function GodModeOverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="glass-panel border-none rounded-2xl p-6 flex flex-col relative overflow-hidden">
+        <Card className="border-none rounded-2xl p-6 flex flex-col relative overflow-hidden">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
            </div>
@@ -44,28 +45,28 @@ export default async function GodModeOverviewPage() {
              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
              Enregistrés
            </span>
-        </div>
+        </Card>
 
-        <div className="glass-panel border-none rounded-2xl p-6 flex flex-col relative overflow-hidden">
+        <Card className="border-none rounded-2xl p-6 flex flex-col relative overflow-hidden">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
            </div>
            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Active Numbers</span>
            <span className="text-4xl font-bold text-[var(--text-primary)]">{numbersCount}</span>
            <span className="text-sm text-[var(--text-secondary)] mt-2">Provisioned via Telnyx</span>
-        </div>
+        </Card>
 
-        <div className="glass-panel border-none rounded-2xl p-6 flex flex-col relative overflow-hidden">
+        <Card className="border-none rounded-2xl p-6 flex flex-col relative overflow-hidden">
            <div className="absolute top-0 right-0 p-4 opacity-10">
              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
            </div>
            <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">MRR Global</span>
            <span className="text-4xl font-bold text-[var(--text-primary)]">${mrr.toFixed(2)}</span>
            <span className="text-sm text-[var(--text-secondary)] mt-2">Revenu Mensuel Récurrent</span>
-        </div>
+        </Card>
       </div>
 
-      <div className="glass-panel border-none rounded-2xl p-8">
+      <Card className="border-none rounded-2xl p-8">
          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
             System Diagnostics
@@ -101,7 +102,7 @@ export default async function GodModeOverviewPage() {
                </span>
             </div>
          </div>
-      </div>
+      </Card>
     </div>
   );
 }

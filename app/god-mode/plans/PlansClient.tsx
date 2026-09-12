@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { createOrUpdatePlan, syncPlanToStripe, syncPlanToFlutterwave } from "./actions";
+import { Modal } from "@/components/ui/modal";
+import { Button } from "@/components/ui/button";
 
 type Plan = any; // We'll just pass the Prisma Plan shape here
 
 export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
-  const [plans, setPlans] = useState(initialPlans);
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -16,6 +19,8 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
     monthlyPrice: 0,
     includedMinutes: 0,
     includedSms: 0,
+    hasTransfer: false,
+    hasCallRouting: false,
     features: [""],
   });
 
@@ -27,6 +32,8 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
         monthlyPrice: plan.monthlyPrice,
         includedMinutes: plan.includedMinutes,
         includedSms: plan.includedSms,
+        hasTransfer: plan.hasTransfer === true,
+        hasCallRouting: plan.hasCallRouting === true,
         features: plan.features.length > 0 ? plan.features.map((f: any) => f.name) : [""],
       });
     } else {
@@ -36,6 +43,8 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
         monthlyPrice: 0,
         includedMinutes: 0,
         includedSms: 0,
+        hasTransfer: false,
+        hasCallRouting: false,
         features: [""],
       });
     }
@@ -52,12 +61,12 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
           monthlyPrice: Number(formData.monthlyPrice),
           includedMinutes: Number(formData.includedMinutes),
           includedSms: Number(formData.includedSms),
+          hasTransfer: formData.hasTransfer,
+          hasCallRouting: formData.hasCallRouting,
           features: formData.features.filter(f => f.trim() !== ""),
         });
         setIsModalOpen(false);
-        // The page will revalidate and we'll see updates on next refresh or via server actions, 
-        // but we should ideally refresh. For simplicity, we trigger router.refresh() if needed, 
-        // but Next.js Server Actions with revalidatePath usually update the page automatically.
+        router.refresh();
       } catch (err) {
         console.error(err);
         alert("Error saving plan");
@@ -125,6 +134,12 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   {plan.includedSms} SMS included
                 </div>
+                <div className={`mt-2 text-sm ${plan.hasCallRouting ? "text-emerald-400" : "text-[var(--text-secondary)]"}`}>
+                  {plan.hasCallRouting ? "✓" : "✕"} Routage d’appels
+                </div>
+                <div className={`mt-1 text-sm ${plan.hasTransfer ? "text-emerald-400" : "text-[var(--text-secondary)]"}`}>
+                  {plan.hasTransfer ? "✓" : "✕"} Transfert PSTN
+                </div>
               </div>
 
               <div>
@@ -156,11 +171,12 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
       </div>
 
       {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-2xl w-full max-w-lg shadow-2xl p-6">
-            <h2 className="text-2xl font-bold mb-4">{editingPlan ? "Edit Plan" : "Create New Plan"}</h2>
-            <form onSubmit={handleSave} className="space-y-4">
+      <Modal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={editingPlan ? "Edit Plan" : "Create New Plan"}
+      >
+        <form onSubmit={handleSave} className="space-y-4">
               <div>
                 <label className="block text-sm text-[var(--text-secondary)] mb-1">Plan Name</label>
                 <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
@@ -179,23 +195,58 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
                   <input required type="number" value={formData.includedSms} onChange={e => setFormData({...formData, includedSms: Number(e.target.value)})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2" />
                 </div>
               </div>
+              <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                <div className="mb-3 text-sm font-semibold">Fonctions de routage téléphonique</div>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasCallRouting}
+                      onChange={e => setFormData({
+                        ...formData,
+                        hasCallRouting: e.target.checked,
+                        hasTransfer: e.target.checked ? formData.hasTransfer : false,
+                      })}
+                      className="mt-0.5 h-4 w-4 accent-cyan-500"
+                    />
+                    <span>
+                      <span className="block font-medium">Routage d’appels</span>
+                      <span className="text-xs text-[var(--text-secondary)]">Autorise les règles APP, FORWARD et APP_THEN_FORWARD.</span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.hasTransfer}
+                      onChange={e => setFormData({
+                        ...formData,
+                        hasTransfer: e.target.checked,
+                        hasCallRouting: e.target.checked ? true : formData.hasCallRouting,
+                      })}
+                      className="mt-0.5 h-4 w-4 accent-cyan-500"
+                    />
+                    <span>
+                      <span className="block font-medium">Transfert vers un téléphone externe</span>
+                      <span className="text-xs text-[var(--text-secondary)]">Requis en plus du routage pour transférer un appel vers le PSTN.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
               <div>
                 <label className="block text-sm text-[var(--text-secondary)] mb-1">Features (One per line)</label>
                 <textarea rows={4} value={formData.features.join('\n')} onChange={e => setFormData({...formData, features: e.target.value.split('\n')})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2" />
               </div>
               <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-subtle)]">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-lg bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-surface-solid)]">
+                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                   Cancel
-                </button>
-                <button type="submit" disabled={isPending} className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium flex items-center gap-2">
+                </Button>
+                <Button type="submit" disabled={isPending}>
                   {isPending && <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
                   Save Plan
-                </button>
+                </Button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+        </Modal>
     </div>
   );
 }

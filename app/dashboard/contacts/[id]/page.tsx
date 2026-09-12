@@ -6,6 +6,7 @@ import { ArrowLeft, Mail, Phone, Building, FileText, User, Clock } from "lucide-
 import InboxClient from "../../inbox/InboxClient";
 import { EnrollSequenceButton } from "./EnrollSequenceButton";
 import { getSequences } from "../../sequences/actions";
+import { Card } from "@/components/ui/card";
 
 export default async function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -79,14 +80,14 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
           <ArrowLeft className="w-5 h-5 text-[var(--text-primary)]" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">{contact.name || contact.phone}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">{contact.name || contact.phone}</h1>
           <p className="text-sm text-[var(--text-secondary)]">Fiche Contact</p>
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
         {/* Left pane: Contact Info (30%) */}
-        <div className="w-full md:w-1/3 xl:w-1/4 glass-panel p-6 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
+        <Card className="w-full md:w-1/3 xl:w-1/4 p-6 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
           <div className="flex flex-col items-center text-center mb-8">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
               {contact.name ? <span className="text-3xl font-bold">{contact.name.charAt(0).toUpperCase()}</span> : <User className="w-10 h-10" />}
@@ -137,10 +138,10 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
               <EnrollSequenceButton contactId={contact.id} sequences={sequences} />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Right pane: Unified History (70%) */}
-        <div className="flex-1 glass-panel overflow-hidden border border-[var(--border-subtle)] rounded-2xl">
+        <Card className="flex-1 overflow-hidden">
            {/* We inject the InboxClient component directly here! But we need to isolate it from its global layout padding. */}
            <div className="h-full w-full relative -m-0 p-0 transform scale-100">
              {unifiedEvents.length > 0 ? (
@@ -157,8 +158,8 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
                  <p className="text-sm mt-1">C'est le début d'une belle relation !</p>
                </div>
              )}
-           </div>
-        </div>
+            </div>
+         </Card>
       </div>
     </div>
   );

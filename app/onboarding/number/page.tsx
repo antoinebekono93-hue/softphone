@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { searchNumbers, buyNumber } from "./actions";
 import { useRouter } from "next/navigation";
 import { Search, Phone, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function OnboardingNumberPage() {
   const [country, setCountry] = useState("US");
@@ -77,14 +78,15 @@ export default function OnboardingNumberPage() {
           <option value="GB">United Kingdom (+44)</option>
           <option value="FR">France (+33)</option>
         </select>
-        <button 
+        <Button 
           onClick={handleSearch}
           disabled={isSearching}
-          className="btn-primary flex justify-center items-center gap-2 py-3 px-6 text-[15px]"
+          size="lg"
+          className="flex justify-center items-center gap-2 text-[15px]"
         >
           {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           {isSearching ? "Searching" : "Search"}
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-4">

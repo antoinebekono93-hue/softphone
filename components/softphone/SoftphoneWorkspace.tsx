@@ -12,6 +12,7 @@ export function SoftphoneWorkspace() {
   const [searchQuery, setSearchQuery] = useState("");
   const [contacts, setContacts] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
+  const [voicemails, setVoicemails] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
   const { routeCall } = useCallRouter();
@@ -20,9 +21,10 @@ export function SoftphoneWorkspace() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [cRes, hRes] = await Promise.all([
+        const [cRes, hRes, vRes] = await Promise.all([
           fetch('/api/contacts'),
-          fetch('/api/calls')
+          fetch('/api/calls'),
+          fetch('/api/voicemails'),
         ]);
         if (cRes.ok) {
           setContacts(await cRes.json());
@@ -30,6 +32,7 @@ export function SoftphoneWorkspace() {
         if (hRes.ok) {
           setHistory(await hRes.json());
         }
+        if (vRes.ok) setVoicemails(await vRes.json());
       } catch (e) {
         console.error(e);
       } finally {
@@ -37,6 +40,15 @@ export function SoftphoneWorkspace() {
       }
     };
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const refreshVoicemails = async () => {
+      const response = await fetch('/api/voicemails', { cache: 'no-store' });
+      if (response.ok) setVoicemails(await response.json());
+    };
+    window.addEventListener('softphone:voicemail', refreshVoicemails);
+    return () => window.removeEventListener('softphone:voicemail', refreshVoicemails);
   }, []);
 
   const getCallIcon = (type: string) => {
@@ -189,11 +201,26 @@ export function SoftphoneWorkspace() {
 
               {/* VOICEMAIL TAB */}
               {activeTab === 'voicemail' && (
-                <div className="p-8 text-center flex flex-col items-center justify-center h-full">
-                  <div className="w-16 h-16 rounded-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
-                    <Voicemail className="w-8 h-8 text-[var(--text-secondary)]" />
-                  </div>
-                  <p className="text-[var(--text-secondary)]">Aucun nouveau message vocal.</p>
+                <div className="divide-y divide-[var(--border-subtle)]">
+                  {voicemails.length === 0 && <div className="p-8 text-center flex flex-col items-center">
+                    <div className="w-16 h-16 rounded-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
+                      <Voicemail className="w-8 h-8 text-[var(--text-secondary)]" />
+                    </div>
+                    <p className="text-[var(--text-secondary)]">Aucun nouveau message vocal.</p>
+                  </div>}
+                  {voicemails.map((message) => <div key={message.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-[var(--text-primary)]">{message.fromNumber}</div>
+                        <div className="text-xs text-[var(--text-secondary)]">{new Date(message.startedAt).toLocaleString()}</div>
+                      </div>
+                      <Voicemail className="w-5 h-5 text-cyan-500" />
+                    </div>
+                    <audio controls preload="none" className="w-full h-9" src={message.audioUrl}>
+                      Votre navigateur ne peut pas lire cet enregistrement.
+                    </audio>
+                    {message.transcriptionText && <p className="text-xs text-[var(--text-secondary)] line-clamp-3">{message.transcriptionText}</p>}
+                  </div>)}
                 </div>
               )}
             </>

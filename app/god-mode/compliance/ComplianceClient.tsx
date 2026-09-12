@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { ShieldCheck, ShieldAlert, CheckCircle, XCircle, Search, ExternalLink } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { approveKYC, rejectKYC } from "./actions";
 
 export function ComplianceClient({ initialRecords }: { initialRecords: any[] }) {
@@ -47,7 +48,7 @@ export function ComplianceClient({ initialRecords }: { initialRecords: any[] }) 
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full">
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)] flex items-center gap-3">
@@ -70,7 +71,7 @@ export function ComplianceClient({ initialRecords }: { initialRecords: any[] }) 
         </div>
       </div>
 
-      <div className="glass-panel p-6 rounded-2xl">
+      <Card className="p-6">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-[var(--bg-surface-hover)] border-y border-[var(--border-subtle)] text-[var(--text-secondary)]">
@@ -134,7 +135,7 @@ export function ComplianceClient({ initialRecords }: { initialRecords: any[] }) 
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

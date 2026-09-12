@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmbeddedSignupButton } from "@/components/whatsapp/EmbeddedSignupButton";
+import { Card } from "@/components/ui/card";
 import { WalletSection } from "./WalletSection";
 
 export const metadata = {
@@ -45,7 +46,7 @@ export default async function SettingsPage() {
         />
 
         {/* Profile Section */}
-        <div className="glass-panel rounded-2xl p-6">
+        <Card className="p-6">
           <h2 className="text-xl font-medium mb-4">My Profile</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex flex-col gap-1.5">
@@ -60,10 +61,10 @@ export default async function SettingsPage() {
           <div className="mt-6 flex justify-end">
             <button className="px-5 py-2.5 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors">Save Changes</button>
           </div>
-        </div>
+        </Card>
 
         {/* Organization Section */}
-        <div className="glass-panel rounded-2xl p-6">
+        <Card className="p-6">
           <h2 className="text-xl font-medium mb-4">Organization Details</h2>
           <div className="flex flex-col gap-1.5 mb-6">
             <label className="text-sm font-medium text-[var(--text-secondary)]">Organization Name</label>
@@ -78,7 +79,7 @@ export default async function SettingsPage() {
             <p className="text-sm text-[var(--text-secondary)] mb-4">Connect your WhatsApp Business account directly to reply to customers from our inbox.</p>
             <EmbeddedSignupButton appId={process.env.NEXT_PUBLIC_META_APP_ID || "YOUR_META_APP_ID"} />
           </div>
-        </div>
+        </Card>
 
         {/* Danger Zone */}
         <div className="border border-rose-500/20 bg-rose-500/5 rounded-2xl p-6">

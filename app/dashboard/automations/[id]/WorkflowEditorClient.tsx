@@ -18,7 +18,8 @@ import {
 import "@xyflow/react/dist/style.css";
 import { TriggerNode, HttpActionNode, SmsActionNode, DelayNode, IfElseNode, AIGenerationNode, EmailNode } from "./Nodes";
 import { Save, Play, MessageSquare, Clock, ArrowLeft, Globe, Zap, Webhook, ArrowRightLeft, Sparkles, Mail, History, CheckCircle2, XCircle, ChevronRight, X } from "lucide-react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
 const nodeTypes = {
@@ -180,13 +181,13 @@ export function WorkflowEditorClient({ flowId, initialName, initialIsActive, ini
           >
             <Play className="w-4 h-4" /> {isActive ? 'Désactiver' : 'Activer'}
           </button>
-          <button 
+          <Button 
             onClick={handleSave}
             disabled={isSaving}
-            className="btn-primary-gradient px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+            className="px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-cyan-500/20 disabled:opacity-50"
           >
             <Save className="w-4 h-4" /> Sauvegarder
-          </button>
+          </Button>
         </div>
       </div>
 

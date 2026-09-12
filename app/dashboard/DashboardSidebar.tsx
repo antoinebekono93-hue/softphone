@@ -63,8 +63,10 @@ export function DashboardSidebar({
   // Grouped Navigation by Module
   const getActiveModule = () => {
     if (pathname.includes("/dashboard/sms")) return "sms";
+    if (pathname.includes("/dashboard/social-campaigns")) return "social";
+    if (pathname.includes("/dashboard/campaigns")) return "voice";
     if (pathname.includes("/dashboard/whatsapp") || pathname.includes("/dashboard/pipeline")) return "whatsapp";
-    if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice") || pathname.includes("/dashboard/tts")) return "ai";
+    if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice-lab") || pathname.includes("/dashboard/tts")) return "ai";
     return "phone"; // Default
   };
 
@@ -112,6 +114,30 @@ export function DashboardSidebar({
           { name: "Campagnes Sociales", href: "/dashboard/social-campaigns", icon: MessageSquare },
           { name: "Numéros & eSIM", href: "/dashboard/numbers", icon: Smartphone },
           { name: "Modèles (Templates)", href: "/dashboard/whatsapp/templates", icon: BookUser },
+          { name: "Paramètres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
+        ]
+      }
+    ],
+    voice: [
+      {
+        title: "Voix & Campagnes",
+        items: [
+          { name: "Campagnes", href: "/dashboard/campaigns", icon: Phone },
+          { name: "Numéros", href: "/dashboard/numbers", icon: Hash },
+          { name: "IVR & Routage", href: "/dashboard/ivr", icon: GitMerge },
+          { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
+        ]
+      }
+    ],
+    social: [
+      {
+        title: "Social & Messagerie",
+        items: [
+          { name: "Campagnes Sociales", href: "/dashboard/social-campaigns", icon: MessageSquare },
+          { name: "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
+          { name: "Flux WhatsApp", href: "/dashboard/whatsapp/flows", icon: Workflow },
+          { name: "Templates", href: "/dashboard/whatsapp/templates", icon: BookUser },
+          { name: "Numéros & eSIM", href: "/dashboard/numbers", icon: Smartphone },
           { name: "Paramètres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
         ]
       }

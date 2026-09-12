@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { Bot, Server, Shield, Key, Save, CheckCircle, Cpu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function LiveKitConfigClient() {
   const [isSaving, setIsSaving] = useState(false);
@@ -26,19 +28,19 @@ export function LiveKitConfigClient() {
           </h1>
           <p className="text-[var(--text-secondary)]">Manage your LiveKit server connection for Voice AI Agents (SIP Inbound).</p>
         </div>
-        <button 
+        <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="apple-btn btn-primary flex items-center gap-2"
+          className="flex items-center gap-2"
         >
           {isSaving ? <Cpu className="w-4 h-4 animate-spin" /> : (saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />)}
           {saved ? "Saved Configuration" : "Save Changes"}
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          <div className="glass-panel p-6 rounded-2xl">
+          <Card className="p-6">
             <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
               <Server className="w-5 h-5 text-cyan-500" /> Server Connection
             </h2>
@@ -70,9 +72,9 @@ export function LiveKitConfigClient() {
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="glass-panel p-6 rounded-2xl border-l-4 border-l-violet-500">
+          <Card className="p-6 border-l-4 border-l-violet-500">
             <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
               <Shield className="w-5 h-5 text-violet-500" /> SIP Inbound Trunk
             </h2>
@@ -90,11 +92,11 @@ export function LiveKitConfigClient() {
                 <button className="px-4 py-2 bg-[var(--bg-surface-hover)] hover:bg-white/10 text-[var(--text-primary)] font-bold rounded-lg transition-colors border border-[var(--border-subtle)] text-sm">Copy</button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         <div className="space-y-6">
-          <div className="glass-panel p-6 rounded-2xl bg-gradient-to-br from-violet-500/10 to-transparent">
+          <Card className="p-6 bg-gradient-to-br from-violet-500/10 to-transparent">
             <h3 className="font-bold text-[var(--text-primary)] mb-2 flex items-center gap-2">
               <Cpu className="w-4 h-4 text-violet-400" /> Architecture Status
             </h3>
@@ -118,7 +120,7 @@ export function LiveKitConfigClient() {
                 X-Call-Log-Id
               </code>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

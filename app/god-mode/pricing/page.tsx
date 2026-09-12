@@ -10,7 +10,7 @@ export default async function GodModePricingPage() {
   const settings = await getSystemSettings();
 
   return (
-    <div className="p-8 max-w-5xl mx-auto w-full">
+    <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 text-[var(--text-primary)]">Tarifs et Marges Opérateur</h1>
         <p className="text-[var(--text-secondary)]">

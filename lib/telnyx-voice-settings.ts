@@ -82,6 +82,15 @@ function stringArray(value: unknown, pattern?: RegExp) {
   return [...new Set(input.map(String).map((item) => item.trim()).filter((item) => item && (!pattern || pattern.test(item))))];
 }
 
+function optionalE164(value: unknown) {
+  if (value === null || value === "") return null;
+  if (value === undefined) return undefined;
+  if (typeof value !== "string" || !/^\+[1-9]\d{6,14}$/.test(value.trim())) {
+    throw new Error("ANI_OVERRIDE_E164_INVALID");
+  }
+  return value.trim();
+}
+
 export function requiredHttpsUrl(value: unknown, field: string) {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${field}_REQUIRED`);
   const url = new URL(value.trim());
@@ -113,7 +122,10 @@ export function credentialConnectionPayload(body: any, create = false) {
   } : undefined;
   const outbound = body?.outbound && typeof body.outbound === "object" ? {
     call_parking_enabled: optionalBoolean(body.outbound.call_parking_enabled),
-    ani_override: enumValue(body.outbound.ani_override, ANI_OVERRIDE),
+    // Telnyx exposes two distinct properties: the E.164 number and the policy.
+    // Sending the policy in ani_override makes outbound configuration invalid.
+    ani_override: optionalE164(body.outbound.ani_override),
+    ani_override_type: enumValue(body.outbound.ani_override_type, ANI_OVERRIDE),
     channel_limit: nullablePositiveInteger(body.outbound.channel_limit),
     instant_ringback_enabled: optionalBoolean(body.outbound.instant_ringback_enabled),
     generate_ringback_tone: optionalBoolean(body.outbound.generate_ringback_tone),

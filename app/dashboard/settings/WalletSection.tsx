@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Wallet, CreditCard, ArrowUpRight, ArrowDownRight, History, Loader2, AlertCircle, ExternalLink, Zap, Phone, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Card } from "@/components/ui/card";
 
 export function WalletSection({
   balance,
@@ -89,7 +90,7 @@ export function WalletSection({
   const isActive = planStatus === "ACTIVE" || planStatus === "TRIALING";
 
   return (
-    <div className="glass-panel rounded-2xl p-6">
+    <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-medium flex items-center gap-2">
           <Wallet className="w-5 h-5 text-[var(--accent-primary)]" />
@@ -231,6 +232,6 @@ export function WalletSection({
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

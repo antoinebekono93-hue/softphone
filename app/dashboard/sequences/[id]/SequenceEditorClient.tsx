@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ArrowLeft, Plus, Clock, MessageSquare, Phone, MessageCircle, Save, Trash2, Loader2, Link as LinkIcon, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { createSequenceStep, deleteSequenceStep, updateSequence } from "../actions";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function SequenceEditorClient({ initialSequence }: { initialSequence: any }) {
   const [sequence, setSequence] = useState(initialSequence);
@@ -73,9 +75,9 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
           <h2 className="text-xl font-bold text-[var(--text-primary)] mb-4">Étapes du Workflow</h2>
 
           {sequence.steps.length === 0 ? (
-            <div className="glass-panel p-8 text-center text-[var(--text-secondary)]">
+            <Card className="p-8 text-center text-[var(--text-secondary)]">
               <p>Cette séquence est vide. Ajoutez votre première action.</p>
-            </div>
+            </Card>
           ) : (
             <div className="space-y-4 relative">
               {sequence.steps.map((step: any, index: number) => (
@@ -93,7 +95,7 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
                   </div>
 
                   {/* Step Card */}
-                  <div className="glass-panel p-5 flex-1 hover:border-[var(--accent-cyan)] transition-colors group">
+                  <Card className="p-5 flex-1 hover:border-[var(--accent-cyan)] group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--bg-base)] text-[var(--text-secondary)]">
@@ -126,7 +128,7 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
                     <div className="mt-2 text-sm text-[var(--text-secondary)] bg-[var(--bg-base)] p-3 rounded-xl border border-[var(--border-subtle)] whitespace-pre-wrap">
                       {step.content || "(Aucun contenu)"}
                     </div>
-                  </div>
+                  </Card>
                 </div>
               ))}
             </div>
@@ -145,7 +147,7 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
                  <span className="font-semibold">Ajouter une étape</span>
                </button>
             ) : (
-               <div className="glass-panel p-6 animate-in slide-in-from-top-4 duration-300">
+               <Card className="p-6 animate-in slide-in-from-top-4 duration-300">
                  <div className="flex justify-between items-center mb-4">
                    <h3 className="font-bold text-[var(--text-primary)]">Configurer l'étape</h3>
                    <button onClick={() => setIsAddingStep(false)} className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">Annuler</button>
@@ -199,22 +201,22 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
                      />
                    </div>
 
-                   <button 
-                      type="submit"
-                      disabled={isSaving} 
-                      className="btn-primary-gradient w-full flex items-center justify-center"
-                   >
+                    <Button 
+                       type="submit"
+                       disabled={isSaving} 
+                       className="w-full flex items-center justify-center"
+                    >
                      {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : "Enregistrer l'étape"}
-                   </button>
+                    </Button>
                  </form>
-               </div>
+               </Card>
             )}
           </div>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="glass-panel p-6">
+          <Card className="p-6">
             <h3 className="font-bold text-[var(--text-primary)] mb-4">Statistiques</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
@@ -230,7 +232,7 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

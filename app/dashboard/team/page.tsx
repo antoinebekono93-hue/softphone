@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Users, Phone, Plus, MoreHorizontal, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export const metadata = {
   title: "Team Management | Antigravity",
@@ -19,23 +21,23 @@ export default async function TeamPage() {
   });
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto w-full">
+    <div className="p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-2 text-[var(--text-primary)]">
+          <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
             Team <span className="text-gradient">Management</span>
           </h1>
-          <p className="text-[var(--text-secondary)] text-sm md:text-base">Invite users, manage roles, and monitor team activity.</p>
+          <p className="text-[var(--text-secondary)] text-sm">Invite users, manage roles, and monitor team activity.</p>
         </div>
-        <button className="w-full md:w-auto btn-primary-gradient flex items-center justify-center gap-2">
+        <Button className="w-full md:w-auto flex items-center justify-center gap-2">
           <Plus className="w-5 h-5" />
           Invite Member
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Left Side: Team List */}
-        <div className="lg:col-span-3 glass-panel flex flex-col overflow-hidden">
+        <Card className="lg:col-span-3 flex flex-col overflow-hidden">
           <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface-solid)]/30">
             <h2 className="font-semibold text-lg text-[var(--text-primary)]">Active Members (4/10 Seats)</h2>
             <div className="relative hidden sm:block">
@@ -94,11 +96,11 @@ export default async function TeamPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
 
         {/* Right Side: Quick Stats & Ring Groups */}
         <div className="flex flex-col gap-6">
-          <div className="glass-panel p-6">
+          <Card className="p-6">
             <h3 className="font-semibold mb-4 text-[var(--text-primary)] flex items-center gap-2">
               <Users className="w-4 h-4 text-cyan-500" /> Ring Groups
             </h3>
@@ -127,7 +129,7 @@ export default async function TeamPage() {
                 Create Ring Group
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

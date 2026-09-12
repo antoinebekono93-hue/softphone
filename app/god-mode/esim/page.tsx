@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Wifi, Activity, QrCode, Download, Database, AlertTriangle, ShieldCheck, Search, Plus } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function GodModeEsimPage() {
   const [dataLimit, setDataLimit] = useState(10);
 
   return (
-    <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full">
       <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)] flex items-center gap-3">
@@ -16,15 +18,15 @@ export default function GodModeEsimPage() {
           </h1>
           <p className="text-[var(--text-secondary)]">Déploiement et contrôle de la connectivité globale pour flottes IoT et mobiles.</p>
         </div>
-        <button className="btn-primary-gradient px-4 py-2 text-sm shadow-md">
+        <Button>
            <Plus className="w-4 h-4" /> Nouvelle flotte eSIM
-        </button>
+        </Button>
       </div>
 
       {/* Configuration d'Application Vocale (Adapted for eSIM) - Data Plans & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
          {/* Gestion des Profils & QR Codes */}
-         <div className="glass-panel p-8 rounded-2xl flex flex-col">
+         <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <QrCode className="text-violet-500" />
                Déploiement de Profils (OTA)
@@ -64,10 +66,10 @@ export default function GodModeEsimPage() {
                   </button>
                </div>
             </div>
-         </div>
+         </Card>
 
          {/* Contrôle de consommation & Forfaits */}
-         <div className="glass-panel p-8 rounded-2xl flex flex-col">
+         <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <Database className="text-emerald-500" />
                Forfaits & Limites de Consommation
@@ -114,11 +116,11 @@ export default function GodModeEsimPage() {
                   />
                </div>
             </div>
-         </div>
+         </Card>
       </div>
 
       {/* Vue d'ensemble de la flotte (Table) */}
-      <div className="glass-panel p-8 rounded-2xl">
+      <Card className="p-8 rounded-2xl hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
             <div>
                <h2 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
@@ -200,7 +202,7 @@ export default function GodModeEsimPage() {
                </tbody>
             </table>
          </div>
-      </div>
+      </Card>
     </div>
   );
 }
