@@ -1,3 +1,8 @@
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
+import { Item, Reveal, Stagger } from "./motion";
+
 const awards = [
   { icon: "★", title: "Leader Magic Quadrant", subtitle: "Gartner · 12e année consécutive", color: "text-yellow-500" },
   { icon: "📈", title: "Momentum Leader", subtitle: "G2 · Hiver 2026", color: "text-rose-500" },
@@ -8,28 +13,36 @@ const awards = [
 ];
 
 export default function AwardsSection() {
+  const reduced = useReducedMotion();
+
   return (
     <section className="py-24 px-4 max-w-7xl mx-auto w-full">
-      <div className="text-center mb-16">
+      <Reveal className="text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
           Une plateforme <span className="text-gradient">primée</span>
         </h2>
         <p className="text-[var(--text-secondary)] text-lg font-medium">
           Reconnue par les analystes et les utilisateurs du secteur.
         </p>
-      </div>
+      </Reveal>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+      <Stagger className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {awards.map((award, i) => (
-          <div key={i} className="rounded-[32px] glass-panel-premium p-8 text-center group hover:-translate-y-1 transition-transform">
-            <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-[var(--bg-surface-hover)] ${award.color}`}>
-              {award.icon}
-            </div>
-            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">{award.title}</h3>
-            <p className="text-sm font-medium text-[var(--text-secondary)]">{award.subtitle}</p>
-          </div>
+          <Item key={i}>
+            <motion.div
+              whileHover={reduced ? undefined : { y: -4 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-[32px] glass-panel-premium p-8 text-center group h-full"
+            >
+              <div className={`w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-[var(--bg-surface-hover)] ${award.color}`}>
+                {award.icon}
+              </div>
+              <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1">{award.title}</h3>
+              <p className="text-sm font-medium text-[var(--text-secondary)]">{award.subtitle}</p>
+            </motion.div>
+          </Item>
         ))}
-      </div>
+      </Stagger>
     </section>
   );
 }

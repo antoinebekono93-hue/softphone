@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 
 const tabs = [
   {
@@ -115,7 +116,15 @@ export default function ProductTabs() {
       </div>
 
       {/* Active tab content */}
-      <div key={active} className="animate-fade-in-scale rounded-[32px] glass-panel-premium p-8 md:p-12 relative overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={active}
+          initial={{ opacity: 0, y: 14, scale: 0.995 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.995 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-[32px] glass-panel-premium p-8 md:p-12 relative overflow-hidden"
+        >
         <div className={`absolute inset-0 bg-gradient-to-br ${current.gradient} to-transparent pointer-events-none`}></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative">
           <div>
@@ -155,7 +164,8 @@ export default function ProductTabs() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
+      </AnimatePresence>
     </section>
   );
 }

@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
+import { Item, Reveal, Stagger } from "./motion";
 
 const caseStudies = [
   {
@@ -43,57 +47,65 @@ const productColors: Record<string, string> = {
 };
 
 export default function CaseStudies() {
+  const reduced = useReducedMotion();
+
   return (
     <section className="py-24 px-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
       <div className="max-w-7xl mx-auto w-full">
-        <div className="text-center mb-16">
+        <Reveal className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
             Adopté par des entreprises <span className="text-gradient">de toutes tailles</span>
           </h2>
           <p className="text-[var(--text-secondary)] text-lg font-medium">
             Découvrez comment nos clients transforment leurs communications.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {caseStudies.map((cs, i) => (
-            <div key={i} className="rounded-[32px] glass-panel-premium p-8 relative overflow-hidden group">
-              <div className={`absolute inset-0 bg-gradient-to-br ${cs.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-              <div className="relative">
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                  <h3 className="text-xl font-extrabold uppercase tracking-wide text-[var(--text-primary)]">{cs.company}</h3>
-                </div>
+            <Item key={i}>
+              <motion.div
+                whileHover={reduced ? undefined : { y: -6, boxShadow: "0 20px 40px -12px rgba(0,0,0,0.15)" }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                className="rounded-[32px] glass-panel-premium p-8 relative overflow-hidden group h-full"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${cs.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <h3 className="text-xl font-extrabold uppercase tracking-wide text-[var(--text-primary)]">{cs.company}</h3>
+                  </div>
 
-                <blockquote className="text-[var(--text-secondary)] font-medium mb-8 leading-relaxed">
-                  "{cs.quote}"
-                </blockquote>
+                  <blockquote className="text-[var(--text-secondary)] font-medium mb-8 leading-relaxed">
+                    "{cs.quote}"
+                  </blockquote>
 
-                <div className="flex items-end justify-between gap-4 mb-8">
-                  <div>
-                    <div className="text-5xl font-extrabold n8n-gradient-text">{cs.metric}</div>
-                    <div className="text-sm font-medium text-[var(--text-secondary)] mt-2">{cs.metricLabel}</div>
+                  <div className="flex items-end justify-between gap-4 mb-8">
+                    <div>
+                      <div className="text-5xl font-extrabold n8n-gradient-text">{cs.metric}</div>
+                      <div className="text-sm font-medium text-[var(--text-secondary)] mt-2">{cs.metricLabel}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    {cs.products.map((product, j) => (
+                      <span key={j} className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${productColors[product] || productColors["Intégrations"]}`}>
+                        {product}
+                      </span>
+                    ))}
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {cs.products.map((product, j) => (
-                    <span key={j} className={`text-xs font-semibold px-3 py-1.5 rounded-full border ${productColors[product] || productColors["Intégrations"]}`}>
-                      {product}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+              </motion.div>
+            </Item>
           ))}
-        </div>
+        </Stagger>
 
-        <div className="text-center mt-12">
-          <button className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)] hover:text-rose-500 transition-colors">
+        <Reveal className="text-center mt-12" delay={0.1}>
+          <Link href="/pricing" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)] hover:text-rose-500 transition-colors">
             Voir toutes les études de cas
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </button>
-        </div>
+          </Link>
+        </Reveal>
       </div>
     </section>
   );

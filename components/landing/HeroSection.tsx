@@ -1,51 +1,114 @@
+"use client";
+
 import Link from "next/link";
+import { motion, useReducedMotion } from "motion/react";
+import { WordReveal } from "./motion";
+
+const EASE = [0.16, 1, 0.3, 1] as const;
 
 export default function HeroSection() {
+  const reduced = useReducedMotion();
+
   return (
-    <main className="flex-1 flex flex-col items-center text-center px-4 pt-32 pb-20 relative">
-      {/* Glow de fond */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-rose-500/20 blur-[120px] rounded-full pointer-events-none -z-10"></div>
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-orange-500/20 blur-[100px] rounded-full pointer-events-none -z-10"></div>
+    <main className="flex-1 flex flex-col items-center text-center px-4 pt-32 pb-20 relative overflow-hidden">
+      {/* Glow de fond animé */}
+      <motion.div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-rose-500/20 blur-[120px] rounded-full pointer-events-none -z-10"
+        animate={
+          reduced
+            ? { opacity: 0.6 }
+            : { opacity: [0.5, 0.9, 0.5], scale: [1, 1.08, 1] }
+        }
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-orange-500/20 blur-[100px] rounded-full pointer-events-none -z-10"
+        animate={
+          reduced
+            ? { opacity: 0.4 }
+            : { opacity: [0.3, 0.7, 0.3], scale: [1, 1.15, 1] }
+        }
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+      />
 
       {/* Badge */}
-      <div className="opacity-0 animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 text-xs text-rose-400 mb-8 shadow-sm">
+      <motion.div
+        initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.05, ease: EASE }}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 text-xs text-rose-400 mb-8 shadow-sm"
+      >
         <span className="font-bold">Nouveau :</span>
         <span>Plateforme IA Vocal Agentic en ligne</span>
-      </div>
+      </motion.div>
 
-      {/* H1 */}
-      <h1 className="opacity-0 animate-fade-up [animation-delay:100ms] text-5xl md:text-[5.5rem] font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.05] text-[var(--text-primary)]">
-        Le Softphone IA qui révolutionne votre <span className="n8n-gradient-text">relation client.</span>
-      </h1>
+      {/* H1 dévoilé mot à mot */}
+      <motion.h1
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="text-5xl md:text-[5.5rem] font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.05] text-[var(--text-primary)]"
+      >
+        <WordReveal text="Le Softphone IA qui révolutionne votre" delay={0.1} />
+        <span className="n8n-gradient-text">
+          <WordReveal text="relation client." delay={0.42} />
+        </span>
+      </motion.h1>
 
-      {/* Subtitle */}
-      <p className="opacity-0 animate-fade-up [animation-delay:200ms] text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 font-normal leading-relaxed">
+      {/* Sous-titre */}
+      <motion.p
+        initial={{ opacity: 0, y: reduced ? 0 : 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
+        className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
+      >
         Rejoignez plus de <span className="font-bold text-[var(--text-primary)]">10 000 entreprises</span> qui font confiance à Antigravity pour leurs communications vocales pilotées par l'IA.
-      </p>
+      </motion.p>
 
       {/* CTAs */}
-      <div className="opacity-0 animate-fade-up [animation-delay:300ms] flex flex-col sm:flex-row gap-4 items-center mb-10">
-        <Link href="/register" className="text-base font-semibold n8n-gradient-bg text-white px-8 py-4 rounded-full shadow-lg shadow-rose-500/30 hover:scale-105 transition-all flex items-center gap-2">
-          Essai gratuit 14 jours <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </Link>
-        <Link href="/pricing" className="text-base font-semibold text-[var(--text-primary)] bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] px-8 py-4 rounded-full transition-all flex items-center gap-2">
-          Voir les tarifs
-        </Link>
-        <Link href="/register" className="text-base font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-4 py-4 rounded-full transition-colors flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-          Parler à un expert
-        </Link>
-      </div>
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.72 } } }}
+        className="flex flex-col sm:flex-row gap-4 items-center mb-10"
+      >
+        {[
+          <Link key="cta1" href="/register" className="text-base font-semibold n8n-gradient-bg text-white px-8 py-4 rounded-full shadow-lg shadow-rose-500/30 hover:scale-105 transition-all flex items-center gap-2">
+            Essai gratuit 14 jours <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </Link>,
+          <Link key="cta2" href="/pricing" className="text-base font-semibold text-[var(--text-primary)] bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] px-8 py-4 rounded-full transition-all flex items-center gap-2">
+            Voir les tarifs
+          </Link>,
+          <Link key="cta3" href="/register" className="text-base font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-4 py-4 rounded-full transition-colors flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            Parler à un expert
+          </Link>,
+        ].map((node, i) => (
+          <motion.div key={i} variants={{ hidden: { opacity: 0, y: reduced ? 0 : 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } } }}>
+            {node}
+          </motion.div>
+        ))}
+      </motion.div>
 
       {/* Trust badges */}
-      <div className="opacity-0 animate-fade-up [animation-delay:350ms] flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-[var(--text-secondary)] mb-16">
+      <motion.div
+        initial={{ opacity: 0, y: reduced ? 0 : 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 1.0, ease: EASE }}
+        className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-[var(--text-secondary)] mb-16"
+      >
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>99,99% Disponibilité</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Déploiement en 2 minutes</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Sans carte bancaire requise</span>
-      </div>
+      </motion.div>
 
       {/* Hero Visual Mockup */}
-      <div className="opacity-0 animate-fade-up [animation-delay:400ms] w-full max-w-5xl relative mt-4">
+      <motion.div
+        initial={{ opacity: 0, y: reduced ? 0 : 48, scale: reduced ? 1 : 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.9, delay: 1.05, ease: EASE }}
+        className="w-full max-w-5xl relative mt-4"
+      >
         <div className="rounded-3xl bg-[#f3f4f6] p-4 md:p-8 overflow-hidden relative">
           <div className="rounded-xl bg-white shadow-2xl overflow-hidden border border-gray-200">
             {/* MacOS / Browser Header */}
@@ -93,7 +156,7 @@ export default function HeroSection() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }

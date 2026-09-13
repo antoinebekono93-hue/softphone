@@ -26,6 +26,9 @@ export default function LandingPage() {
         .animate-marquee {
           animation: marquee 30s linear infinite;
         }
+        .animate-marquee:hover, .animate-marquee-reverse:hover {
+          animation-play-state: paused;
+        }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }

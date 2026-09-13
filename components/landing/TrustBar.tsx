@@ -1,3 +1,7 @@
+"use client";
+
+import { Reveal } from "./motion";
+
 const companies = [
   "Vinci", "Bouygues", "Eiffage", "Spie", "Colas", "TotalEnergies", "AXA",
   "BNP Paribas", "LVMH", "L'Oréal", "Sanofi", "Dassault", "Thales",
@@ -11,9 +15,9 @@ export default function TrustBar() {
 
   return (
     <section className="py-12 border-y border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/20 overflow-hidden">
-      <p className="text-center text-xs font-bold tracking-[0.2em] text-[var(--text-secondary)] uppercase mb-8">
+      <Reveal className="text-center text-xs font-bold tracking-[0.2em] text-[var(--text-secondary)] uppercase mb-8" y={8}>
         Ils font confiance à notre technologie
-      </p>
+      </Reveal>
 
       {/* Row 1 - scrolling left */}
       <div className="relative w-full flex overflow-hidden mb-4">
