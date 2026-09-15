@@ -106,8 +106,9 @@ réapplique la connexion sélectionnée et désactive le transfert natif Telnyx.
 
 ## Déploiement
 
-La migration `20260910000000_add_telnyx_public_key` doit être appliquée avant le
-déploiement de cette version. La clé API, la clé publique et l'identifiant de
+Les migrations `20260910000000_add_telnyx_public_key` et
+`20260910010000_add_voicemail` doivent être appliquées avant le déploiement de
+cette version. La clé API, la clé publique et l'identifiant de
 connexion peuvent être enregistrés dans God Mode ; les variables
 `TELNYX_API_KEY`, `TELNYX_PUBLIC_KEY` et `TELNYX_SIP_CONNECTION_ID` restent des
 solutions de secours.
@@ -123,12 +124,28 @@ Les credentials APNS/FCM de la connexion servent aux applications mobiles
 natives. Pour une PWA fermée ou suspendue, ils ne remplacent pas à eux seuls un
 service push navigateur ; l'audit vérifie donc séparément le canal Pusher.
 
+## Répondeur réel
+
+Le répondeur se configure par numéro dans God Mode ou dans le compte client. Il
+nécessite le mode `APP` et un forfait avec `hasRecording=true`. Après le délai
+configuré, Vercel maintient une tâche différée qui répond à l'appel, lit le
+message d'accueil, joue le bip Telnyx et enregistre uniquement la piste de
+l'appelant pendant au maximum 120 secondes. Le worker PSTN et le cron GitHub
+restent un filet de récupération idempotent.
+
+Le webhook conserve le `recording_id`, et non uniquement l'URL temporaire. Au
+moment de l'écoute, le backend authentifié demande à Telnyx une URL de
+téléchargement fraîche et vérifie que le message appartient à l'organisation.
+
 ## Références officielles
 
 - [Fondamentaux Voice API](https://developers.telnyx.com/docs/voice/programmable-voice/voice-api-fundamentals)
 - [Réception des webhooks](https://developers.telnyx.com/docs/voice/programmable-voice/receiving-webhooks)
 - [Webhooks Voice API](https://developers.telnyx.com/docs/voice/programmable-voice/voice-api-webhooks)
 - [Commandes Voice API](https://developers.telnyx.com/docs/voice/programmable-voice/sending-commands)
+- [Démarrer un enregistrement](https://developers.telnyx.com/api-reference/call-commands/recording-start)
+- [Récupérer un enregistrement](https://developers.telnyx.com/api-reference/call-recordings/retrieve-a-call-recording)
+- [Événement de fin de synthèse vocale](https://developers.telnyx.com/api-reference/callbacks/call-speak-ended)
 - [Reprises de commandes](https://developers.telnyx.com/docs/voice/programmable-voice/command-retries)
 - [Connexion par credentials](https://developers.telnyx.com/api-reference/credential-connections/create-a-credential-connection)
 - [Profils vocaux sortants](https://developers.telnyx.com/api-reference/outbound-voice-profiles/create-an-outbound-voice-profile)
