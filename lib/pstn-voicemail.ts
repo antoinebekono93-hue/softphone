@@ -28,7 +28,7 @@ export async function executePstnVoicemail(callLogId: string) {
     },
   });
   const number = call?.phoneNumber;
-  if (!call || !number || !number.voicemailEnabled || number.incomingRoutingMode !== "APP" || !number.organization.pricingPlan?.hasRecording) {
+  if (!call || !number || !call.voicemailCommandId || !number.voicemailEnabled || number.incomingRoutingMode !== "APP" || !number.organization.pricingPlan?.hasRecording) {
     await prisma.callLog.updateMany({
       where: { id: callLogId, voicemailStatus: "STARTING" },
       data: { voicemailStatus: "CANCELLED" },
@@ -57,7 +57,7 @@ export async function startPstnVoicemailGreeting(callControlId: string) {
     where: { telnyxCallControlId: callControlId },
     include: { phoneNumber: true },
   });
-  if (!call || call.voicemailStatus !== "STARTING" || !call.phoneNumber) return false;
+  if (!call || !call.voicemailCommandId || call.voicemailStatus !== "STARTING" || !call.phoneNumber) return false;
 
   const moved = await prisma.callLog.updateMany({
     where: { id: call.id, voicemailStatus: "STARTING" },
@@ -77,13 +77,15 @@ export async function startPstnVoicemailGreeting(callControlId: string) {
   } catch (error) {
     console.error(`[PSTN Voicemail] greeting failed for ${callControlId}`, error);
     await prisma.callLog.update({ where: { id: call.id }, data: { voicemailStatus: "FAILED" } });
+    const telnyx = await getConfiguredTelnyxClient();
+    await telnyx.calls.actions.hangup(callControlId, { command_id: `${call.voicemailCommandId}-failure-hangup` }).catch(() => undefined);
     throw error;
   }
 }
 
 export async function startPstnVoicemailRecording(callControlId: string) {
   const call = await prisma.callLog.findUnique({ where: { telnyxCallControlId: callControlId } });
-  if (!call || call.voicemailStatus !== "GREETING") return false;
+  if (!call || !call.voicemailCommandId || call.voicemailStatus !== "GREETING") return false;
 
   const moved = await prisma.callLog.updateMany({
     where: { id: call.id, voicemailStatus: "GREETING" },
@@ -107,6 +109,8 @@ export async function startPstnVoicemailRecording(callControlId: string) {
   } catch (error) {
     console.error(`[PSTN Voicemail] recording failed for ${callControlId}`, error);
     await prisma.callLog.update({ where: { id: call.id }, data: { voicemailStatus: "FAILED" } });
+    const telnyx = await getConfiguredTelnyxClient();
+    await telnyx.calls.actions.hangup(callControlId, { command_id: `${call.voicemailCommandId}-failure-hangup` }).catch(() => undefined);
     throw error;
   }
 }
