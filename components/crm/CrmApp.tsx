@@ -85,21 +85,21 @@ export default function CrmApp() {
   const selectedOpportunity = opportunities.find(o => o.id === selectedRecordId);
 
   return (
-    <div className="h-full flex flex-col relative overflow-hidden bg-white p-8">
+    <div className="h-full flex flex-col relative overflow-hidden bg-[var(--bg-surface-solid)] p-8">
       {/* Odoo-style Topbar */}
-      <div className="flex items-center justify-between border-b border-gray-200 pb-4 mb-4">
-        <div className="flex items-center gap-2 text-gray-900">
+      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4 mb-4">
+        <div className="flex items-center gap-2 text-[var(--text-primary)]">
           <button 
             onClick={() => setSelectedRecordId(null)}
-            className="text-2xl font-extrabold hover:text-blue-600 transition-colors tracking-tight"
+            className="text-2xl font-extrabold hover:text-[var(--brand)] transition-colors tracking-tight"
           >
             Pipeline
           </button>
           
           {selectedOpportunity && (
             <>
-              <span className="text-gray-400 font-light text-2xl">/</span>
-              <span className="text-2xl font-bold text-gray-600 tracking-tight">{selectedOpportunity.name}</span>
+              <span className="text-[var(--text-muted)] font-light text-2xl">/</span>
+              <span className="text-2xl font-bold text-[var(--text-secondary)] tracking-tight">{selectedOpportunity.name}</span>
             </>
           )}
         </div>
@@ -117,7 +117,7 @@ export default function CrmApp() {
       {/* Main Area */}
       <div className="flex-1 overflow-hidden relative">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full text-gray-500 font-medium">Chargement...</div>
+          <div className="flex items-center justify-center h-full text-[var(--text-secondary)] font-medium">Chargement...</div>
         ) : selectedRecordId && selectedOpportunity ? (
           <RecordView 
             opportunity={selectedOpportunity} 

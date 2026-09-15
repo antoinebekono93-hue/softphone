@@ -54,7 +54,7 @@ export default async function CallDetailsPage({ params }: { params: Promise<{ id
       <div className="grid gap-6 md:grid-cols-3">
         {/* Colonne de gauche : QA & Info */}
         <div className="space-y-6 md:col-span-1">
-          <Card className={call.qaScore && call.qaScore >= 8 ? 'border-green-200 bg-green-50/50' : call.qaScore && call.qaScore < 5 ? 'border-red-200 bg-red-50/50' : ''}>
+          <Card className={call.qaScore && call.qaScore >= 8 ? 'border-emerald-500/30 bg-emerald-500/10' : call.qaScore && call.qaScore < 5 ? 'border-red-500/30 bg-red-500/10' : ''}>
             <CardHeader>
               <CardTitle className="text-lg">Assurance Qualité (QA)</CardTitle>
             </CardHeader>
@@ -62,13 +62,13 @@ export default async function CallDetailsPage({ params }: { params: Promise<{ id
               {call.qaScore !== null ? (
                 <div className="space-y-4">
                   <div className="text-5xl font-bold text-center">
-                    <span className={call.qaScore >= 8 ? 'text-green-600' : call.qaScore >= 5 ? 'text-yellow-600' : 'text-red-600'}>
+                    <span className={call.qaScore >= 8 ? 'text-green-400' : call.qaScore >= 5 ? 'text-yellow-400' : 'text-red-400'}>
                       {call.qaScore}
                     </span>
-                    <span className="text-2xl text-gray-400">/10</span>
+                    <span className="text-2xl text-[var(--text-muted)]">/10</span>
                   </div>
                   {call.qaFeedback && (
-                    <div className="text-sm bg-white p-3 rounded-md border shadow-sm">
+                    <div className="text-sm bg-[var(--bg-surface-hover)] p-3 rounded-md border shadow-sm">
                       <p className="font-medium mb-1">Feedback de l'IA :</p>
                       <p className="text-muted-foreground">{call.qaFeedback}</p>
                     </div>
@@ -115,10 +115,10 @@ export default async function CallDetailsPage({ params }: { params: Promise<{ id
                 <div className="space-y-4">
                   {transcriptSegments.map((seg, idx) => (
                     <div key={idx} className={`flex gap-3 ${seg.role === 'User' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${seg.role === 'User' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${seg.role === 'User' ? 'bg-blue-500/15 text-blue-400' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)]'}`}>
                         {seg.role === 'User' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                       </div>
-                      <div className={`p-3 rounded-lg max-w-[80%] ${seg.role === 'User' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-gray-100 text-gray-900 rounded-tl-none'}`}>
+                      <div className={`p-3 rounded-lg max-w-[80%] ${seg.role === 'User' ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-[var(--bg-surface-hover)] text-[var(--text-primary)] rounded-tl-none'}`}>
                         <p className="text-sm">{seg.text}</p>
                       </div>
                     </div>

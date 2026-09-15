@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAppCall } from "@/contexts/AppCallContext";
 import { useCallRouter } from "@/hooks/useCallRouter";
+import { StatusDot } from "@/components/ui/status-dot";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { AudioVisualizer } from "./AudioVisualizer";
+import { APP_STATUS_TEXT, appPulse, appTone } from "./status-labels";
 import { Phone, PhoneOff, Mic, MicOff, Users, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -58,12 +61,16 @@ export function AppCallPanel() {
 
   // Vue "en appel"
   if (inCall) {
-    const displayName = outboundPeer?.name || outboundPeer?.username || "Collegue";
+    const displayName = outboundPeer?.name || outboundPeer?.username || "Collègue";
     return (
       <div className="flex flex-col items-center justify-between w-full h-full py-6 gap-6">
         <div className="text-center">
-          <div className="text-sm font-medium text-[var(--text-secondary)] mb-2 tracking-widest uppercase">
-            {appCallStatus === "ACTIVE" || connected ? "Appel interne en cours" : "Appel interne..."}
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <StatusDot tone={appTone(appCallStatus)} pulse={appPulse(appCallStatus)} />
+            <span className="text-sm font-medium text-[var(--text-secondary)] tracking-widest uppercase">
+              {APP_STATUS_TEXT[appCallStatus]}
+            </span>
+            <StatusBadge status={appCallStatus} />
           </div>
           <div className="text-3xl font-semibold text-[var(--text-primary)]">{displayName}</div>
         </div>
@@ -73,7 +80,7 @@ export function AppCallPanel() {
           {connected && audioPlayFailed && (
             <button
               onClick={retryRemoteAudio}
-              className="absolute z-20 px-4 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold shadow-lg"
+              className="absolute z-20 px-4 py-2 rounded-lg bg-[var(--warning)] text-white text-xs font-semibold shadow-lg"
             >
               Activer le son
             </button>
@@ -84,15 +91,15 @@ export function AppCallPanel() {
           <button
             onClick={toggleMute}
             className={`w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95 ${
-              isMuted ? "bg-amber-500 text-white" : "bg-[var(--bg-surface-hover)] text-[var(--text-primary)]"
+              isMuted ? "bg-[var(--warning)] text-white" : "bg-[var(--bg-surface-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)]"
             }`}
-            aria-label="Muet"
+            aria-label={isMuted ? "Réactiver le micro" : "Couper le micro"}
           >
             {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
           </button>
           <button
             onClick={hangupAppCall}
-            className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-400 flex items-center justify-center shadow-lg active:scale-95"
+            className="w-16 h-16 rounded-full bg-[var(--danger)] hover:opacity-90 flex items-center justify-center shadow-[0_0_20px_color-mix(in_oklch,var(--danger)_25%,transparent)] active:scale-95"
             aria-label="Raccrocher"
           >
             <PhoneOff className="w-7 h-7 text-white" />
@@ -125,12 +132,12 @@ export function AppCallPanel() {
           onChange={(e) => setTarget(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleCall()}
           placeholder="ex. alice, 101, alice@acme.com"
-          className="flex-1 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
+          className="flex-1 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--brand)]/50 text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
         />
         <button
           onClick={handleCall}
           disabled={isCalling || !target.trim()}
-          className="p-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-white disabled:opacity-40 transition-colors"
+          className="p-2.5 rounded-lg bg-[var(--success)] hover:opacity-90 text-white disabled:opacity-40 transition-colors"
           aria-label="Appeler"
         >
           {isCalling ? <Loader2 className="w-5 h-5 animate-spin" /> : <Phone className="w-5 h-5" />}
@@ -160,13 +167,13 @@ export function AppCallPanel() {
                   {u.callExtension ? ` • ext ${u.callExtension}` : ""}
                 </span>
               </div>
-              <button
+<button
                 onClick={() => {
                   const dial = u.callUsername || u.callExtension || u.email || "";
                   if (dial) void routeCall(dial);
                   else toast.error("Ce collègue n'a pas d'identifiant d'appel");
                 }}
-                className="p-2 rounded-full bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors"
+                className="p-2 rounded-full bg-[var(--success)]/10 text-[var(--success)] hover:bg-[var(--success)] hover:text-white transition-colors"
                 aria-label={`Appeler ${u.name || u.callUsername}`}
               >
                 <Phone className="w-4 h-4" />

@@ -55,7 +55,7 @@ DelayNode.displayName = "DelayNode";
 
 export const AiAgentNode = memo(({ data }: any) => {
   return (
-    <div className="bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white rounded-xl shadow-xl border-2 border-violet-300 w-64">
+    <div className="bg-gradient-to-br from-cyan-500 to-violet-500 text-white rounded-xl shadow-xl border-2 border-violet-300 w-64">
       <Handle type="target" position={Position.Top} className="w-3 h-3 bg-white border-2 border-violet-500" />
       <div className="p-3 font-bold flex items-center gap-2 border-b border-white/20">
         <Bot className="w-4 h-4" /> Transfert à l'IA

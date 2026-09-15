@@ -358,7 +358,7 @@ export function ContactsClient({ initialContacts, initialGroups }: { initialCont
                       </td>
                       <td className="p-4">
                         {contact.leadScore !== null ? (
-                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${contact.leadScore >= 70 ? 'bg-rose-500/10 text-rose-500' : contact.leadScore >= 40 ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${contact.leadScore >= 70 ? 'bg-cyan-500/10 text-cyan-500' : contact.leadScore >= 40 ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                             {contact.leadScore >= 70 ? '🔥 Chaud' : contact.leadScore >= 40 ? '⭐ Tiède' : '❄️ Froid'} ({contact.leadScore})
                           </span>
                         ) : "-"}

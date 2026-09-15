@@ -82,7 +82,7 @@ export default function OnboardingNumberPage() {
           onClick={handleSearch}
           disabled={isSearching}
           size="lg"
-          className="flex justify-center items-center gap-2 text-[15px]"
+          className="flex justify-center items-center gap-2 text-[15px] rounded-full!"
         >
           {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           {isSearching ? "Searching" : "Search"}

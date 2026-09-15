@@ -121,7 +121,7 @@ export default function BillingPage() {
           <CardContent className="space-y-6">
             <div className="grid grid-cols-3 gap-4">
               {[10, 50, 100].map((amount) => (
-                <div key={amount} className="border rounded-xl p-4 flex flex-col items-center justify-center gap-2 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                <div key={amount} className="border rounded-xl p-4 flex flex-col items-center justify-center gap-2 bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-surface)] transition-colors">
                   <span className="text-2xl font-bold">{amount} €</span>
                   <div className="flex flex-col w-full gap-2 mt-2">
                     <Button 
@@ -165,9 +165,9 @@ export default function BillingPage() {
           ) : (
             <div className="space-y-4">
               {transactions.map((tx) => (
-                <div key={tx.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                <div key={tx.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-[var(--bg-surface-hover)] transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-full ${tx.type === 'CREDIT' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                    <div className={`p-2 rounded-full ${tx.type === 'CREDIT' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
                       {tx.type === 'CREDIT' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
                     </div>
                     <div>
@@ -176,7 +176,7 @@ export default function BillingPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`font-bold ${tx.type === 'CREDIT' ? 'text-green-600' : 'text-gray-900'}`}>
+                    <span className={`font-bold ${tx.type === 'CREDIT' ? 'text-emerald-400' : 'text-rose-400'}`}>
                       {tx.type === 'CREDIT' ? '+' : '-'}{Math.abs(tx.amount).toFixed(2)} €
                     </span>
                   </div>

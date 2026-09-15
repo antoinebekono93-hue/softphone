@@ -16,7 +16,7 @@ import {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-rose-500/30 font-sans overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-cyan-500/30 font-sans overflow-x-hidden">
       {/* CSS personnalisé pour les animations */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee {

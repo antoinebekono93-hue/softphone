@@ -56,7 +56,7 @@ export default function AbandonedCartsTable({ carts }: { carts: any[] }) {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                <thead className="text-xs text-[var(--text-secondary)] uppercase bg-[var(--bg-surface-hover)] border-b">
                   <tr>
                     <th className="px-6 py-3">ID Panier</th>
                     <th className="px-6 py-3">Date</th>
@@ -67,11 +67,11 @@ export default function AbandonedCartsTable({ carts }: { carts: any[] }) {
                 </thead>
                 <tbody>
                   {carts.map(cart => (
-                    <tr key={cart.id} className="bg-white border-b hover:bg-gray-50">
-                      <td className="px-6 py-4 font-mono text-xs text-gray-500">
+                    <tr key={cart.id} className="border-b hover:bg-[var(--bg-surface-hover)]">
+                      <td className="px-6 py-4 font-mono text-xs text-[var(--text-secondary)]">
                         {cart.externalCartId}
                       </td>
-                      <td className="px-6 py-4 text-gray-600">
+                      <td className="px-6 py-4 text-[var(--text-secondary)]">
                         {new Date(cart.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
                       <td className="px-6 py-4">
@@ -82,7 +82,7 @@ export default function AbandonedCartsTable({ carts }: { carts: any[] }) {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-gray-400 italic">Inconnu</span>
+                          <span className="text-[var(--text-muted)] italic">Inconnu</span>
                         )}
                       </td>
                       <td className="px-6 py-4 font-semibold">
@@ -90,11 +90,11 @@ export default function AbandonedCartsTable({ carts }: { carts: any[] }) {
                       </td>
                       <td className="px-6 py-4">
                         {cart.status === "RECOVERED" ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1 w-fit">
+                          <Badge className="bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/20 flex items-center gap-1 w-fit">
                             <CheckCircle className="w-3 h-3" /> Vente Récupérée
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 flex items-center gap-1 w-fit">
+                          <Badge variant="outline" className="text-[var(--warning)] border-[var(--warning)]/25 bg-[var(--warning)]/10 flex items-center gap-1 w-fit">
                             <AlertTriangle className="w-3 h-3" /> En cours de relance
                           </Badge>
                         )}

@@ -53,8 +53,8 @@ export function SoftphoneWorkspace() {
 
   const getCallIcon = (type: string) => {
     switch (type) {
-      case 'missed': return <PhoneMissed className="w-4 h-4 text-rose-500" />;
-      case 'incoming': return <PhoneIncoming className="w-4 h-4 text-emerald-500" />;
+      case 'missed': return <PhoneMissed className="w-4 h-4 text-[var(--danger)]" />;
+      case 'incoming': return <PhoneIncoming className="w-4 h-4 text-[var(--success)]" />;
       case 'outgoing': return <PhoneForwarded className="w-4 h-4 text-[var(--text-secondary)]" />;
       default: return null;
     }
@@ -70,10 +70,10 @@ export function SoftphoneWorkspace() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
             <input 
               type="text"
-              placeholder="Search contacts or numbers..."
+              placeholder="Rechercher contacts ou numéros…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
+              className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]/50 text-[var(--text-primary)] placeholder-[var(--text-secondary)]"
             />
           </div>
         </div>
@@ -82,19 +82,19 @@ export function SoftphoneWorkspace() {
         <div className="flex px-4 pt-2 border-b border-[var(--border-subtle)]">
           <button 
             onClick={() => setActiveTab('history')}
-            className={`flex-1 flex items-center justify-center gap-2 pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'history' ? 'border-cyan-500 text-cyan-500' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            className={`flex-1 flex items-center justify-center gap-2 pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'history' ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             <History className="w-4 h-4" /> Historique
           </button>
           <button 
             onClick={() => setActiveTab('contacts')}
-            className={`flex-1 flex items-center justify-center gap-2 pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'contacts' ? 'border-cyan-500 text-cyan-500' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            className={`flex-1 flex items-center justify-center gap-2 pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'contacts' ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             <Users className="w-4 h-4" /> Contacts
           </button>
           <button 
             onClick={() => setActiveTab('voicemail')}
-            className={`flex-1 flex items-center justify-center gap-2 pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'voicemail' ? 'border-cyan-500 text-cyan-500' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            className={`flex-1 flex items-center justify-center gap-2 pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'voicemail' ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
             <Voicemail className="w-4 h-4" /> Voicemails
           </button>
@@ -117,7 +117,7 @@ export function SoftphoneWorkspace() {
                       <div className="flex flex-col gap-1">
                         <div className="font-medium text-[var(--text-primary)] flex items-center gap-2">
                           {getCallIcon(call.status === 'missed' ? 'missed' : call.direction === 'inbound' ? 'incoming' : 'outgoing')}
-                          <span className={call.status === 'missed' ? 'text-rose-500' : ''}>{call.fromNumber} &rarr; {call.toNumber}</span>
+                          <span className={call.status === 'missed' ? 'text-[var(--danger)]' : ''}>{call.fromNumber} &rarr; {call.toNumber}</span>
                         </div>
                         <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
                           <span>{new Date(call.createdAt).toLocaleString()}</span>
@@ -129,7 +129,7 @@ export function SoftphoneWorkspace() {
                           )}
                         </div>
                       </div>
-                      <button className="p-2 text-[var(--text-secondary)] hover:text-cyan-500 hover:bg-cyan-500/10 rounded-full transition-colors">
+                      <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand)] hover:bg-[var(--brand)]/10 rounded-full transition-colors">
                         <PhoneForwarded className="w-4 h-4" />
                       </button>
                     </div>
@@ -156,7 +156,7 @@ export function SoftphoneWorkspace() {
                       <div className="flex items-center justify-between">
                         <div className="flex flex-col gap-1">
                           <div className="font-medium text-[var(--text-primary)] flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-500 flex items-center justify-center text-xs font-bold">
+                            <div className="w-6 h-6 rounded-full bg-[var(--brand)]/15 text-[var(--brand)] flex items-center justify-center text-xs font-bold">
                             {(contact.name || "?").charAt(0).toUpperCase()}
                             </div>
                             {contact.name || "Sans Nom"}
@@ -187,7 +187,7 @@ export function SoftphoneWorkspace() {
                           </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); routeCall(contact.phone); }}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-gradient-to-r from-emerald-500 to-emerald-400 hover:opacity-90 rounded-xl text-sm font-semibold text-white transition-opacity shadow-sm"
+                            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-[var(--success)] hover:opacity-90 rounded-xl text-sm font-semibold text-white transition-opacity shadow-sm"
                           >
                             <Phone className="w-4 h-4" />
                             Moi-même
@@ -214,7 +214,7 @@ export function SoftphoneWorkspace() {
                         <div className="font-semibold text-[var(--text-primary)]">{message.fromNumber}</div>
                         <div className="text-xs text-[var(--text-secondary)]">{new Date(message.startedAt).toLocaleString()}</div>
                       </div>
-                      <Voicemail className="w-5 h-5 text-cyan-500" />
+                      <Voicemail className="w-5 h-5 text-[var(--brand)]" />
                     </div>
                     <audio controls preload="none" className="w-full h-9" src={message.audioUrl}>
                       Votre navigateur ne peut pas lire cet enregistrement.
@@ -231,7 +231,7 @@ export function SoftphoneWorkspace() {
       {/* Right Panel: Dialpad/Softphone */}
       <div className="flex-1 flex items-center justify-center p-4 lg:p-8 relative bg-gradient-to-br from-[var(--bg-surface-hover)] to-[var(--bg-app)]">
         {/* Decorative background glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[var(--brand)]/5 blur-[100px] rounded-full pointer-events-none"></div>
         <Softphone />
       </div>
     </div>

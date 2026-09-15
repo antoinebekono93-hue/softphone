@@ -62,7 +62,7 @@ export default function EcommerceSettings({ initialStore, orgId }: { initialStor
             <select
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              className="w-full p-2 border rounded-md mb-4 bg-white"
+              className="w-full p-2 border rounded-md mb-4"
             >
               <option value="SHOPIFY">Shopify</option>
               <option value="WOOCOMMERCE">WooCommerce</option>
@@ -81,7 +81,7 @@ export default function EcommerceSettings({ initialStore, orgId }: { initialStor
             />
           </div>
 
-          <div className="flex items-center gap-2 p-4 bg-gray-50 rounded-lg border">
+          <div className="flex items-center gap-2 p-4 bg-[var(--bg-surface-hover)] rounded-lg border border-[var(--border-subtle)]">
             <input 
               type="checkbox" 
               id="discountToggle"
@@ -91,7 +91,7 @@ export default function EcommerceSettings({ initialStore, orgId }: { initialStor
             />
             <div className="flex-1">
               <label htmlFor="discountToggle" className="font-medium cursor-pointer">Autoriser l'IA à offrir une réduction</label>
-              <p className="text-sm text-gray-500">Si un client hésite à cause du prix lors d'un abandon de panier, l'IA proposera ce code promo.</p>
+              <p className="text-sm text-[var(--text-secondary)]">Si un client hésite à cause du prix lors d'un abandon de panier, l'IA proposera ce code promo.</p>
             </div>
             {aiDiscountEnabled && (
               <input 
@@ -107,7 +107,7 @@ export default function EcommerceSettings({ initialStore, orgId }: { initialStor
           <button 
             onClick={handleSave}
             disabled={isSaving}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-[var(--brand)] text-white rounded-md hover:opacity-90 disabled:opacity-50"
           >
             {isSaving ? "Enregistrement..." : "Enregistrer la configuration"}
           </button>
@@ -118,46 +118,46 @@ export default function EcommerceSettings({ initialStore, orgId }: { initialStor
             <h3 className="text-lg font-medium mb-4">Webhooks à configurer</h3>
             
             {platform === "SHOPIFY" && (
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Allez dans votre admin Shopify {'>'} Paramètres {'>'} Notifications {'>'} Webhooks et ajoutez ces deux webhooks :
               </p>
             )}
             
             {platform === "WOOCOMMERCE" && (
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Allez dans WordPress {'>'} WooCommerce {'>'} Réglages {'>'} Avancé {'>'} Webhooks et créez deux webhooks (Format: JSON) :
               </p>
             )}
 
             {platform === "CUSTOM" && (
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Demandez à votre développeur d'envoyer des requêtes POST (Content-Type: application/json) vers ces URLs :
               </p>
             )}
             
             <div className="space-y-4">
-              <div className="p-4 bg-gray-50 border rounded-md">
+              <div className="p-4 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-md">
                 <p className="font-semibold text-sm mb-1">1. Webhook Produit (Création/Mise à jour)</p>
                 <div className="flex items-center gap-2">
-                  <code className="text-xs bg-gray-200 p-2 rounded flex-1 overflow-x-auto">
+                  <code className="text-xs bg-[var(--bg-elevated)] p-2 rounded flex-1 overflow-x-auto">
                     {getWebhookUrl('catalog-sync')}
                   </code>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-[var(--text-secondary)] mt-2">
                   {platform === "SHOPIFY" && "Événement : Mise à jour de produit (Product update)"}
                   {platform === "WOOCOMMERCE" && "Sujet : Produit mis à jour"}
                   {platform === "CUSTOM" && "Payload attendu : { id: '123', title: 'Nom', variants: [{ price: '10', sku: 'A1', inventory_quantity: 5 }] }"}
                 </p>
               </div>
 
-              <div className="p-4 bg-gray-50 border rounded-md">
+              <div className="p-4 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-md">
                 <p className="font-semibold text-sm mb-1">2. Webhook Panier Abandonné</p>
                 <div className="flex items-center gap-2">
-                  <code className="text-xs bg-gray-200 p-2 rounded flex-1 overflow-x-auto">
+                  <code className="text-xs bg-[var(--bg-elevated)] p-2 rounded flex-1 overflow-x-auto">
                     {getWebhookUrl('abandoned-cart')}
                   </code>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-[var(--text-secondary)] mt-2">
                   {platform === "SHOPIFY" && "Événement : Création de panier abandonné (Cart creation)"}
                   {platform === "WOOCOMMERCE" && "Sujet : Action personnalisée (woocommerce_checkout_update_order_meta ou via un plugin de relance de panier)"}
                   {platform === "CUSTOM" && "Payload attendu : { id: 'CART1', total_price: '50', currency: 'EUR', customer: { phone: '+33600000000', first_name: 'Jean' }, line_items: [{ product_id: '123', title: 'Nom', quantity: 1, price: '50' }] }"}

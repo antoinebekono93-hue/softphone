@@ -77,12 +77,12 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
               key={plan.id}
               className={`rounded-[28px] p-7 relative flex flex-col transition-all hover:-translate-y-0.5 ${
                 plan.recommended
-                  ? "glass-panel-premium border-rose-500/40 shadow-[0_0_48px_rgba(255,87,87,0.12)]"
+                  ? "glass-panel-premium border-cyan-500/40 shadow-[0_0_48px_rgba(34,211,238,0.12)]"
                   : "glass-panel-premium"
               }`}
             >
               {plan.recommended && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 n8n-gradient-bg text-[11px] font-bold uppercase tracking-wider rounded-full text-white shadow-lg shadow-rose-500/30">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 n8n-gradient-bg text-[11px] font-bold uppercase tracking-wider rounded-full text-white shadow-lg shadow-cyan-500/30">
                   Recommandé
                 </div>
               )}
@@ -118,7 +118,7 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
                 href="/register"
                 className={`w-full py-3 rounded-full text-center text-sm font-bold transition-all mb-6 ${
                   plan.recommended
-                    ? "n8n-gradient-bg text-white shadow-lg shadow-rose-500/25 hover:scale-[1.02] active:scale-95"
+                    ? "n8n-gradient-bg text-white shadow-lg shadow-cyan-500/25 hover:scale-[1.02] active:scale-95"
                     : "bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)]"
                 }`}
               >

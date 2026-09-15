@@ -86,7 +86,7 @@ export default function BillingClient({
       {/* Wallet Balance Card */}
       <div className="glass-panel-premium rounded-[32px] p-8 border border-white/10 space-y-6">
         <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-orange-500"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4H6a2 2 0 01-2-2V6"/><path d="M20 12v4h-2a2 2 0 01-2-2v-2h4z"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--accent-primary)]"><path d="M20 12V8H6a2 2 0 01-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4H6a2 2 0 01-2-2V6"/><path d="M20 12v4h-2a2 2 0 01-2-2v-2h4z"/></svg>
           Wallet Balance
         </h2>
         <div className="text-5xl font-black text-transparent bg-clip-text n8n-gradient-text">
@@ -104,7 +104,7 @@ export default function BillingClient({
               <button
                 key={amount}
                 onClick={() => setCustomAmount(amount.toString())}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${parseInt(customAmount) === amount ? 'bg-orange-500/20 text-orange-400 border border-orange-500/50' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:text-white'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${parseInt(customAmount) === amount ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:text-[var(--text-primary)]'}`}
               >
                 +${amount}
               </button>
@@ -116,7 +116,7 @@ export default function BillingClient({
                 min="5"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
-                className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 pl-7 pr-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-orange-500 transition-colors"
+                className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg py-2 pl-7 pr-3 text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
               />
             </div>
           </div>
@@ -125,14 +125,14 @@ export default function BillingClient({
             <button 
               onClick={() => handleStripeCheckout(parseInt(customAmount))}
               disabled={isPending || !parseInt(customAmount) || parseInt(customAmount) < 5}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium n8n-gradient-bg shadow-lg shadow-rose-500/20 hover:scale-105 text-white transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium n8n-gradient-bg shadow-lg shadow-cyan-500/20 hover:scale-105 text-white transition-all disabled:opacity-50"
             >
               {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Stripe"}
             </button>
             <button 
               onClick={() => handleFlutterwaveCheckout(parseInt(customAmount))}
               disabled={isPending || !parseInt(customAmount) || parseInt(customAmount) < 5}
-              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90 text-white transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white transition-all disabled:opacity-50"
             >
               {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Flutterwave"}
             </button>
@@ -143,7 +143,7 @@ export default function BillingClient({
       {/* Current Plan Card */}
       <div className="glass-panel-premium rounded-[32px] p-8 border border-white/10 flex flex-col">
         <h2 className="text-xl font-bold text-[var(--text-primary)] flex items-center gap-2 mb-6">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-rose-500"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-[var(--accent-primary)]"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
           Current Plan
         </h2>
         

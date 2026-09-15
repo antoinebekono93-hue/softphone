@@ -51,17 +51,17 @@ export default function TicketActions({
             Résoudre & CSAT
           </button>
         )}
-        <button className="px-4 py-2 bg-black text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors">
+        <button className="px-4 py-2 bg-[var(--bg-surface-solid)] text-[var(--text-primary)] text-sm font-medium rounded-md hover:bg-[var(--bg-surface-hover)] transition-colors">
           Prendre en charge
         </button>
       </div>
 
       {csatScore !== null && (
-        <div className="flex items-center gap-1 mt-2 text-yellow-500 bg-yellow-50 px-3 py-1 rounded-full text-sm font-medium border border-yellow-200">
+        <div className="flex items-center gap-1 mt-2 text-yellow-500 bg-yellow-500/10 px-3 py-1 rounded-full text-sm font-medium border border-yellow-500/20">
           {[...Array(5)].map((_, i) => (
-            <Star key={i} className={`w-4 h-4 ${i < csatScore ? 'fill-current' : 'text-gray-300'}`} />
+            <Star key={i} className={`w-4 h-4 ${i < csatScore ? 'fill-current' : 'text-[var(--text-muted)]'}`} />
           ))}
-          <span className="ml-1 text-gray-700">Client satisfait</span>
+          <span className="ml-1 text-[var(--text-secondary)]">Client satisfait</span>
         </div>
       )}
     </div>

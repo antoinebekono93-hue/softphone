@@ -11,7 +11,7 @@ type ThemeProviderState = {
 };
 
 const initialState: ThemeProviderState = {
-  theme: "light",
+  theme: "dark",
   setTheme: () => null,
   toggleTheme: () => null,
 };
@@ -41,11 +41,11 @@ export function ThemeProvider({
   useEffect(() => {
     if (!mounted) return;
     const root = window.document.documentElement;
-    
-    if (theme === "dark") {
-      root.setAttribute("data-theme", "dark");
+
+    if (theme === "light") {
+      root.setAttribute("data-theme", "light");
     } else {
-      root.removeAttribute("data-theme");
+      root.setAttribute("data-theme", "dark");
     }
   }, [theme, mounted]);
 

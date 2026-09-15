@@ -1,10 +1,14 @@
 import * as React from "react"
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  hoverable?: boolean
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, hoverable = false, ...props }, ref) => (
     <div
       ref={ref}
-      className={`rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[var(--shadow-panel)] transition-all duration-300 ${className || ""}`}
+      className={`rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[var(--shadow-panel)] transition-all duration-300 ${hoverable ? "hover:-translate-y-0.5 hover:border-[var(--border-glow)] hover:shadow-[var(--shadow-hover)]" : ""} ${className || ""}`}
       {...props}
     />
   )

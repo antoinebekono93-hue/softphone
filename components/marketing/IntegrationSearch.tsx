@@ -54,7 +54,7 @@ export default function IntegrationSearch({ integrations }: { integrations: Inte
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Rechercher une intégration… (HubSpot, Notion, WhatsApp, Webhook…)"
-            className="w-full rounded-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] py-3 pl-11 pr-5 text-sm font-medium text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-rose-500/50 focus:ring-2 focus:ring-rose-500/20"
+            className="w-full rounded-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] py-3 pl-11 pr-5 text-sm font-medium text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
           />
         </div>
       </div>
@@ -66,7 +66,7 @@ export default function IntegrationSearch({ integrations }: { integrations: Inte
             onClick={() => setCategory(c)}
             className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
               category === c
-                ? "n8n-gradient-bg text-white shadow-lg shadow-rose-500/20"
+                ? "n8n-gradient-bg text-white shadow-lg shadow-cyan-500/20"
                 : "bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             }`}
           >
@@ -95,7 +95,7 @@ export default function IntegrationSearch({ integrations }: { integrations: Inte
                 </span>
               )}
               {integration.status === "recommandee" && (
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400">
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-400">
                   Recommandée
                 </span>
               )}
@@ -117,7 +117,7 @@ export default function IntegrationSearch({ integrations }: { integrations: Inte
 
       {(filtered.length > 0 || query === "") && (
         <div className="text-center mt-10 text-sm text-[var(--text-secondary)] font-medium">
-          {filtered.length} intégration{filtered.length > 1 ? "s" : ""} disponible{filtered.length > 1 ? "s" : ""} · Besoin autre chose ? <span className="text-rose-400 font-bold">Demandez une intégration</span>
+          {filtered.length} intégration{filtered.length > 1 ? "s" : ""} disponible{filtered.length > 1 ? "s" : ""} · Besoin autre chose ? <span className="text-cyan-400 font-bold">Demandez une intégration</span>
         </div>
       )}
     </div>

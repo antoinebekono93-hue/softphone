@@ -27,21 +27,21 @@ export default function ProductShowcase() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="h-full rounded-[32px] glass-panel-premium p-8 relative overflow-hidden group"
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Transcriptions IA en direct</h3>
             <p className="text-[var(--text-secondary)] font-medium">Lisez la conversation avant même de décrocher ou générez des résumés d'appels automatiquement.</p>
 
             <motion.div
               animate={reduced ? undefined : { y: [0, -6, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute bottom-[-20px] right-8 w-80 h-48 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/90 backdrop-blur-xl p-4 shadow-[0_10px_30px_rgba(255,87,87,0.1)]"
+              className="absolute bottom-[-20px] right-8 w-80 h-48 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/90 backdrop-blur-xl p-4 shadow-[0_10px_30px_rgba(34,211,238,0.1)]"
             >
               <div className="flex gap-3 mb-3">
-                <div className="w-6 h-6 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-500 text-[10px] font-bold border border-rose-500/30">IA</div>
+                <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-500 text-[10px] font-bold border border-cyan-500/30">IA</div>
                 <div className="text-xs text-[var(--text-primary)] leading-relaxed font-medium">"Bonjour, j'appelle concernant le devis pour le chantier de rénovation..."</div>
               </div>
               <div className="flex gap-3">
-                <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-500 text-[10px] font-bold border border-orange-500/30">JD</div>
+                <div className="w-6 h-6 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-500 text-[10px] font-bold border border-violet-500/30">JD</div>
                 <div className="text-xs text-[var(--text-primary)] leading-relaxed font-medium">"Bien sûr, je peux vous aider. Quel est le numéro de référence ?"</div>
               </div>
             </motion.div>
@@ -58,8 +58,8 @@ export default function ProductShowcase() {
             <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Présence Globale</h3>
             <p className="text-[var(--text-secondary)] mb-8 font-medium">Numéros locaux dans plus de 50 pays.</p>
             <div className="w-full aspect-square rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex items-center justify-center relative shadow-inner">
-              <div className="absolute w-full h-full border border-orange-500 rounded-full animate-ping opacity-20"></div>
-              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              <div className="absolute w-full h-full border border-violet-500 rounded-full animate-ping opacity-20"></div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
             </div>
           </motion.div>
         </Item>
@@ -74,7 +74,7 @@ export default function ProductShowcase() {
             <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Boîte Partagée</h3>
             <p className="text-[var(--text-secondary)] font-medium">Collaborez sur les SMS et messages vocaux en équipe.</p>
             <div className="absolute bottom-8 left-8 flex -space-x-4">
-              <div className="w-12 h-12 rounded-full border-2 border-[var(--bg-surface-solid)] bg-gradient-to-tr from-rose-400 to-orange-500 shadow-md"></div>
+              <div className="w-12 h-12 rounded-full border-2 border-[var(--bg-surface-solid)] bg-gradient-to-tr from-cyan-400 to-blue-500 shadow-md"></div>
               <div className="w-12 h-12 rounded-full border-2 border-[var(--bg-surface-solid)] bg-gradient-to-tr from-violet-400 to-fuchsia-500 shadow-md"></div>
               <div className="w-12 h-12 rounded-full border-2 border-[var(--bg-surface-solid)] bg-[var(--bg-surface-solid)] backdrop-blur-md flex items-center justify-center text-xs font-bold text-[var(--text-primary)] shadow-md">+3</div>
             </div>
@@ -94,22 +94,22 @@ export default function ProductShowcase() {
               <motion.div
                 animate={reduced ? undefined : { height: ["4rem", "6.5rem", "4rem"] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0 }}
-                className="w-8 h-16 rounded-md bg-rose-500/30"
+                className="w-8 h-16 rounded-md bg-cyan-500/30"
               ></motion.div>
               <motion.div
                 animate={reduced ? undefined : { height: ["6rem", "9rem", "6rem"] }}
                 transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut", delay: 0.3 }}
-                className="w-8 h-24 rounded-md bg-rose-500/50"
+                className="w-8 h-24 rounded-md bg-cyan-500/50"
               ></motion.div>
               <motion.div
                 animate={reduced ? undefined : { height: ["3rem", "5rem", "3rem"] }}
                 transition={{ duration: 3.1, repeat: Infinity, ease: "easeInOut", delay: 0.6 }}
-                className="w-8 h-12 rounded-md bg-orange-500/30"
+                className="w-8 h-12 rounded-md bg-blue-500/30"
               ></motion.div>
               <motion.div
                 animate={reduced ? undefined : { height: ["5rem", "7.5rem", "5rem"] }}
                 transition={{ duration: 3.8, repeat: Infinity, ease: "easeInOut", delay: 0.9 }}
-                className="w-8 h-20 rounded-md bg-orange-500/50"
+                className="w-8 h-20 rounded-md bg-blue-500/50"
               ></motion.div>
             </div>
           </motion.div>
@@ -124,7 +124,7 @@ export default function ProductShowcase() {
           >
             <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Synchronisation CRM (Bientôt)</h3>
             <p className="text-[var(--text-secondary)] font-medium">Enregistrez vos appels directement dans HubSpot et Salesforce sans aucun effort manuel.</p>
-            <div className="absolute right-0 bottom-0 w-2/3 h-2/3 bg-gradient-to-tl from-rose-500/10 to-transparent"></div>
+            <div className="absolute right-0 bottom-0 w-2/3 h-2/3 bg-gradient-to-tl from-cyan-500/10 to-transparent"></div>
           </motion.div>
         </Item>
       </Stagger>

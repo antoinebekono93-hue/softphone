@@ -110,7 +110,7 @@ export default function CreateCampaignPage() {
 
             <div className="space-y-2">
               <Label>Contacts (Fichier CSV)</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition-colors">
+              <div className="border-2 border-dashed border-[var(--border-default)] rounded-lg p-6 text-center hover:bg-[var(--bg-surface-hover)] transition-colors">
                 <Input 
                   type="file" 
                   accept=".csv" 

@@ -40,7 +40,7 @@ const showcase = [
       "Rendez-vous confirmés par SMS automatiquement",
       "Chaque échange analysé pour améliorer votre pipeline",
     ],
-    accent: "from-rose-500 to-orange-500",
+    accent: "from-cyan-500 to-blue-500",
   },
   {
     title: "Sans réceptionniste IA",
@@ -264,7 +264,7 @@ export default function AIReceptionistPage() {
     <MarketingLayout>
       <PageHero
         badge="Répondeur IA 24/7 · Module complémentaire"
-        accent="rose"
+        accent="cyan"
         title={
           <>
             Fini les appels manqués : <span className="n8n-gradient-text">votre réceptionniste IA répond en 0,5 seconde</span>
@@ -272,7 +272,7 @@ export default function AIReceptionistPage() {
         }
         subtitle="Il décroche à votre place, qualifie, prend les rendez-vous et protège votre marque — jour et nuit, en 30+ langues."
       >
-        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Activer le répondeur IA
         </Link>
         <Link href="/pricing" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -293,7 +293,7 @@ export default function AIReceptionistPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {benefits.map((b) => (
             <div key={b.title} className="rounded-[24px] glass-panel-premium p-6 flex flex-col gap-4">
-              <div className="w-12 h-12 rounded-2xl n8n-gradient-bg flex items-center justify-center text-white shadow-[0_0_20px_rgba(255,87,87,0.3)]">
+              <div className="w-12 h-12 rounded-2xl n8n-gradient-bg flex items-center justify-center text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={b.icon} /></svg>
               </div>
               <h3 className="text-base font-extrabold text-[var(--text-primary)]">{b.title}</h3>
@@ -320,7 +320,7 @@ export default function AIReceptionistPage() {
         <SectionHeading title="Le même 9h-18h, mais sans aucun appel perdu" />
         <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
           {showcase.map((col) => (
-            <div key={col.title} className="rounded-[24px] p-8 border border-[var(--border-subtle)]" style={{ background: col.accent === "from-rose-500 to-orange-500" ? "rgba(255,79,79,0.06)" : "var(--bg-surface-hover)" }}>
+            <div key={col.title} className="rounded-[24px] p-8 border border-[var(--border-subtle)]" style={{ background: col.accent === "from-cyan-500 to-blue-500" ? "rgba(34,211,238,0.06)" : "var(--bg-surface-hover)" }}>
               <h3 className="text-xl font-extrabold text-[var(--text-primary)] mb-6">{col.title}</h3>
               <ul className="space-y-4">
                 {col.points.map((p) => (
@@ -363,7 +363,7 @@ export default function AIReceptionistPage() {
         <SectionHeading title="Sous le capot, une IA de production" subtitle="Des fonctionnalités conçues pour les entreprises, pas les démos." />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {deepFeatures.map((f) => (
-            <div key={f.title} className="rounded-[20px] glass-panel-premium p-6 flex flex-col gap-3 border-t-2 border-t-rose-500/40">
+            <div key={f.title} className="rounded-[20px] glass-panel-premium p-6 flex flex-col gap-3 border-t-2 border-t-cyan-500/40">
               <h3 className="text-sm font-extrabold text-[var(--text-primary)]">{f.title}</h3>
               <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">{f.description}</p>
             </div>

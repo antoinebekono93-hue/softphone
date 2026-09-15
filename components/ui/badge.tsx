@@ -24,7 +24,7 @@ const variantClass: Record<BadgeVariant, string> = {
   danger: "badge-glass-red",
   destructive: "badge-glass-red",
   outline: "bg-transparent border-[var(--border-subtle)] text-[var(--text-secondary)]",
-  warning: "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
+  warning: "badge-glass-amber",
 };
 
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(

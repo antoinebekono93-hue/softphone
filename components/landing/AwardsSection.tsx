@@ -5,8 +5,8 @@ import { Item, Reveal, Stagger } from "./motion";
 
 const awards = [
   { icon: "★", title: "Leader Magic Quadrant", subtitle: "Gartner · 12e année consécutive", color: "text-yellow-500" },
-  { icon: "📈", title: "Momentum Leader", subtitle: "G2 · Hiver 2026", color: "text-rose-500" },
-  { icon: "🏆", title: "Meilleurs Résultats", subtitle: "G2 · 2026", color: "text-orange-500" },
+  { icon: "📈", title: "Momentum Leader", subtitle: "G2 · Hiver 2026", color: "text-cyan-500" },
+  { icon: "🏆", title: "Meilleurs Résultats", subtitle: "G2 · 2026", color: "text-blue-500" },
   { icon: "❤️", title: "Adoption Utilisateurs", subtitle: "G2 · Meilleure note", color: "text-emerald-500" },
   { icon: "🛠️", title: "Installation la plus simple", subtitle: "G2 · 2026", color: "text-violet-500" },
   { icon: "✓", title: "Buyer's Choice", subtitle: "TrustRadius · 2026", color: "text-cyan-500" }

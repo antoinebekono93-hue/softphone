@@ -116,7 +116,7 @@ export interface DrawerProps {
   description?: React.ReactNode;
   children?: React.ReactNode;
   footer?: React.ReactNode;
-  side?: "right" | "left";
+  side?: "right" | "left" | "bottom";
   className?: string;
 }
 
@@ -133,7 +133,10 @@ export function Drawer({
   useModalBehavior(open, onClose);
   if (!open || typeof document === "undefined") return null;
 
-  const sideClass = side === "right" ? "right-0" : "left-0";
+  const isBottom = side === "bottom";
+  const sideClass = isBottom
+    ? "bottom-0 inset-x-0 max-h-[85vh] flex-col rounded-t-2xl border-b-0"
+    : `top-0 ${side === "right" ? "right-0" : "left-0"} h-full max-w-md flex-col border-l`;
 
   return createPortal(
     <div
@@ -148,7 +151,7 @@ export function Drawer({
         aria-hidden="true"
       />
       <div
-        className={`absolute top-0 ${sideClass} flex h-full max-w-md flex-col border-l border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-2xl ${className || ""}`}
+        className={`absolute flex ${sideClass} border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-2xl ${className || ""}`}
       >
         {title && <ModalHeader title={title} description={description} onClose={onClose} />}
         <div className="flex-1 overflow-y-auto p-5">{children}</div>

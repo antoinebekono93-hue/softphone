@@ -990,7 +990,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
               <button 
                 onClick={handleSearchNumbers}
                 disabled={isSearching}
-                className="px-6 py-2 bg-[var(--bg-surface-hover)] hover:bg-white/10 text-white rounded-lg font-medium border border-[var(--border-subtle)] transition-colors flex items-center gap-2 h-10"
+                className="px-6 py-2 bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-elevated)] text-white rounded-lg font-medium border border-[var(--border-subtle)] transition-colors flex items-center gap-2 h-10"
               >
                 {isSearching ? (
                   <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
@@ -1153,7 +1153,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
               </div>
               <button 
                 onClick={handleRefreshLogs}
-                className="px-4 py-2 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium hover:bg-white/5 transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg text-sm font-medium hover:bg-[var(--bg-elevated)] transition-colors flex items-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 Refresh

@@ -60,7 +60,7 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
           <h1 className="text-3xl font-bold tracking-tight mb-2">Tenants (Organizations)</h1>
           <p className="text-[var(--text-secondary)]">Manage organizations, their limits, and subscriptions.</p>
         </div>
-        <button className="px-4 py-2 bg-red-600 hover:bg-red-500 text-[var(--text-primary)] rounded-lg text-sm font-bold transition-colors shadow-[0_0_15px_rgba(220,38,38,0.3)]">
+        <button className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90 text-white rounded-lg text-sm font-bold transition-colors shadow-[0_0_15px_rgba(34,211,238,0.3)]">
           + New Tenant
         </button>
       </div>
@@ -199,7 +199,7 @@ export function TenantsClient({ initialTenants, plans }: { initialTenants: Tenan
                 </div>
               </div>
               <div className="pt-4 border-t border-[var(--border-subtle)] mt-4">
-                <button type="submit" disabled={isPending} className="w-full py-3 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium flex justify-center items-center gap-2">
+                <button type="submit" disabled={isPending} className="w-full py-3 rounded-lg bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90 text-white font-medium flex justify-center items-center gap-2">
                   {isPending && <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
                   Save Changes
                 </button>

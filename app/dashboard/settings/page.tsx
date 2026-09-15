@@ -59,7 +59,7 @@ export default async function SettingsPage() {
             </div>
           </div>
           <div className="mt-6 flex justify-end">
-            <button className="px-5 py-2.5 bg-white text-black font-medium rounded-lg hover:bg-gray-200 transition-colors">Save Changes</button>
+            <button className="px-5 py-2.5 bg-[var(--bg-surface-solid)] text-[var(--text-primary)] font-medium rounded-lg hover:bg-[var(--bg-surface-hover)] transition-colors">Save Changes</button>
           </div>
         </Card>
 

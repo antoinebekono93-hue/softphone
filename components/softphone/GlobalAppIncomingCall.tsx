@@ -1,6 +1,8 @@
 "use client";
 
 import { useAppCall } from "@/contexts/AppCallContext";
+import { StatusDot } from "@/components/ui/status-dot";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Phone, PhoneOff } from "lucide-react";
 
 /**
@@ -22,17 +24,19 @@ export function GlobalAppIncomingCall() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="w-full max-w-md rounded-3xl glass-panel bg-[var(--bg-surface-solid)] p-10 flex flex-col items-center relative overflow-hidden animate-in zoom-in-95 duration-300 shadow-2xl">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-emerald-500/10 blur-[60px] rounded-full pointer-events-none" />
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl glass-panel bg-[var(--bg-glass)] p-6 sm:p-10 flex flex-col items-center relative animate-in zoom-in-95 duration-300 shadow-2xl">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-[var(--success)]/10 blur-[60px] rounded-full pointer-events-none" />
 
-        <div className="text-emerald-500 font-medium text-sm tracking-widest uppercase mb-8 animate-pulse">
-          Appel interne entrant
+        <div className="flex items-center gap-2 text-[var(--success)] font-medium text-sm tracking-widest uppercase mb-8">
+          <StatusDot tone="info" pulse />
+          <span>Appel entrant interne</span>
+          <StatusBadge status="RINGING" />
         </div>
 
         <div className="relative mb-8">
-          <div className="absolute inset-0 rounded-full border border-emerald-400/40 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-          <div className="absolute inset-0 rounded-full border border-emerald-400/20 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite_0.5s]" />
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.4)] relative z-10">
+          <div className="absolute inset-0 rounded-full border border-[var(--success)]/40 animate-signal-ring" />
+          <div className="absolute inset-0 rounded-full border border-[var(--success)]/20 animate-signal-ring" style={{ animationDelay: "0.5s" }} />
+          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[var(--success)] to-[var(--telecom)] flex items-center justify-center shadow-[0_0_30px_color-mix(in_oklch,var(--success)_40%,transparent)] relative z-10">
             <span className="text-4xl font-bold text-white">
               {(displayName.charAt(0) || "?").toUpperCase()}
             </span>
@@ -50,7 +54,7 @@ export function GlobalAppIncomingCall() {
           <div className="flex flex-col items-center gap-3">
             <button
               onClick={declineAppCall}
-              className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-400 flex items-center justify-center shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all active:scale-95"
+              className="w-16 h-16 rounded-full bg-[var(--danger)] hover:opacity-90 flex items-center justify-center shadow-[0_0_20px_color-mix(in_oklch,var(--danger)_30%,transparent)] transition-all active:scale-95"
               aria-label="Refuser"
             >
               <PhoneOff className="w-7 h-7 text-white" />
@@ -61,7 +65,7 @@ export function GlobalAppIncomingCall() {
           <div className="flex flex-col items-center gap-3">
             <button
               onClick={acceptAppCall}
-              className="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95"
+              className="w-16 h-16 rounded-full bg-[var(--success)] hover:opacity-90 flex items-center justify-center shadow-[0_0_20px_color-mix(in_oklch,var(--success)_30%,transparent)] transition-all active:scale-95"
               aria-label="Accepter"
             >
               <Phone className="w-7 h-7 text-white" />

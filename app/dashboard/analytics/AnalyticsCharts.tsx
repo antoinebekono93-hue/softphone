@@ -25,8 +25,8 @@ export default function AnalyticsCharts({ data }: { data: ChartData[] }) {
                 itemStyle={{ color: 'var(--text-primary)' }}
               />
               <Legend />
-              <Bar dataKey="messages" name="Messages" fill="#06b6d4" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="calls" name="Appels" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="messages" name="Messages" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="calls" name="Appels" fill="#06b6d4" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -45,8 +45,8 @@ export default function AnalyticsCharts({ data }: { data: ChartData[] }) {
                 itemStyle={{ color: 'var(--text-primary)' }}
               />
               <Legend />
-              <Line type="monotone" dataKey="messages" name="Messages" stroke="#06b6d4" strokeWidth={3} dot={false} />
-              <Line type="monotone" dataKey="calls" name="Appels" stroke="#8b5cf6" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="messages" name="Messages" stroke="#8b5cf6" strokeWidth={3} dot={false} />
+              <Line type="monotone" dataKey="calls" name="Appels" stroke="#06b6d4" strokeWidth={3} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>

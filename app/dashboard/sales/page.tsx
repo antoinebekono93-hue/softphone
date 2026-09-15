@@ -50,15 +50,15 @@ export default async function SalesPage() {
             ) : (
               <div className="space-y-4">
                 {quotes.map(quote => (
-                  <div key={quote.id} className="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50/50">
+                  <div key={quote.id} className="flex justify-between items-center p-4 border rounded-lg hover:bg-[var(--bg-surface-hover)]">
                     <div>
                       <p className="font-medium">{quote.contact.name} <span className="text-muted-foreground font-normal">({quote.contact.phone})</span></p>
                       <p className="text-sm text-muted-foreground">{quote.description}</p>
-                      <p className="text-xs text-gray-400 mt-1">{quote.createdAt.toLocaleDateString()}</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">{quote.createdAt.toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-lg">{quote.amount} €</p>
-                      <Badge variant="outline" className={quote.status === 'SENT' ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-gray-600'}>
+                      <Badge variant="outline" className={quote.status === 'SENT' ? 'text-[var(--brand)] border-[var(--brand)]/30 bg-[var(--brand)]/10' : 'text-[var(--text-secondary)]'}>
                         {quote.status}
                       </Badge>
                     </div>
@@ -85,15 +85,15 @@ export default async function SalesPage() {
             ) : (
               <div className="space-y-4">
                 {invoices.map(invoice => (
-                  <div key={invoice.id} className="flex justify-between items-center p-4 border rounded-lg hover:bg-gray-50/50">
+                  <div key={invoice.id} className="flex justify-between items-center p-4 border rounded-lg hover:bg-[var(--bg-surface-hover)]">
                     <div>
                       <p className="font-medium">{invoice.contact.name} <span className="text-muted-foreground font-normal">({invoice.contact.phone})</span></p>
                       <p className="text-sm text-muted-foreground">{invoice.description}</p>
-                      <p className="text-xs text-gray-400 mt-1">{invoice.createdAt.toLocaleDateString()}</p>
+                      <p className="text-xs text-[var(--text-muted)] mt-1">{invoice.createdAt.toLocaleDateString()}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-lg">{invoice.amount} €</p>
-                      <Badge variant="outline" className={invoice.status === 'SENT' ? 'text-blue-600 border-blue-200 bg-blue-50' : 'text-gray-600'}>
+                      <Badge variant="outline" className={invoice.status === 'SENT' ? 'text-[var(--brand)] border-[var(--brand)]/30 bg-[var(--brand)]/10' : 'text-[var(--text-secondary)]'}>
                         {invoice.status}
                       </Badge>
                     </div>

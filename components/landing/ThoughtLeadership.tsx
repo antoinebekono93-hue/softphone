@@ -10,7 +10,7 @@ const resources = [
     description: "Téléchargez notre rapport exclusif sur les tendances de l'IA conversationnelle et comment les entreprises s'y adaptent.",
     cta: "Télécharger le rapport",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-rose-500"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-500"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>
     )
   },
   {
@@ -19,7 +19,7 @@ const resources = [
     description: "Rejoignez notre session interactive avec nos experts produit pour découvrir comment automatiser vos conversations.",
     cta: "S'inscrire au webinaire",
     icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-500"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v6l4 2-4 2v6"/></svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-500"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 3v6l4 2-4 2v6"/></svg>
     )
   },
   {

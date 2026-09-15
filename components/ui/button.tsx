@@ -24,7 +24,7 @@ const baseClass =
 const variantClass: Record<ButtonVariant, string> = {
   default: "bg-primary text-primary-foreground hover:opacity-90 shadow-sm active:scale-[0.98]",
   primary: "bg-primary text-primary-foreground hover:opacity-90 shadow-sm active:scale-[0.98]",
-  gradient: "n8n-gradient-bg shadow-sm active:scale-[0.98]",
+  gradient: "brand-gradient-bg shadow-sm active:scale-[0.98]",
   secondary:
     "bg-secondary text-secondary-foreground border border-[var(--border-subtle)] hover:bg-[var(--bg-surface)]",
   outline:

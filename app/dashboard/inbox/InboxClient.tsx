@@ -464,7 +464,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
       case 'WHATSAPP': return 'bg-emerald-600 text-white rounded-br-none';
       case 'INSTAGRAM': return 'bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 text-white rounded-br-none';
       case 'FACEBOOK': return 'bg-blue-600 text-white rounded-br-none';
-      default: return 'bg-rose-600 text-white rounded-br-none';
+      default: return 'bg-cyan-600 text-white rounded-br-none';
     }
   };
 
@@ -531,7 +531,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
               <button
                 key={contact.id}
                 onClick={() => setSelectedContactId(contact.id)}
-                className={`w-full text-left p-4 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex gap-3 ${selectedContactId === contact.id ? 'bg-[var(--bg-surface-hover)] border-l-2 border-l-rose-500' : 'border-l-2 border-l-transparent'}`}
+                className={`w-full text-left p-4 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors flex gap-3 ${selectedContactId === contact.id ? 'bg-[var(--bg-surface-hover)] border-l-2 border-l-[var(--accent-primary)]' : 'border-l-2 border-l-transparent'}`}
               >
                 <div className="mt-1 p-2 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-full shrink-0 relative">
                   <User className="w-4 h-4 text-[var(--text-secondary)]" />
@@ -582,7 +582,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             {/* Chat Header */}
             <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] flex items-center justify-between shadow-sm z-10">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-rose-400/20 to-orange-400/20 border border-[var(--border-subtle)] flex items-center justify-center">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-[var(--border-subtle)] flex items-center justify-center">
                   <User className="w-4 h-4 text-[var(--text-secondary)]" />
                 </div>
                 <div>
@@ -595,7 +595,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                 {selectedContact.botMode ? (
                   <button
                     onClick={() => handleTakeover(false, selectedContact.escalationStatus === 'REQUESTED' ? 'RESOLVED' : selectedContact.escalationStatus)}
-                    className="text-sm font-semibold bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    className="text-sm font-semibold bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                   >
                     <User className="w-4 h-4" /> Reprendre la main
                   </button>
@@ -630,9 +630,9 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                       <div key={msg.id} className={`flex flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
                         <div className={`max-w-[85%] rounded-2xl p-4 border border-[var(--border-subtle)] ${isOutbound ? 'bg-[var(--bg-surface)] rounded-br-none' : 'bg-[var(--bg-surface)]/60 rounded-bl-none'}`}>
                           <div className="flex items-center gap-3 mb-2">
-                            <div className="p-2 bg-rose-500/20 rounded-full">
-                              <PhoneCall className="w-4 h-4 text-rose-500" />
-                            </div>
+<div className="p-2 bg-cyan-500/20 rounded-full">
+  <PhoneCall className="w-4 h-4 text-cyan-500" />
+</div>
                             <span className="font-bold text-sm text-[var(--text-primary)]">
                               Appel Vocal {msg.duration ? `(${msg.duration}s)` : ''}
                             </span>
@@ -673,22 +673,22 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
               {selectedContact.botMode && (
                 <div className="flex items-center gap-2 mb-3 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <p className="text-xs text-emerald-700">L'Agent IA gère cette conversation. Cliquez sur "Reprendre la main" pour écrire.</p>
+                  <p className="text-xs text-emerald-400">L'Agent IA gère cette conversation. Cliquez sur "Reprendre la main" pour écrire.</p>
                 </div>
               )}
 
               {/* Channel selector */}
               <div className="flex items-center gap-1.5 mb-2">
-                <button onClick={() => setSelectedChannel('WHATSAPP')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'WHATSAPP' ? 'bg-emerald-500/15 text-emerald-700 border border-emerald-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
+                <button onClick={() => setSelectedChannel('WHATSAPP')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'WHATSAPP' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
                   <MessageCircle className="w-3 h-3" /> WhatsApp
                 </button>
-                <button onClick={() => setSelectedChannel('SMS')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'SMS' ? 'bg-blue-500/15 text-blue-700 border border-blue-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
+                <button onClick={() => setSelectedChannel('SMS')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'SMS' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
                   <MessageSquare className="w-3 h-3" /> SMS
                 </button>
-                <button onClick={() => setSelectedChannel('INSTAGRAM')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'INSTAGRAM' ? 'bg-pink-500/15 text-pink-700 border border-pink-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
+                <button onClick={() => setSelectedChannel('INSTAGRAM')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'INSTAGRAM' ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
                   <Camera className="w-3 h-3" /> Instagram
                 </button>
-                <button onClick={() => setSelectedChannel('FACEBOOK')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'FACEBOOK' ? 'bg-blue-500/15 text-blue-700 border border-blue-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
+                <button onClick={() => setSelectedChannel('FACEBOOK')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'FACEBOOK' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
                   <Monitor className="w-3 h-3" /> Facebook
                 </button>
               </div>
@@ -705,7 +705,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                     }
                   }}
                   placeholder={selectedContact.botMode ? "Reprenez la main pour écrire..." : "Écrivez un message (Entrée pour envoyer)..."}
-                  className="flex-1 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none min-h-[48px] max-h-[120px] focus:outline-none focus:border-rose-400 transition-colors text-sm placeholder:text-[var(--text-secondary)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none min-h-[48px] max-h-[120px] focus:outline-none focus:border-[var(--accent-primary)] transition-colors text-sm placeholder:text-[var(--text-secondary)] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleSendMessage}
@@ -739,8 +739,8 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
         {selectedContact ? (
           <>
             <div className="p-5 border-b border-[var(--border-subtle)] text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-rose-500/20 to-orange-500/20 rounded-full mx-auto flex items-center justify-center border border-rose-500/30 mb-3">
-                <User className="w-6 h-6 text-rose-400" />
+              <div className="w-16 h-16 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full mx-auto flex items-center justify-center border border-cyan-500/30 mb-3">
+                <User className="w-6 h-6 text-[var(--text-secondary)]" />
               </div>
               <h3 className="font-bold text-base text-[var(--text-primary)]">{selectedContact.name}</h3>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">{selectedContact.phone}</p>
@@ -749,7 +749,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             <div className="p-4 overflow-y-auto flex-1 space-y-4">
               <div>
                 <h4 className="font-bold text-xs uppercase tracking-widest text-[var(--text-secondary)] mb-2 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-rose-400" /> Résumé IA
+                  <Sparkles className="w-3.5 h-3.5 text-violet-400" /> Résumé IA
                 </h4>
                 <Card className="p-3 text-xs text-[var(--text-secondary)] leading-relaxed rounded-xl border border-[var(--border-subtle)]">
                   {selectedContact.aiSummary || "L'IA n'a pas encore généré de résumé pour ce contact."}

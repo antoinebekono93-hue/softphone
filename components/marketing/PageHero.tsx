@@ -3,18 +3,16 @@ export default function PageHero({
   title,
   subtitle,
   children,
-  accent = "rose",
+  accent = "cyan",
 }: {
   badge?: string;
   title: React.ReactNode;
   subtitle?: React.ReactNode;
   children?: React.ReactNode;
-  accent?: "rose" | "cyan" | "amber" | "violet" | "emerald" | "blue";
+  accent?: "cyan" | "violet" | "emerald" | "blue";
 }) {
   const gradients: Record<string, { a: string; b: string }> = {
-    rose: { a: "bg-rose-500/20 blur-[120px] w-[800px] h-[400px]", b: "bg-orange-500/20 blur-[100px] w-[400px] h-[300px]" },
     cyan: { a: "bg-cyan-500/20 blur-[120px] w-[800px] h-[400px]", b: "bg-blue-500/20 blur-[100px] w-[400px] h-[300px]" },
-    amber: { a: "bg-amber-500/20 blur-[120px] w-[800px] h-[400px]", b: "bg-orange-500/15 blur-[100px] w-[400px] h-[300px]" },
     violet: { a: "bg-violet-500/20 blur-[120px] w-[800px] h-[400px]", b: "bg-purple-500/15 blur-[100px] w-[400px] h-[300px]" },
     emerald: { a: "bg-emerald-500/20 blur-[120px] w-[800px] h-[400px]", b: "bg-teal-500/15 blur-[100px] w-[400px] h-[300px]" },
     blue: { a: "bg-blue-500/20 blur-[120px] w-[800px] h-[400px]", b: "bg-indigo-500/15 blur-[100px] w-[400px] h-[300px]" },
@@ -27,7 +25,7 @@ export default function PageHero({
       <div className={`absolute top-20 left-1/2 -translate-x-1/2 rounded-full pointer-events-none -z-10 ${g.b}`}></div>
 
       {badge && (
-        <div className="opacity-0 animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 text-xs text-rose-400 mb-8 shadow-sm">
+        <div className="opacity-0 animate-fade-up inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-400 mb-8 shadow-sm">
           {badge}
         </div>
       )}

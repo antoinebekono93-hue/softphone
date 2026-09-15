@@ -107,7 +107,7 @@ export function WalletSection({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Balance Card */}
-        <div className="bg-gradient-to-br from-[var(--accent-primary)] to-rose-600 rounded-2xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-br from-[var(--accent-primary)] to-blue-600 rounded-2xl p-6 text-white shadow-lg">
           <div className="flex items-center gap-2 text-white/80 text-sm font-medium mb-3">
             <Wallet className="w-4 h-4" /> Solde Actuel
           </div>

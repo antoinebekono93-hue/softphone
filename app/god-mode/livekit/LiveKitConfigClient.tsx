@@ -89,7 +89,7 @@ export function LiveKitConfigClient() {
                   defaultValue="sip:agent@my-project.sip.livekit.cloud"
                   className="flex-1 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-violet-500/50"
                 />
-                <button className="px-4 py-2 bg-[var(--bg-surface-hover)] hover:bg-white/10 text-[var(--text-primary)] font-bold rounded-lg transition-colors border border-[var(--border-subtle)] text-sm">Copy</button>
+                <button className="px-4 py-2 bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-elevated)] text-[var(--text-primary)] font-bold rounded-lg transition-colors border border-[var(--border-subtle)] text-sm">Copy</button>
               </div>
             </div>
           </Card>

@@ -96,7 +96,7 @@ export function SequencesClient({ initialSequences }: { initialSequences: any[] 
                 </div>
                 <button 
                   onClick={() => toggleActive(seq.id, seq.isActive)}
-                  className={`p-2 rounded-full transition-colors ${seq.isActive ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] hover:text-white'}`}
+                  className={`p-2 rounded-full transition-colors ${seq.isActive ? 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
                   title={seq.isActive ? "Désactiver" : "Activer"}
                 >
                   {seq.isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}

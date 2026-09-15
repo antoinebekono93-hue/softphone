@@ -179,7 +179,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
             </button>
 
             {isDropdownOpen && !disabled && (
-              <div className="absolute top-full left-0 mt-2 w-48 max-h-64 overflow-y-auto bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute top-full left-0 mt-2 w-48 max-h-64 overflow-y-auto bg-[var(--bg-elevated)] border border-[var(--border-subtle)] rounded-xl shadow-xl z-50 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100">
                 {COUNTRIES.map((country) => (
                   <button
                     key={country.code}
@@ -216,7 +216,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
           <button
             onClick={handleBackspace}
             className="p-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-            aria-label="Backspace"
+            aria-label="Effacer"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
@@ -238,7 +238,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
             onClick={() => handleKeyClick(key.digit)}
             onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
             disabled={disabled}
-            className="bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border-none text-[var(--text-primary)] relative flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-[0_2px_10px_rgba(0,0,0,0.05)] active:scale-95"
+            className="bg-[var(--bg-glass)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] relative flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-sm active:scale-95"
             style={{ WebkitUserSelect: 'none', touchAction: 'manipulation' }}
           >
             <span className="text-2xl sm:text-3xl font-medium">
@@ -255,8 +255,8 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
       <button
         onClick={handleCall}
         disabled={disabled || !number}
-        className="bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 text-white w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all disabled:bg-[var(--text-secondary)] disabled:opacity-50"
-        aria-label="Call"
+        className="bg-[var(--success)] hover:opacity-90 shadow-[0_0_20px_color-mix(in_oklch,var(--success)_25%,transparent)] text-white w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all disabled:bg-[var(--bg-surface-hover)] disabled:text-[var(--text-muted)] disabled:opacity-60"
+        aria-label="Appeler"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>

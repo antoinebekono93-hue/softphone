@@ -72,7 +72,7 @@ export default function AISummaryPage() {
         }
         subtitle="Antigravity transforme chaque appel en donnée actionnable : transcription, sentiment, qualification, CRM, rendez-vous. Tout est automatisé, tout est mesuré."
       >
-        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Essayer l'IA vocale
         </Link>
         <Link href="/receptionniste-ia" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -91,10 +91,10 @@ export default function AISummaryPage() {
           subtitle="Chaque appel alimente le suivant : l'IA décroche en 0,5 seconde, traite, mesure et s'améliore à chaque échange, avec vos données."
         />
         <div className="grid md:grid-cols-4 gap-6 relative">
-          <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-px bg-gradient-to-r from-rose-500/0 via-rose-500/50 to-rose-500/0"></div>
+          <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-px bg-gradient-to-r from-cyan-500/0 via-cyan-500/50 to-cyan-500/0"></div>
           {flywheelSteps.map((step) => (
             <div key={step.title} className="rounded-[24px] glass-panel-premium p-6 flex flex-col gap-4 relative">
-              <div className="w-12 h-12 rounded-2xl n8n-gradient-bg flex items-center justify-center text-white shadow-[0_0_20px_rgba(255,87,87,0.3)]">
+              <div className="w-12 h-12 rounded-2xl n8n-gradient-bg flex items-center justify-center text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={step.icon} /></svg>
               </div>
               <h3 className="text-base font-extrabold text-[var(--text-primary)]">{step.title}</h3>
@@ -117,10 +117,10 @@ export default function AISummaryPage() {
               href={product.href}
               className="group rounded-[24px] glass-panel-premium p-6 flex flex-col gap-4 transition-transform hover:-translate-y-1"
             >
-              <div className="w-11 h-11 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] flex items-center justify-center text-rose-400 group-hover:text-rose-300 transition-colors">
+              <div className="w-11 h-11 rounded-xl bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] flex items-center justify-center text-cyan-400 group-hover:text-cyan-300 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={product.icon} /></svg>
               </div>
-              <h3 className="text-base font-extrabold text-[var(--text-primary)] group-hover:text-rose-400 transition-colors">{product.title}</h3>
+              <h3 className="text-base font-extrabold text-[var(--text-primary)] group-hover:text-cyan-400 transition-colors">{product.title}</h3>
               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{product.description}</p>
             </Link>
           ))}
@@ -135,7 +135,7 @@ export default function AISummaryPage() {
         />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {channels.map((c) => (
-            <div key={c.title} className="rounded-[24px] glass-panel-premium p-6 flex flex-col gap-4 border-t-2 border-t-rose-500/40">
+            <div key={c.title} className="rounded-[24px] glass-panel-premium p-6 flex flex-col gap-4 border-t-2 border-t-cyan-500/40">
               <div className="w-11 h-11 rounded-xl n8n-gradient-bg flex items-center justify-center text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={c.icon} /></svg>
               </div>

@@ -228,7 +228,7 @@ export default function SectorsPage() {
         }
         subtitle="Chaque secteur a ses appels critiques et ses contraintes. Antigravity s'adapte à votre jargon, vos horaires et vos processus."
       >
-        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Tester sur mon secteur
         </Link>
         <Link href="/pricing" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -271,7 +271,7 @@ export default function SectorsPage() {
             Nous construisons des scénarios sur mesure avec chaque client. Dites-nous quels appels vous perdez, nous configurons la réponse qui va avec.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+            <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
               Demander une démo sectorielle
             </Link>
             <Link href="/etudes-de-cas" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">

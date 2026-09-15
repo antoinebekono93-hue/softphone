@@ -39,7 +39,13 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] flex flex-col items-center justify-center p-4">
+    <div
+      className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] flex flex-col items-center justify-center p-4"
+      style={{
+        background:
+          "radial-gradient(60rem 60rem at 50% -20%, color-mix(in oklch, var(--accent-primary) 9%, transparent), transparent 60%), radial-gradient(45rem 45rem at 110% 110%, color-mix(in oklch, var(--accent-violet) 7%, transparent), transparent 60%), var(--bg-base)",
+      }}
+    >
       <Link href="/" className="absolute top-8 left-8 text-2xl font-bold tracking-tight">
         Antigravity
       </Link>
@@ -71,7 +77,7 @@ export default function RegisterPage() {
               <Input required name="password" type="password" placeholder="••••••••" minLength={6} />
             </div>
 
-            <Button disabled={isLoading} type="submit" size="lg" className="mt-4 w-full">
+            <Button disabled={isLoading} type="submit" size="lg" className="mt-4 w-full rounded-full! bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]">
               {isLoading ? "Creating account..." : "Continue"}
             </Button>
           </form>

@@ -3,7 +3,7 @@ import MarketingHeader from "./MarketingHeader";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-rose-500/30 font-sans overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-cyan-500/30 font-sans overflow-x-hidden">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }

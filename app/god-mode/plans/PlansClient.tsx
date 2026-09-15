@@ -105,7 +105,7 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
           <h1 className="text-3xl font-bold tracking-tight mb-2">Dynamic Plans</h1>
           <p className="text-[var(--text-secondary)]">Create and manage your SaaS pricing tiers without code.</p>
         </div>
-        <button onClick={() => openModal()} className="px-6 py-3 bg-red-600 hover:bg-red-500 text-[var(--text-primary)] rounded-lg font-medium shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-colors flex items-center gap-2">
+        <button onClick={() => openModal()} className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90 text-white rounded-lg font-medium shadow-[0_0_20px_rgba(34,211,238,0.3)] transition-colors flex items-center gap-2">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
           Create New Plan
         </button>

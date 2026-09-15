@@ -51,7 +51,7 @@ export default function IntegrationsPage() {
         }
         subtitle="CRM, helpdesk, calendriers, IA : Antigravity synchronise vos appels avec les outils que votre équipe utilise déjà. Sans friction, sans codage."
       >
-        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Essayer gratuitement
         </Link>
         <Link href="#api" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -69,7 +69,7 @@ export default function IntegrationsPage() {
         <div className="rounded-[32px] glass-panel-premium p-8 md:p-12">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
-              <div className="text-xs font-bold uppercase tracking-widest text-rose-400 mb-4">API & Webhooks</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-4">API & Webhooks</div>
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
                 Intégrez Antigravity à n&apos;importe quel système
               </h2>
@@ -77,7 +77,7 @@ export default function IntegrationsPage() {
                 Pas d&apos;intégration prête à l&apos;emploi pour votre outil métier ? Notre API documentée et nos webhooks couvrent tous les cas. Vos agents deviennent programmables.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/register" className="n8n-gradient-bg text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+                <Link href="/register" className="n8n-gradient-bg text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
                   Obtenir mes clés API
                 </Link>
                 <Link href="#" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-6 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -104,7 +104,7 @@ export default function IntegrationsPage() {
           subtitle="Demandez une intégration ou construisez-la vous-même en quelques minutes."
         />
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform text-center">
+          <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform text-center">
             Demander une intégration
           </Link>
           <Link href="/etudes-de-cas" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors text-center">

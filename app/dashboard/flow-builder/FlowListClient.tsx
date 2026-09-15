@@ -40,7 +40,7 @@ export function FlowListClient({ initialFlows }: { initialFlows: any[] }) {
         <button 
           onClick={handleCreateFlow} 
           disabled={isCreating}
-          className="px-4 py-2 bg-black text-white text-sm font-medium rounded-md hover:bg-gray-800 transition-colors flex items-center gap-2 disabled:opacity-50"
+          className="px-4 py-2 bg-[var(--bg-surface-solid)] text-[var(--text-primary)] text-sm font-medium rounded-md hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center gap-2 disabled:opacity-50"
         >
           <Plus className="w-4 h-4" /> Nouveau Scénario
         </button>

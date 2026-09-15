@@ -177,7 +177,7 @@ export function WorkflowEditorClient({ flowId, initialName, initialIsActive, ini
           </button>
           <button 
             onClick={() => setIsActive(!isActive)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}`}
+            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${isActive ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}`}
           >
             <Play className="w-4 h-4" /> {isActive ? 'Désactiver' : 'Activer'}
           </button>
@@ -247,10 +247,10 @@ export function WorkflowEditorClient({ flowId, initialName, initialIsActive, ini
 
           <div className="text-xs font-bold text-[var(--text-secondary)] mt-4 mb-1 uppercase tracking-wider">Avancé</div>
 
-          <div className="glass-panel p-4 rounded-xl border border-pink-500/30 cursor-grab active:cursor-grabbing hover:bg-pink-500/5 transition-colors"
+          <div className="glass-panel p-4 rounded-xl border border-violet-500/30 cursor-grab active:cursor-grabbing hover:bg-violet-500/5 transition-colors"
             draggable onDragStart={(e) => onDragStart(e, 'aiGenerationNode', 'Génération IA')}
           >
-            <div className="flex items-center gap-3 text-pink-500 font-bold mb-1">
+            <div className="flex items-center gap-3 text-violet-500 font-bold mb-1">
               <Sparkles className="w-5 h-5" /> Génération IA
             </div>
             <div className="text-xs text-[var(--text-secondary)]">Faire traiter une donnée par OpenAI.</div>

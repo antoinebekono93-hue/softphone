@@ -148,7 +148,7 @@ export default function GodModeVoicePage() {
                {/* TTS Config */}
                <div className="p-5 border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] rounded-xl relative overflow-hidden group">
                   <div className="flex items-center gap-3 mb-3">
-                     <div className="p-2 bg-rose-500/10 rounded-lg text-rose-500 shrink-0"><Mic className="w-4 h-4" /></div>
+                     <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-500 shrink-0"><Mic className="w-4 h-4" /></div>
                      <h3 className="font-bold text-[var(--text-primary)]">Synthèse Vocale (TTS)</h3>
                   </div>
                   <div className="flex gap-4">

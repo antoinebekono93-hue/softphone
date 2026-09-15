@@ -136,7 +136,7 @@ export default async function PricingPage() {
     <MarketingLayout>
       <PageHero
         badge="Prix simples · Sans engagement"
-        accent="amber"
+        accent="blue"
         title={
           <>
             Une IA qui répond, <span className="n8n-gradient-text">à un prix clair</span>
@@ -144,7 +144,7 @@ export default async function PricingPage() {
         }
         subtitle="Des plans transparents, sans frais cachés. Changez de plan ou annulez à tout moment — vos agents IA gardent la mémoire de chaque client."
       >
-        <Link href="#plans" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+        <Link href="#plans" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Voir les plans
         </Link>
         <Link href="/receptionniste-ia" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -176,7 +176,7 @@ export default async function PricingPage() {
                 {plans.map((plan) => (
                   <th key={plan.id} className="p-4 text-sm font-extrabold text-center text-[var(--text-primary)]">
                     {plan.name}
-                    {plan.recommended && <div className="text-[10px] font-bold uppercase tracking-widest text-rose-400 mt-1">Recommandé</div>}
+                    {plan.recommended && <div className="text-[10px] font-bold uppercase tracking-widest text-cyan-400 mt-1">Recommandé</div>}
                   </th>
                 ))}
               </tr>
@@ -214,7 +214,7 @@ export default async function PricingPage() {
                 <span className="text-3xl font-extrabold text-[var(--text-primary)]">{addon.price}</span>
                 <span className="text-xs text-[var(--text-secondary)] font-medium">{addon.period}</span>
               </div>
-              <div className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400 self-start">
+              <div className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 self-start">
                 {addon.badge}
               </div>
               <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{addon.description}</p>

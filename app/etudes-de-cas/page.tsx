@@ -198,7 +198,7 @@ export default function CaseStudiesPage() {
         }
         subtitle="10 000+ entreprises nous font confiance en France et en Afrique. Voici comment elles automatisent leur téléphonie, sans casser leur organisation."
       >
-        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-rose-500/25 hover:scale-105 transition-transform">
+        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Essayer gratuitement
         </Link>
         <Link href="/pricing" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
@@ -212,7 +212,7 @@ export default function CaseStudiesPage() {
           <div className="grid lg:grid-cols-5">
             <div className="lg:col-span-3 p-8 md:p-12 flex flex-col gap-6">
               <div className="flex flex-wrap gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400">
+                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
                   {featuredStudy.solution}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
@@ -234,7 +234,7 @@ export default function CaseStudiesPage() {
                   </div>
                 ))}
               </div>
-              <blockquote className="border-l-2 border-rose-500/50 pl-4 italic text-[var(--text-secondary)] font-medium">
+              <blockquote className="border-l-2 border-cyan-500/50 pl-4 italic text-[var(--text-secondary)] font-medium">
                 « {featuredStudy.quote} »
               </blockquote>
               <div className="flex items-center gap-3">

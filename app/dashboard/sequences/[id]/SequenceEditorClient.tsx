@@ -48,7 +48,7 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
     switch (type) {
       case 'SMS': return <MessageSquare className="w-5 h-5 text-blue-500" />;
       case 'WHATSAPP': return <MessageCircle className="w-5 h-5 text-emerald-500" />;
-      case 'AI_CALL': return <Phone className="w-5 h-5 text-rose-500" />;
+      case 'AI_CALL': return <Phone className="w-5 h-5 text-violet-500" />;
       default: return <LinkIcon className="w-5 h-5 text-gray-500" />;
     }
   };

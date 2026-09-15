@@ -340,7 +340,7 @@ export default function AITeamClient({ initialEmployees, phoneNumbers, whatsappA
                     </div>
                   )}
                   {/* Gradient Separator */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--accent-primary)] to-orange-500"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--accent-primary)] to-violet-500"></div>
                   
                   {/* Top Right Icon */}
                   <div className="absolute top-4 right-4 z-10">

@@ -32,7 +32,7 @@ export default function MarketingHeader() {
       <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-2 flex-1">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md n8n-gradient-bg shadow-[0_0_15px_rgba(255,87,87,0.4)]"></div>
+            <div className="w-6 h-6 rounded-md n8n-gradient-bg shadow-[0_0_15px_rgba(34,211,238,0.4)]"></div>
             <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">Antigravity</span>
           </Link>
         </div>
@@ -55,7 +55,7 @@ export default function MarketingHeader() {
           <Link href="/login" className="text-sm font-medium text-[var(--text-primary)] hover:opacity-70 transition-opacity hidden sm:block">
             Connexion
           </Link>
-          <Link href="/register" className="text-sm font-medium n8n-gradient-bg text-white px-4 py-2 rounded-full transition-transform hover:scale-105 shadow-lg shadow-rose-500/20 hidden sm:block">
+          <Link href="/register" className="text-sm font-medium n8n-gradient-bg text-white px-4 py-2 rounded-full transition-transform hover:scale-105 shadow-lg shadow-cyan-500/20 hidden sm:block">
             Essai Gratuit
           </Link>
           <button
@@ -106,7 +106,7 @@ export default function MarketingHeader() {
             <Link href="/login" className="px-4 py-3 rounded-xl text-sm font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] transition-all text-center">
               Connexion
             </Link>
-            <Link href="/register" className="n8n-gradient-bg text-white px-4 py-3 rounded-xl text-sm font-bold text-center shadow-lg shadow-rose-500/20">
+            <Link href="/register" className="n8n-gradient-bg text-white px-4 py-3 rounded-xl text-sm font-bold text-center shadow-lg shadow-cyan-500/20">
               Essai Gratuit
             </Link>
           </div>

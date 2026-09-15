@@ -41,7 +41,7 @@ export default function InventoryClient({ products, store, carts, orgId }: { pro
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-700 uppercase bg-gray-50 border-b">
+                  <thead className="text-xs text-[var(--text-secondary)] uppercase bg-[var(--bg-surface-hover)] border-b">
                     <tr>
                       <th scope="col" className="px-6 py-3">Produit</th>
                       <th scope="col" className="px-6 py-3">SKU</th>
@@ -52,11 +52,11 @@ export default function InventoryClient({ products, store, carts, orgId }: { pro
                   </thead>
                   <tbody>
                     {products.map((product) => (
-                      <tr key={product.id} className="bg-white border-b hover:bg-gray-50">
-                        <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                      <tr key={product.id} className="border-b hover:bg-[var(--bg-surface-hover)]">
+                        <td className="px-6 py-4 font-medium text-[var(--text-primary)] whitespace-nowrap">
                           {product.name}
                         </td>
-                        <td className="px-6 py-4 font-mono text-gray-500">
+                        <td className="px-6 py-4 font-mono text-[var(--text-secondary)]">
                           {product.sku || '-'}
                         </td>
                         <td className="px-6 py-4 font-semibold">

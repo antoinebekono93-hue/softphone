@@ -34,10 +34,10 @@ export function CallControls({
             onClick={onMute}
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-sm ${
               isMuted
-                ? "bg-cyan-500 hover:bg-cyan-600 text-white"
-                : "bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                ? "bg-[var(--brand)] hover:bg-[var(--brand-active)] text-[var(--brand-foreground)]"
+                : "bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
             }`}
-            aria-label={isMuted ? "Unmute" : "Mute"}
+            aria-label={isMuted ? "Réactiver le micro" : "Couper le micro"}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {isMuted ? (
@@ -58,7 +58,7 @@ export function CallControls({
               )}
             </svg>
           </button>
-          <span className="text-xs font-medium text-[var(--text-secondary)] mt-1">Mute</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)] mt-1">Muet</span>
         </div>
 
         {/* Keypad Toggle */}
@@ -67,10 +67,10 @@ export function CallControls({
             onClick={onKeypad}
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-sm ${
               showKeypad
-                ? "bg-cyan-500 hover:bg-cyan-600 text-white"
-                : "bg-[var(--bg-surface-solid)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
+                ? "bg-[var(--brand)] hover:bg-[var(--brand-active)] text-[var(--brand-foreground)]"
+                : "bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)]"
             }`}
-            aria-label="Keypad"
+            aria-label="Clavier"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -80,15 +80,15 @@ export function CallControls({
               <line x1="3" y1="15" x2="21" y2="15"></line>
             </svg>
           </button>
-          <span className="text-xs font-medium text-[var(--text-secondary)] mt-1">Keypad</span>
+          <span className="text-xs font-medium text-[var(--text-secondary)] mt-1">Clavier</span>
         </div>
       </div>
 
       {/* Hang Up Button */}
       <button
         onClick={onHangUp}
-        className="bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20 w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-all"
-        aria-label="Hang Up"
+        className="bg-[var(--danger)] hover:opacity-90 text-white shadow-[0_0_20px_color-mix(in_oklch,var(--danger)_25%,transparent)] w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-all"
+        aria-label="Raccrocher"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>

@@ -75,19 +75,19 @@ export default async function CampaignsPage() {
                       <span>Progression</span>
                       <span className="font-medium">{progress}%</span>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="w-full bg-[var(--bg-surface-hover)] rounded-full h-2">
                       <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress}%` }}></div>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-[var(--bg-surface-hover)] rounded-lg">
                       <div className="text-muted-foreground mb-1">Contacts</div>
                       <div className="text-2xl font-semibold">{total}</div>
                     </div>
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <div className="text-green-600 mb-1">Décrochés</div>
-                      <div className="text-2xl font-semibold text-green-700">{answered}</div>
+                    <div className="p-3 bg-[var(--success)]/10 rounded-lg">
+                      <div className="text-[var(--success)] mb-1">Décrochés</div>
+                      <div className="text-2xl font-semibold text-[var(--success)]">{answered}</div>
                     </div>
                   </div>
                 </div>

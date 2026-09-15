@@ -303,8 +303,8 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
                 </td>
                 <td className="px-6 py-4 text-right">
                    <div className="flex items-center justify-end gap-2">
-                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${num.capabilities?.includes('voice') ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/5 text-white/30 border border-white/10'}`}>Voice</span>
-                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${num.capabilities?.includes('sms') ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-white/5 text-white/30 border border-white/10'}`}>SMS</span>
+                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${num.capabilities?.includes('voice') ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)]'}`}>Voice</span>
+                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${num.capabilities?.includes('sms') ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)]'}`}>SMS</span>
                    </div>
                 </td>
               </tr>
@@ -334,7 +334,7 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
               </label>
               <label className="block text-sm text-[var(--text-secondary)]">
                 Mode
-                <select value={routingMode} onChange={(event) => { setRoutingMode(event.target.value as typeof routingMode); setRoutingError(null); }} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[#121212] px-3 py-2 text-white">
+                <select value={routingMode} onChange={(event) => { setRoutingMode(event.target.value as typeof routingMode); setRoutingError(null); }} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-white">
                   <option value="APP">APP — softphone WebRTC</option>
                   <option value="FORWARD">FORWARD — téléphone externe</option>
                   <option value="APP_THEN_FORWARD">APP_THEN_FORWARD — application puis téléphone</option>
@@ -343,13 +343,13 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
               {routingMode !== "APP" && (
                 <label className="block text-sm text-[var(--text-secondary)]">
                   Destination PSTN (E.164)
-                  <input value={forwardToE164} onChange={(event) => setForwardToE164(event.target.value)} placeholder="+2376XXXXXXXX" className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[#121212] px-3 py-2 font-mono text-white" />
+                  <input value={forwardToE164} onChange={(event) => setForwardToE164(event.target.value)} placeholder="+2376XXXXXXXX" className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 font-mono text-white" />
                 </label>
               )}
               {routingMode === "APP_THEN_FORWARD" && (
                 <label className="block text-sm text-[var(--text-secondary)]">
                   Sonnerie dans l’application (5–60 secondes)
-                  <input type="number" min="5" max="60" value={ringAppSeconds} onChange={(event) => setRingAppSeconds(event.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[#121212] px-3 py-2 text-white" />
+                  <input type="number" min="5" max="60" value={ringAppSeconds} onChange={(event) => setRingAppSeconds(event.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-white" />
                 </label>
               )}
               <div className="rounded-lg border border-[var(--border-subtle)] bg-black/20 p-3 space-y-3">
@@ -365,11 +365,11 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
                   <>
                     <label className="block text-sm text-[var(--text-secondary)]">
                       Délai avant répondeur (10–60 secondes)
-                      <input type="number" min="10" max="60" value={voicemailDelaySeconds} onChange={(event) => setVoicemailDelaySeconds(event.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[#121212] px-3 py-2 text-white" />
+                      <input type="number" min="10" max="60" value={voicemailDelaySeconds} onChange={(event) => setVoicemailDelaySeconds(event.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-white" />
                     </label>
                     <label className="block text-sm text-[var(--text-secondary)]">
                       Message d’accueil (vide = message français par défaut)
-                      <textarea maxLength={1000} rows={3} value={voicemailGreeting} onChange={(event) => setVoicemailGreeting(event.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[#121212] px-3 py-2 text-white" />
+                      <textarea maxLength={1000} rows={3} value={voicemailGreeting} onChange={(event) => setVoicemailGreeting(event.target.value)} className="mt-1 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2 text-white" />
                     </label>
                     {routingMode !== "APP" && <p className="text-xs text-red-300">Le répondeur nécessite le mode APP pour éviter un conflit avec le transfert.</p>}
                     {!selectedRoutingPlan?.hasRecording && <p className="text-xs text-red-300">Le forfait doit inclure l’enregistrement des appels.</p>}
@@ -435,7 +435,7 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
             <select
               value={purchaseOrganizationId}
               onChange={(event) => setPurchaseOrganizationId(event.target.value)}
-              className="w-full bg-[#121212] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-[var(--text-primary)] outline-none focus:border-red-500/50"
+              className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--border-glow)]"
             >
               <option value="">Sélectionner…</option>
               {organizations.map((organization) => (
@@ -449,7 +449,7 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
               type="text" 
               value={countryCode}
               onChange={(e) => setCountryCode(e.target.value.toUpperCase())}
-              className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-[var(--text-primary)] outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all"
+              className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--border-glow)] focus:ring-1 focus:ring-[var(--brand)] transition-all"
               placeholder="US, FR, GB..."
             />
           </div>
@@ -458,7 +458,7 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
             <select 
               value={limit}
               onChange={(e) => setLimit(e.target.value)}
-              className="w-full bg-[#121212] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-[var(--text-primary)] outline-none focus:border-red-500/50"
+              className="w-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--border-glow)]"
             >
               <option value="10">10 numbers</option>
               <option value="25">25 numbers</option>
@@ -467,11 +467,11 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
           </div>
           <div className="flex items-center gap-4">
              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={features.voice} onChange={(e) => setFeatures(p => ({...p, voice: e.target.checked}))} className="accent-red-500 w-4 h-4" />
+                <input type="checkbox" checked={features.voice} onChange={(e) => setFeatures(p => ({...p, voice: e.target.checked}))} className="accent-[var(--brand)] w-4 h-4" />
                 Voice
              </label>
              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={features.sms} onChange={(e) => setFeatures(p => ({...p, sms: e.target.checked}))} className="accent-red-500 w-4 h-4" />
+                <input type="checkbox" checked={features.sms} onChange={(e) => setFeatures(p => ({...p, sms: e.target.checked}))} className="accent-[var(--brand)] w-4 h-4" />
                 SMS
              </label>
           </div>
@@ -529,7 +529,7 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
                     <button 
                       onClick={() => buyNumber(num.phone_number)}
                       disabled={isBuying === num.phone_number || !purchaseOrganizationId}
-                      className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-[var(--text-primary)] rounded-lg text-xs font-bold transition-colors"
+                      className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-violet-500 hover:opacity-90 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-colors"
                     >
                       {isBuying === num.phone_number ? "Processing..." : "Buy Number"}
                     </button>

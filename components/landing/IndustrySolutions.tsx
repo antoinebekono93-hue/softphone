@@ -8,9 +8,9 @@ const industries = [
   {
     id: "immobilier",
     label: "Immobilier & BTP",
-    color: "text-orange-500",
-    border: "border-orange-500/50",
-    bg: "bg-orange-500/10",
+    color: "text-blue-500",
+    border: "border-blue-500/50",
+    bg: "bg-blue-500/10",
     title: "Des communications adaptées aux chantiers et aux agences",
     description: "Connectez vos équipes terrain, gérez les appels de devis et suivez chaque prospect sans perdre une occasion.",
     metrics: [
@@ -34,9 +34,9 @@ const industries = [
   {
     id: "sante",
     label: "Santé",
-    color: "text-rose-500",
-    border: "border-rose-500/50",
-    bg: "bg-rose-500/10",
+    color: "text-cyan-500",
+    border: "border-cyan-500/50",
+    bg: "bg-cyan-500/10",
     title: "Coordonnez les soins et prenez soin de vos patients",
     description: "Télémédecine, alertes, coordination entre soignants : une communication fluide et sécurisée.",
     metrics: [

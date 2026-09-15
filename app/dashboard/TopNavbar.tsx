@@ -35,7 +35,7 @@ export function TopNavbar({
   ];
 
   return (
-    <header className="fixed top-0 inset-x-0 h-16 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] z-40 flex items-center px-4 md:px-6">
+    <header className="hidden md:flex fixed top-0 inset-x-0 h-16 bg-[var(--bg-base)] border-b border-[var(--border-subtle)] z-40 items-center px-4 md:px-6">
       {/* Left: Logo + Search */}
       <div className="flex items-center gap-4 flex-1">
         <div className="flex items-center gap-3 font-bold text-[var(--text-primary)] shrink-0">

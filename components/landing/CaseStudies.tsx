@@ -19,7 +19,7 @@ const caseStudies = [
     metric: "30%",
     metricLabel: "Réduction des coûts de téléphonie",
     products: ["Phone", "Support Client", "IA Vocale"],
-    color: "from-rose-500/20 to-transparent"
+    color: "from-cyan-500/20 to-transparent"
   },
   {
     company: "Vinci",
@@ -40,9 +40,9 @@ const caseStudies = [
 ];
 
 const productColors: Record<string, string> = {
-  "Phone": "text-orange-500 border-orange-500/30 bg-orange-500/10",
+  "Phone": "text-cyan-500 border-cyan-500/30 bg-cyan-500/10",
   "IA Vocale": "text-violet-500 border-violet-500/30 bg-violet-500/10",
-  "Support Client": "text-rose-500 border-rose-500/30 bg-rose-500/10",
+  "Support Client": "text-blue-500 border-blue-500/30 bg-blue-500/10",
   "Intégrations": "text-emerald-500 border-emerald-500/30 bg-emerald-500/10"
 };
 
@@ -101,7 +101,7 @@ export default function CaseStudies() {
         </Stagger>
 
         <Reveal className="text-center mt-12" delay={0.1}>
-          <Link href="/pricing" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)] hover:text-rose-500 transition-colors">
+          <Link href="/pricing" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--accent-primary)] transition-colors">
             Voir toutes les études de cas
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </Link>

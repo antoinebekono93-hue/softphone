@@ -53,7 +53,7 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-3xl font-semibold text-white tracking-tight flex items-center gap-3">
+        <h1 className="text-3xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-3">
           <Server className="text-cyan-500" />
           LiveKit sur Telnyx
           <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full font-medium tracking-wide">BÊTA</span>
@@ -78,7 +78,7 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
               onClick={() => setActiveStep(item.step)}
               className={`p-4 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
                 activeStep === item.step 
-                  ? "bg-[var(--bg-surface-hover)] border-cyan-500/50 text-white" 
+                  ? "bg-[var(--bg-surface-hover)] border-cyan-500/50 text-[var(--text-primary)]"
                   : "bg-[var(--bg-surface-solid)] border-[var(--border-subtle)] text-[var(--text-secondary)] hover:border-gray-500"
               }`}
             >
@@ -95,7 +95,7 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
           {/* STEP 1 */}
           {activeStep === 1 && (
             <div className="space-y-6 animate-in fade-in">
-              <h2 className="text-xl font-semibold text-white">Provisionner votre Tenant LiveKit</h2>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Provisionner votre Tenant LiveKit</h2>
               <p className="text-sm text-[var(--text-secondary)]">Enregistrez votre projet sur la plateforme Telnyx LiveKit. Cette étape n'est à faire qu'une seule fois par région.</p>
               
               {provisionState.error && (
@@ -112,17 +112,17 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
               <form onSubmit={handleProvision} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">Région</label>
-                  <select name="region" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                  <select name="region" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500">
                     {regions.map(r => <option key={r.id} value={r.id}>{r.name} ({r.id})</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">Nom du Projet</label>
-                  <input required name="name" type="text" placeholder="mon-projet" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
+                  <input required name="name" type="text" placeholder="mon-projet" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">API Secret LiveKit</label>
-                  <input required name="secret" type="password" placeholder="Choisissez un secret sécurisé" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" />
+                  <input required name="secret" type="password" placeholder="Choisissez un secret sécurisé" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500" />
                 </div>
                 <button disabled={provisionState.isLoading} type="submit" className="px-6 py-2.5 bg-cyan-500 hover:bg-cyan-600 text-black font-medium text-sm rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50">
                   {provisionState.isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -135,7 +135,7 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
           {/* STEP 2 */}
           {activeStep === 2 && (
             <div className="space-y-6 animate-in fade-in">
-              <h2 className="text-xl font-semibold text-white">Créer le Pont Téléphonique SIP</h2>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Créer le Pont Téléphonique SIP</h2>
               <p className="text-sm text-[var(--text-secondary)]">Associez un numéro de téléphone Telnyx à un serveur SIP LiveKit régional. Nous créons la connexion FQDN et la lions automatiquement.</p>
               
               {bridgeState.error && (
@@ -152,13 +152,13 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
               <form onSubmit={handleBridge} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">Numéro de Téléphone</label>
-                  <select name="phoneNumberId" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                  <select name="phoneNumberId" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500">
                     {phoneNumbers.map(n => <option key={n.id} value={n.id}>{n.number}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-400 mb-1">Région Cible</label>
-                  <select name="region" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500">
+                  <select name="region" className="w-full bg-[var(--bg-app)] border border-[var(--border-subtle)] rounded-lg px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:border-cyan-500">
                     {regions.map(r => <option key={r.id} value={r.id}>{r.name} ({r.id})</option>)}
                   </select>
                 </div>
@@ -174,7 +174,7 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
           {/* STEP 3 */}
           {activeStep === 3 && (
             <div className="space-y-6 animate-in fade-in">
-              <h2 className="text-xl font-semibold text-white">Configurer LiveKit via CLI</h2>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Configurer LiveKit via CLI</h2>
               <p className="text-sm text-[var(--text-secondary)]">Exécutez ces commandes dans votre terminal pour autoriser le trafic entrant vers votre Trunk et configurer la règle de dispatch.</p>
               
               <div className="space-y-4">
@@ -212,7 +212,7 @@ export default function LiveKitClient({ phoneNumbers }: { phoneNumbers: any[] })
           {/* STEP 4 */}
           {activeStep === 4 && (
             <div className="space-y-6 animate-in fade-in">
-              <h2 className="text-xl font-semibold text-white">Déployer l'Agent</h2>
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">Déployer l'Agent</h2>
               <p className="text-sm text-[var(--text-secondary)]">Sauvegardez ce code dans <code>agent.py</code>, ajoutez vos identifiants, et déployez sur les serveurs Telnyx !</p>
               
               <pre className="bg-[var(--bg-app)] p-4 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto border border-[var(--border-subtle)] max-h-96">

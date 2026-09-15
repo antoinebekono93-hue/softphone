@@ -16,9 +16,9 @@ export default function FAQAccordion({ items }: { items: { question: string; ans
               className="w-full flex items-center justify-between gap-4 py-5 px-4 text-left group"
               aria-expanded={isOpen}
             >
-              <span className="text-base md:text-lg font-bold text-[var(--text-primary)] group-hover:text-rose-400 transition-colors">{item.question}</span>
+              <span className="text-base md:text-lg font-bold text-[var(--text-primary)] group-hover:text-cyan-400 transition-colors">{item.question}</span>
               <span
-                className={`w-8 h-8 shrink-0 rounded-full border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] transition-transform duration-300 group-hover:border-rose-500/30 ${isOpen ? "rotate-45" : ""}`}
+                className={`w-8 h-8 shrink-0 rounded-full border border-[var(--border-subtle)] flex items-center justify-center text-[var(--text-secondary)] transition-transform duration-300 group-hover:border-cyan-500/30 ${isOpen ? "rotate-45" : ""}`}
                 aria-hidden="true"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>

@@ -140,9 +140,9 @@ export function IfElseNode({ data }: any) {
 
 export function AIGenerationNode({ data }: any) {
   return (
-    <div className="bg-[var(--bg-surface-solid)] border-2 border-pink-500 rounded-xl p-4 shadow-lg w-72">
-      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-pink-500" />
-      <div className="flex items-center gap-3 text-pink-500 font-bold mb-3 pb-2 border-b border-[var(--border-subtle)]">
+    <div className="bg-[var(--bg-surface-solid)] border-2 border-violet-500 rounded-xl p-4 shadow-lg w-72">
+      <Handle type="target" position={Position.Left} className="w-3 h-3 bg-violet-500" />
+      <div className="flex items-center gap-3 text-violet-500 font-bold mb-3 pb-2 border-b border-[var(--border-subtle)]">
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
         Génération IA (OpenAI)
       </div>
@@ -157,7 +157,7 @@ export function AIGenerationNode({ data }: any) {
         defaultValue={data.inputVariable || "{{trigger.data.message}}"}
         className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded p-1 text-xs text-[var(--text-primary)]"
       />
-      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-pink-500" />
+      <Handle type="source" position={Position.Right} className="w-3 h-3 bg-violet-500" />
     </div>
   );
 }

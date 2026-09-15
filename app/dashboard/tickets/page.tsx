@@ -25,11 +25,11 @@ export default async function SupportTicketsPage() {
       case 'URGENT':
         return <Badge variant="destructive" className="flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Urgent</Badge>;
       case 'HIGH':
-        return <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">Élevée</Badge>;
+        return <Badge variant="outline" className="text-red-500 border-red-500/30 bg-red-500/10">Élevée</Badge>;
       case 'NORMAL':
-        return <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">Normale</Badge>;
+        return <Badge variant="outline" className="text-blue-400 border-blue-500/30 bg-blue-500/10">Normale</Badge>;
       case 'LOW':
-        return <Badge variant="outline" className="text-gray-600">Basse</Badge>;
+        return <Badge variant="outline" className="text-[var(--text-secondary)]">Basse</Badge>;
       default:
         return <Badge variant="outline">{priority}</Badge>;
     }
@@ -72,18 +72,18 @@ export default async function SupportTicketsPage() {
           ) : (
             <div className="space-y-4">
               {tickets.map(ticket => (
-                <div key={ticket.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 border rounded-lg hover:bg-gray-50/50 transition-colors">
+                <div key={ticket.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 border rounded-lg hover:bg-[var(--bg-surface-hover)] transition-colors">
                   <div className="space-y-1">
                     <div className="flex items-center gap-3">
                       <h3 className="font-semibold text-lg">{ticket.title}</h3>
                       {getPriorityBadge(ticket.priority)}
                       {getStatusBadge(ticket.status)}
                     </div>
-                    <p className="text-sm text-gray-600 line-clamp-2 mt-2">{ticket.description}</p>
+                    <p className="text-sm text-[var(--text-secondary)] line-clamp-2 mt-2">{ticket.description}</p>
                     
                     <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
-                        <strong className="font-medium text-gray-700">Client:</strong> {ticket.contact.name} ({ticket.contact.phone})
+                        <strong className="font-medium text-[var(--text-secondary)]">Client:</strong> {ticket.contact.name} ({ticket.contact.phone})
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />

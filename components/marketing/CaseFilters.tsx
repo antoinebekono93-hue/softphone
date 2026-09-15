@@ -23,7 +23,7 @@ export default function CaseFilters({ cases }: { cases: CaseStudy[] }) {
             onClick={() => setSector(s)}
             className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
               sector === s
-                ? "n8n-gradient-bg text-white shadow-lg shadow-rose-500/20"
+                ? "n8n-gradient-bg text-white shadow-lg shadow-cyan-500/20"
                 : "bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             }`}
           >
@@ -38,7 +38,7 @@ export default function CaseFilters({ cases }: { cases: CaseStudy[] }) {
             onClick={() => setSolution(s)}
             className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
               solution === s
-                ? "n8n-gradient-bg text-white shadow-lg shadow-rose-500/20"
+                ? "n8n-gradient-bg text-white shadow-lg shadow-cyan-500/20"
                 : "bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             }`}
           >

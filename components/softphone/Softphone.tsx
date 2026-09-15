@@ -4,10 +4,14 @@ import { useState, useEffect } from "react";
 import { useTelnyx } from "@/contexts/TelnyxContext";
 import { useAppCall } from "@/contexts/AppCallContext";
 import { useCallRouter } from "@/hooks/useCallRouter";
+import { StatusDot } from "@/components/ui/status-dot";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Dialpad } from "./Dialpad";
 import { CallControls } from "./CallControls";
 import { AudioVisualizer } from "./AudioVisualizer";
 import { AppCallPanel } from "./AppCallPanel";
+import { TelemetryStrip } from "./TelemetryStrip";
+import { PSTN_STATUS_TEXT, pstnPulse, pstnTone } from "./status-labels";
 import { formatPhoneNumber } from "@/lib/utils";
 
 type CallerIdNumber = {
@@ -21,6 +25,7 @@ export function Softphone() {
     isRegistered,
     registrationError,
     callState,
+    callDirection,
     incomingCallerId,
     remoteStream,
     hangupCall,
@@ -83,27 +88,23 @@ export function Softphone() {
   const isCallActive = callState === "active";
 
   return (
-    <div className="relative w-full max-w-md mx-auto h-[min(90vh,750px)] supports-[height:100dvh]:h-[min(92dvh,750px)] glass-panel bg-[var(--bg-surface-solid)] overflow-hidden flex flex-col">
+    <div className="relative w-full max-w-md mx-auto h-[min(90vh,750px)] supports-[height:100dvh]:h-[min(92dvh,750px)] glass-panel bg-[var(--bg-glass)] overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="flex flex-col items-center justify-center p-6 pb-2 relative z-10">
-        <div className="flex items-center gap-2 mb-2">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              isRegistered
-                ? "bg-emerald-500"
-                : registrationError
-                ? "bg-rose-500"
-                : "bg-amber-500 animate-pulse"
-            }`}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 pb-2 relative z-10">
+        <div className="flex items-center gap-2 min-w-0">
+          <StatusDot
+            tone={isRegistered ? "success" : registrationError ? "danger" : "warning"}
+            pulse={!isRegistered && !registrationError}
           />
-          <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
+          <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider truncate">
             {isRegistered
-              ? "Telnyx Online"
+              ? "PSTN connecté"
               : registrationError
               ? registrationError
-              : "Connecting..."}
+              : "Connexion à Telnyx…"}
           </span>
         </div>
+        <TelemetryStrip />
       </div>
 
       {/* Main Content Area */}
@@ -126,7 +127,7 @@ export function Softphone() {
                         <select 
                           value={selectedCallerId}
                           onChange={(e) => setSelectedCallerId(e.target.value)}
-                          className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-cyan-500/50 text-[var(--text-primary)]"
+                          className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[var(--brand)]/50 text-[var(--text-primary)]"
                         >
                           {availableNumbers.map(n => (
                             <option key={n.id} value={n.number}>{formatPhoneNumber(n.number)}</option>
@@ -152,13 +153,13 @@ export function Softphone() {
             <div className="flex items-center gap-1 mt-2 rounded-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] p-1 text-xs font-semibold">
               <button
                 onClick={() => setMode("pstn")}
-                className={`px-3 py-1.5 rounded-full transition-colors ${mode === "pstn" && !appCallActive ? "bg-cyan-500 text-white" : "text-[var(--text-secondary)]"}`}
+                className={`px-3 py-1.5 rounded-full transition-colors ${mode === "pstn" && !appCallActive ? "bg-[var(--brand)] text-[var(--brand-foreground)]" : "text-[var(--text-secondary)]"}`}
               >
                 PSTN
               </button>
               <button
                 onClick={() => setMode("app")}
-                className={`px-3 py-1.5 rounded-full transition-colors ${mode === "app" || appCallActive ? "bg-emerald-500 text-white" : "text-[var(--text-secondary)]"}`}
+                className={`px-3 py-1.5 rounded-full transition-colors ${mode === "app" || appCallActive ? "bg-[var(--success)] text-white" : "text-[var(--text-secondary)]"}`}
               >
                 Interne
               </button>
@@ -168,15 +169,17 @@ export function Softphone() {
           <div className="flex flex-col items-center w-full h-full justify-between py-4 sm:py-8 min-h-0">
             {/* Call Info Header */}
             <div className="text-center w-full mb-8">
-              <div className="text-sm font-medium text-[var(--text-secondary)] mb-2 tracking-widest uppercase animate-pulse">
-                {callState === "ringing"
-                  ? "Calling..."
-                  : callState === "connecting"
-                  ? "Connexion..."
-                  : "Active Call"}
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <StatusDot tone={pstnTone(callState)} pulse={pstnPulse(callState)} />
+                <span className="text-sm font-medium text-[var(--text-secondary)] tracking-widest uppercase">
+                  {callState === "ringing" && callDirection === "inbound"
+                    ? "Appel entrant"
+                    : PSTN_STATUS_TEXT[callState]}
+                </span>
+                <StatusBadge status={callState} />
               </div>
               <div className="text-3xl font-semibold text-[var(--text-primary)] overflow-hidden text-ellipsis whitespace-nowrap">
-                {formatPhoneNumber(incomingCallerId || "Unknown")}
+                {formatPhoneNumber(incomingCallerId || "Inconnu")}
               </div>
             </div>
 

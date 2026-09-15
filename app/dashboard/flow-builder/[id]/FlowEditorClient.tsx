@@ -144,7 +144,7 @@ export function FlowEditorClient({ flowId, initialName, initialIsActive, initial
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsActive(!isActive)}
-            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${isActive ? 'bg-rose-500/10 text-rose-500 hover:bg-rose-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}`}
+            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors ${isActive ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'}`}
           >
             <Play className="w-4 h-4" /> {isActive ? 'Désactiver' : 'Activer'}
           </button>

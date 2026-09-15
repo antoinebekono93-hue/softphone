@@ -6,9 +6,22 @@ import { TelnyxProvider } from "@/contexts/TelnyxContext";
 import { AppCallProvider } from "@/contexts/AppCallContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { validateEnv } from "@/lib/env-validation";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
 
 validateEnv();
 
@@ -71,9 +84,14 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-180x180.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("vite-ui-theme");if(t==="light"){document.documentElement.setAttribute("data-theme","light");}else{document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();`,
+          }}
+        />
       </head>
-      <body className={`font-sans`}>
-        <ThemeProvider defaultTheme="light">
+      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans`}>
+        <ThemeProvider defaultTheme="dark">
           <AuthProvider>
             <LanguageProvider>
               <AppCallProvider>

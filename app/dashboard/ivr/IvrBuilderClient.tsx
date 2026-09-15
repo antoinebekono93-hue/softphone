@@ -184,7 +184,7 @@ export default function IvrBuilderClient({ initialNodes }: { initialNodes: IvrNo
              <h3 className="font-bold text-[var(--text-primary)] flex items-center gap-2">
                <Settings className="w-4 h-4 text-cyan-400" /> Configuration
              </h3>
-             <button onClick={() => setSelectedNodeId(null)} className="text-[var(--text-secondary)] hover:text-white p-1">
+             <button onClick={() => setSelectedNodeId(null)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] p-1">
                <X className="w-4 h-4" />
              </button>
           </div>

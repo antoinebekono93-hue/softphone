@@ -22,7 +22,7 @@ export default function CaseCard({ study }: { study: CaseStudy }) {
       </div>
       <div className="p-6 flex flex-col gap-4">
         <div className="flex flex-wrap gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-400">
+          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
             {study.solution}
           </span>
           <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
@@ -41,7 +41,7 @@ export default function CaseCard({ study }: { study: CaseStudy }) {
             </div>
           ))}
         </div>
-        <blockquote className="text-sm italic text-[var(--text-secondary)] font-medium leading-relaxed border-l-2 border-rose-500/50 pl-4">
+        <blockquote className="text-sm italic text-[var(--text-secondary)] font-medium leading-relaxed border-l-2 border-cyan-500/50 pl-4">
           « {study.quote} »
         </blockquote>
         <div className="text-xs font-bold text-[var(--text-primary)]">{study.author}</div>
