@@ -15,6 +15,12 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 // Simple dict approach
 const dictionaries: Record<Language, Record<string, string>> = {
   fr: {
+    "dashboard.voice_crm": "Voix & CRM",
+    "dashboard.voice_campaigns": "Campagnes vocales",
+    "dashboard.messages_module": "Messages & Conversations",
+    "dashboard.conversations": "Conversations",
+    "dashboard.configuration": "Configuration",
+    "dashboard.ai_automation": "IA & Automatisation",
     "dashboard.overview": "Tableau de bord",
     "dashboard.softphone": "Softphone",
     "dashboard.contacts": "Contacts",
@@ -37,6 +43,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
     "dashboard.ai_rag": "Base de Connaissances"
   },
   en: {
+    "dashboard.voice_crm": "Voice & CRM",
+    "dashboard.voice_campaigns": "Voice Campaigns",
+    "dashboard.messages_module": "Messages & Conversations",
+    "dashboard.conversations": "Conversations",
+    "dashboard.configuration": "Configuration",
+    "dashboard.ai_automation": "AI & Automation",
     "dashboard.overview": "Dashboard",
     "dashboard.softphone": "Softphone",
     "dashboard.contacts": "Contacts",
@@ -59,6 +71,12 @@ const dictionaries: Record<Language, Record<string, string>> = {
     "dashboard.ai_rag": "Knowledge Base"
   },
   ar: {
+    "dashboard.voice_crm": "الصوت وإدارة العملاء",
+    "dashboard.voice_campaigns": "الحملات الصوتية",
+    "dashboard.messages_module": "الرسائل والمحادثات",
+    "dashboard.conversations": "المحادثات",
+    "dashboard.configuration": "الإعدادات",
+    "dashboard.ai_automation": "الذكاء الاصطناعي والأتمتة",
     "dashboard.overview": "لوحة القيادة",
     "dashboard.softphone": "الهاتف البرمجي",
     "dashboard.contacts": "جهات الاتصال",

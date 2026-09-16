@@ -20,8 +20,8 @@ export function TopNavbar({
   const activeModule = resolveDashboardModule(pathname, searchParams.get('module'));
 
   const modules: Array<{ id: DashboardModule; name: string; icon: typeof Phone; href: string }> = [
-    { id: "phone", name: "Téléphone", icon: Phone, href: "/dashboard" },
-    { id: "voice", name: "Voix", icon: Phone, href: "/dashboard/campaigns" },
+    { id: "voice", name: "Voix", icon: Phone, href: "/dashboard" },
+    { id: "messages", name: "Messages", icon: MessageSquare, href: "/dashboard/inbox" },
     { id: "social", name: "Social (FB/WA)", icon: MessageCircle, href: "/dashboard/social-campaigns" },
     { id: "ai", name: "IA & Agents", icon: Bot, href: "/dashboard/ai-team" },
   ];

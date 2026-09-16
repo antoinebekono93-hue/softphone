@@ -104,8 +104,8 @@ export default function MessagingProfilesPage() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
-      <Link href="/dashboard/settings?module=social" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2 mb-6 w-fit">
-        <ArrowLeft className="w-4 h-4" /> Retour aux Paramètres
+      <Link href="/dashboard/inbox?module=messages" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2 mb-6 w-fit">
+        <ArrowLeft className="w-4 h-4" /> Retour aux Messages
       </Link>
 
       <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">

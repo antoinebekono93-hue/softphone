@@ -1,6 +1,6 @@
-export type DashboardModule = 'phone' | 'voice' | 'social' | 'ai';
+export type DashboardModule = 'voice' | 'messages' | 'social' | 'ai';
 
-const MODULES = new Set<DashboardModule>(['phone', 'voice', 'social', 'ai']);
+const MODULES = new Set<DashboardModule>(['voice', 'messages', 'social', 'ai']);
 
 const ROUTE_OWNERS: Array<{ module: DashboardModule; prefixes: string[] }> = [
   {
@@ -18,16 +18,22 @@ const ROUTE_OWNERS: Array<{ module: DashboardModule; prefixes: string[] }> = [
     ],
   },
   {
+    module: 'messages',
+    prefixes: [
+      '/dashboard/inbox',
+      '/dashboard/sms',
+      '/dashboard/sms-inbox',
+      '/dashboard/messages',
+      '/dashboard/channels',
+    ],
+  },
+  {
     module: 'social',
     prefixes: [
       '/dashboard/social-campaigns',
       '/dashboard/whatsapp',
       '/dashboard/whatsapp-inbox',
       '/dashboard/pipeline',
-      '/dashboard/sms',
-      '/dashboard/sms-inbox',
-      '/dashboard/messages',
-      '/dashboard/channels',
       '/dashboard/flow-builder',
     ],
   },
@@ -47,8 +53,9 @@ export function resolveDashboardModule(pathname: string, requested?: string | nu
     pathname === prefix || pathname.startsWith(`${prefix}/`),
   ))?.module;
   if (routeOwner) return routeOwner;
+  if (requested === 'phone') return 'voice';
   if (isDashboardModule(requested)) return requested;
-  return 'phone';
+  return 'voice';
 }
 
 export function dashboardModuleHref(href: string, module: DashboardModule) {

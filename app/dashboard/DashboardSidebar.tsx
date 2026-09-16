@@ -65,15 +65,15 @@ export function DashboardSidebar({
   const activeModule = resolveDashboardModule(pathname, searchParams.get('module'));
 
   const allNavGroups = {
-    phone: [
+    voice: [
       {
-        title: t("dashboard.phone_crm") || "Téléphone & CRM",
+        title: t("dashboard.voice_crm"),
         items: [
           { name: t("dashboard.overview"), href: "/dashboard", icon: Home },
           { name: t("dashboard.softphone"), href: "/dashboard/softphone", icon: Phone },
           { name: t("dashboard.contacts"), href: "/dashboard/contacts", icon: BookUser },
           { name: t("dashboard.sequences"), href: "/dashboard/sequences", icon: Workflow },
-          { name: t("dashboard.inbox"), href: "/dashboard/inbox", icon: Inbox },
+          { name: t("dashboard.voice_campaigns"), href: "/dashboard/campaigns", icon: Phone },
           { name: t("dashboard.analytics"), href: "/dashboard/analytics/revenue", icon: BarChart2 },
         ]
       },
@@ -86,14 +86,15 @@ export function DashboardSidebar({
         ]
       }
     ],
-    voice: [
+    messages: [
       {
-        title: "Voix & Campagnes",
+        title: t("dashboard.messages_module"),
         items: [
-          { name: "Campagnes", href: "/dashboard/campaigns", icon: Phone },
-          { name: "Numéros", href: "/dashboard/numbers", icon: Hash },
-          { name: "IVR & Routage", href: "/dashboard/ivr", icon: GitMerge },
-          { name: "Paramètres", href: "/dashboard/settings", icon: Settings },
+          { name: t("dashboard.inbox"), href: "/dashboard/inbox", icon: Inbox },
+          { name: t("dashboard.conversations"), href: "/dashboard/messages", icon: MessageSquare },
+          { name: t("dashboard.sms_campaigns"), href: "/dashboard/sms", icon: MessageSquare },
+          { name: t("dashboard.sms_inbox"), href: "/dashboard/sms-inbox", icon: Inbox },
+          { name: t("dashboard.sms_profiles"), href: "/dashboard/sms/profiles", icon: Settings },
         ]
       }
     ],
@@ -102,8 +103,6 @@ export function DashboardSidebar({
         title: "Social & Messagerie",
         items: [
           { name: "Campagnes Sociales", href: "/dashboard/social-campaigns", icon: MessageSquare },
-          { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
-          { name: "Boîte SMS", href: "/dashboard/sms-inbox", icon: Inbox },
           { name: "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
           { name: "Flux WhatsApp", href: "/dashboard/whatsapp/flows", icon: Workflow },
           { name: "Templates", href: "/dashboard/whatsapp/templates", icon: BookUser },
@@ -126,7 +125,7 @@ export function DashboardSidebar({
     ]
   };
 
-  const navGroups = allNavGroups[activeModule as keyof typeof allNavGroups] || allNavGroups.phone;
+  const navGroups = allNavGroups[activeModule as keyof typeof allNavGroups] || allNavGroups.voice;
 
   const closeMobile = () => setIsMobileOpen(false);
 
