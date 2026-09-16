@@ -8,8 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
 import Link from "next/link";
+import { usePathname, useSearchParams } from 'next/navigation';
+import { dashboardModuleHref, resolveDashboardModule } from '@/lib/dashboard-modules';
 
 export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[], users: any[] }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeModule = resolveDashboardModule(pathname, searchParams.get('module'));
   const [numbers, setNumbers] = useState(initialNumbers);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<any>(null);
@@ -90,7 +95,7 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
           <p className="text-[var(--text-secondary)] text-sm md:text-base">Manage your organization's phone numbers and assignments.</p>
         </div>
         <Link 
-          href="/dashboard/numbers/buy"
+          href={dashboardModuleHref('/dashboard/numbers/buy', activeModule)}
           className="apple-btn btn-primary flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />

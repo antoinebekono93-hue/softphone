@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { Search, Globe, ShoppingCart, Loader2, Phone, ArrowLeft, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { COUNTRIES } from "@/lib/countries";
+import { dashboardModuleHref, resolveDashboardModule } from '@/lib/dashboard-modules';
 
 type AvailableNumber = {
   phone_number: string;
@@ -29,6 +30,9 @@ export default function BuyNumberPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeModule = resolveDashboardModule(pathname, searchParams.get('module'));
 
   const searchNumbers = async () => {
     setLoading(true);
@@ -78,7 +82,7 @@ export default function BuyNumberPage() {
       const data = await res.json();
 
       if (res.ok) {
-        router.push('/dashboard/numbers?success=true');
+        router.push(`/dashboard/numbers?success=true&module=${activeModule}`);
         router.refresh();
       } else {
         alert(`Erreur: ${data.error}`);
@@ -92,7 +96,7 @@ export default function BuyNumberPage() {
 
   return (
     <div className="p-8 max-w-7xl mx-auto w-full">
-      <Link href="/dashboard/numbers" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2 mb-6 w-fit">
+      <Link href={dashboardModuleHref('/dashboard/numbers', activeModule)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2 mb-6 w-fit">
         <ArrowLeft className="w-4 h-4" /> Retour à l'inventaire
       </Link>
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { 
   Home, 
   Inbox, 
@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardModuleHref, resolveDashboardModule } from '@/lib/dashboard-modules';
 
 export function DashboardSidebar({
   organizationName,
@@ -55,22 +56,13 @@ export function DashboardSidebar({
   isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { t } = useLanguage();
 
-  // Grouped Navigation by Module
-  const getActiveModule = () => {
-    if (pathname.includes("/dashboard/sms")) return "sms";
-    if (pathname.includes("/dashboard/social-campaigns")) return "social";
-    if (pathname.includes("/dashboard/campaigns")) return "voice";
-    if (pathname.includes("/dashboard/whatsapp") || pathname.includes("/dashboard/pipeline")) return "whatsapp";
-    if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice-lab") || pathname.includes("/dashboard/tts")) return "ai";
-    return "phone"; // Default
-  };
-
-  const activeModule = getActiveModule();
+  const activeModule = resolveDashboardModule(pathname, searchParams.get('module'));
 
   const allNavGroups = {
     phone: [
@@ -94,30 +86,6 @@ export function DashboardSidebar({
         ]
       }
     ],
-    sms: [
-      {
-        title: t("dashboard.sms_messaging") || "Messagerie SMS",
-        items: [
-          { name: t("dashboard.sms_campaigns"), href: "/dashboard/sms", icon: MessageSquare },
-          { name: t("dashboard.sms_inbox"), href: "/dashboard/sms-inbox", icon: Inbox },
-          { name: t("dashboard.sms_profiles"), href: "/dashboard/sms/profiles", icon: Settings },
-          { name: t("dashboard.sms_templates"), href: "/dashboard/sms", icon: BookUser },
-        ]
-      }
-    ],
-    whatsapp: [
-      {
-        title: "WhatsApp Business",
-        items: [
-          { name: t("dashboard.wa_crm") || "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
-          { name: "Flux Conversationnels", href: "/dashboard/whatsapp/flows", icon: Workflow },
-          { name: "Campagnes Sociales", href: "/dashboard/social-campaigns", icon: MessageSquare },
-          { name: "Numéros & eSIM", href: "/dashboard/numbers", icon: Smartphone },
-          { name: "Modèles (Templates)", href: "/dashboard/whatsapp/templates", icon: BookUser },
-          { name: "Paramètres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
-        ]
-      }
-    ],
     voice: [
       {
         title: "Voix & Campagnes",
@@ -134,6 +102,8 @@ export function DashboardSidebar({
         title: "Social & Messagerie",
         items: [
           { name: "Campagnes Sociales", href: "/dashboard/social-campaigns", icon: MessageSquare },
+          { name: "Campagnes SMS", href: "/dashboard/sms", icon: MessageSquare },
+          { name: "Boîte SMS", href: "/dashboard/sms-inbox", icon: Inbox },
           { name: "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
           { name: "Flux WhatsApp", href: "/dashboard/whatsapp/flows", icon: Workflow },
           { name: "Templates", href: "/dashboard/whatsapp/templates", icon: BookUser },
@@ -214,7 +184,7 @@ export function DashboardSidebar({
                   return (
                     <li key={item.name}>
                       <Link
-                        href={item.href}
+                        href={dashboardModuleHref(item.href, activeModule)}
                         onClick={() => setIsMobileOpen(false)}
                         className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
                           isActive 

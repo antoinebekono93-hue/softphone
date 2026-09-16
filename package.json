@@ -18,7 +18,8 @@
         "postinstall": "prisma generate",
         "test:pstn-incoming": "tsx scripts/test-pstn-incoming.ts",
         "test:pstn-voicemail": "tsx scripts/test-pstn-voicemail.ts",
-        "test:dialpad": "tsx scripts/test-dialpad.tsx"
+        "test:dialpad": "tsx scripts/test-dialpad.tsx",
+        "test:dashboard-modules": "tsx scripts/test-dashboard-modules.ts"
     },
     "dependencies": {
         "@auth/prisma-adapter": "^2.11.2",

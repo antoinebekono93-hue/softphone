@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Phone, MessageSquare, MessageCircle, Bot, Search, Bell } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { dashboardModuleHref, resolveDashboardModule, type DashboardModule } from '@/lib/dashboard-modules';
 
 export function TopNavbar({
   organizationName,
@@ -13,21 +14,12 @@ export function TopNavbar({
   walletBalance?: number;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { language, setLanguage, t } = useLanguage();
 
-  // Determine active module based on URL
-  const getActiveModule = () => {
-    if (pathname.includes("/dashboard/sms")) return "sms";
-    if (pathname.includes("/dashboard/social-campaigns")) return "social";
-    if (pathname.includes("/dashboard/campaigns")) return "voice";
-    if (pathname.includes("/dashboard/whatsapp")) return "whatsapp";
-    if (pathname.includes("/dashboard/ai") || pathname.includes("/dashboard/rag") || pathname.includes("/dashboard/voice-lab") || pathname.includes("/dashboard/tts")) return "ai";
-    return "phone"; // Default
-  };
+  const activeModule = resolveDashboardModule(pathname, searchParams.get('module'));
 
-  const activeModule = getActiveModule();
-
-  const modules = [
+  const modules: Array<{ id: DashboardModule; name: string; icon: typeof Phone; href: string }> = [
     { id: "phone", name: "Téléphone", icon: Phone, href: "/dashboard" },
     { id: "voice", name: "Voix", icon: Phone, href: "/dashboard/campaigns" },
     { id: "social", name: "Social (FB/WA)", icon: MessageCircle, href: "/dashboard/social-campaigns" },
@@ -62,7 +54,7 @@ export function TopNavbar({
             return (
               <Link 
                 key={m.id}
-                href={m.href}
+                href={dashboardModuleHref(m.href, m.id)}
                 className={`relative flex items-center gap-2 px-4 h-full transition-colors text-sm font-medium ${
                   isActive 
                     ? "text-[var(--text-primary)]" 

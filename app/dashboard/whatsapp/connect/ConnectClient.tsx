@@ -195,7 +195,7 @@ export default function ConnectClient({ phoneNumbers, existingAccount }: { phone
               {phoneNumbers.length === 0 ? (
                 <div className="p-4 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl text-center">
                   <p className="text-[var(--text-secondary)] mb-4">Vous n'avez aucun numéro de téléphone disponible.</p>
-                  <Button onClick={() => router.push('/dashboard/numbers')} className="px-4 py-2 text-sm">
+                  <Button onClick={() => router.push('/dashboard/numbers?module=social')} className="px-4 py-2 text-sm">
                     Acheter un Numéro
                   </Button>
                 </div>
