@@ -14,9 +14,6 @@ export async function GET() {
     });
     if (!org) return NextResponse.json({ error: "Organization not found" }, { status: 404 });
 
-    // Mock API for charts - normally we would sum transactions by type
-    // But since it's hard to have enough dummy data across all types automatically, we'll mock it if not enough real data exists.
-
     const transactions = await prisma.walletTransaction.findMany({
       where: {
         organizationId: org.id,
@@ -34,13 +31,6 @@ export async function GET() {
       if (t.type === 'CALL') callCost += absAmount;
       if (t.type === 'DATA_ESIM') dataCost += absAmount;
     });
-
-    // If perfectly empty (no real usage yet), we provide some mock data for the UI
-    if (smsCost === 0 && callCost === 0 && dataCost === 0) {
-      smsCost = 45.20;
-      callCost = 120.50;
-      dataCost = 85.00;
-    }
 
     return NextResponse.json({
       smsCost,

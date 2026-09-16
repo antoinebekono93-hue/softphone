@@ -1,187 +1,82 @@
 "use client";
 
-import { useState } from "react";
-import { MessageSquare, Settings, DollarSign, Activity, Globe, Hash, Zap, ShieldAlert } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from 'react';
+import { loadMessaging, saveMessagingProfile, createMessagingProfile } from './actions';
+
+function ProfileEditor({ profile, refresh }: { profile: any; refresh: () => Promise<void> }) {
+  const [form, setForm] = useState({
+    name: profile.name || '', enabled: Boolean(profile.enabled), smart_encoding: Boolean(profile.smart_encoding),
+    daily_spend_limit: profile.daily_spend_limit || '10', daily_spend_limit_enabled: Boolean(profile.daily_spend_limit_enabled),
+    destinations: (profile.whitelisted_destinations || []).join(', '),
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
+  async function save() {
+    setSaving(true); setError(''); setSaved(false);
+    try { await saveMessagingProfile(profile.id, form); setSaved(true); await refresh(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Échec de sauvegarde'); }
+    finally { setSaving(false); }
+  }
+  return <section className="glass-panel p-5 space-y-4">
+    <h2 className="text-xl font-semibold">{profile.name}</h2>
+    <p>{profile.organization} · {profile.numbers} numéro(s) associé(s)</p>
+    {profile.error ? <p role="alert">{profile.error}</p> : <>
+      <label className="block">Nom<input className="apple-input mt-1" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></label>
+      <label className="block">Pays autorisés<input className="apple-input mt-1" value={form.destinations} onChange={e => setForm({ ...form, destinations: e.target.value })} /></label>
+      <label className="block">Plafond quotidien Telnyx (USD)<input className="apple-input mt-1" type="number" min="0.0001" step="0.0001" value={form.daily_spend_limit} onChange={e => setForm({ ...form, daily_spend_limit: e.target.value })} /></label>
+      <div className="flex flex-wrap gap-4">
+        <label><input type="checkbox" checked={form.enabled} onChange={e => setForm({ ...form, enabled: e.target.checked })} /> Profil actif</label>
+        <label><input type="checkbox" checked={form.smart_encoding} onChange={e => setForm({ ...form, smart_encoding: e.target.checked })} /> Encodage optimisé</label>
+        <label><input type="checkbox" checked={form.daily_spend_limit_enabled} onChange={e => setForm({ ...form, daily_spend_limit_enabled: e.target.checked })} /> Appliquer le plafond</label>
+      </div>
+      <p className="text-sm break-all">Webhook actuel : {profile.webhook_url || 'Absent'}</p>
+      <p className="text-sm">La sauvegarde raccorde les événements SMS au webhook de production de l’application.</p>
+      {error && <p role="alert" className="text-red-400">{error}</p>}
+      {saved && <p role="status" className="text-emerald-400">Configuration enregistrée chez Telnyx.</p>}
+      <button disabled={saving} onClick={save} className="apple-btn btn-primary">{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+    </>}
+  </section>;
+}
 
 export default function GodModeMessagingPage() {
-  const [smartEncoding, setSmartEncoding] = useState(false);
-  const [spendLimit, setSpendLimit] = useState(500);
-
-  return (
-    <div className="w-full">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)] flex items-center gap-3">
-           <MessageSquare className="text-cyan-500" />
-           Gestion de la Messagerie (SMS/MMS)
-        </h1>
-        <p className="text-[var(--text-secondary)]">Contrôle global des campagnes, profils de messagerie et limites de dépenses.</p>
+  const [data, setData] = useState<Awaited<ReturnType<typeof loadMessaging>> | null>(null);
+  const [error, setError] = useState('');
+  const [name, setName] = useState('');
+  const [organizationId, setOrganizationId] = useState('');
+  const [creating, setCreating] = useState(false);
+  async function create() {
+    setCreating(true); setError('');
+    try { await createMessagingProfile(organizationId, name); setName(''); await refresh(); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Création non confirmée.'); }
+    finally { setCreating(false); }
+  }
+  async function refresh() {
+    try { setData(await loadMessaging()); setError(''); }
+    catch { setError('Impossible de lire les données de messagerie. Vérifiez la connexion Telnyx et la base de données.'); }
+  }
+  useEffect(() => { void refresh(); }, []);
+  return <div className="space-y-6">
+    <h1 className="text-3xl font-bold">Messagerie SMS/MMS</h1>
+    <p>Profils Telnyx et activité enregistrée dans l’application.</p>
+    <button className="apple-btn" onClick={refresh}>Actualiser depuis Telnyx</button>
+    {error && <p role="alert" className="text-red-400">{error}</p>}
+    {!data && !error && <p>Chargement…</p>}
+    {data && <>
+      <section className="glass-panel p-5 space-y-3">
+        <h2 className="text-xl font-semibold">Créer un profil</h2>
+        <label className="block">Organisation<select className="apple-input" value={organizationId} onChange={e => setOrganizationId(e.target.value)}><option value="">Choisir…</option>{data.organizations.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}</select></label>
+        <label className="block">Nom<input className="apple-input" value={name} onChange={e => setName(e.target.value)} maxLength={100} /></label>
+        <p className="text-sm">Le profil est créé désactivé. Configurez les pays et activez-le ci-dessous avant l’envoi.</p>
+        <button className="apple-btn btn-primary" disabled={creating || !organizationId || !name.trim()} onClick={create}>{creating ? 'Création…' : 'Créer chez Telnyx'}</button>
+      </section>
+      <div className="grid md:grid-cols-3 gap-4">
+        <div className="glass-panel p-5">Messages sortants enregistrés : {data.sent}</div>
+        <div className="glass-panel p-5">Livraisons confirmées : {data.delivered}</div>
+        <div className="glass-panel p-5">Échecs confirmés : {data.failed}</div>
       </div>
-
-      {/* KPIs Prioritaires */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-           <div className="absolute top-0 right-0 p-4 opacity-10">
-             <Activity className="w-12 h-12" />
-           </div>
-           <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Messages Envoyés</span>
-           <span className="text-4xl font-bold text-[var(--text-primary)]">1,245,090</span>
-           <span className="text-sm text-emerald-500 mt-2 font-medium">+12% ce mois</span>
-        </Card>
-
-        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-           <div className="absolute top-0 right-0 p-4 opacity-10">
-             <ShieldAlert className="w-12 h-12" />
-           </div>
-           <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Délivrabilité (Livré)</span>
-           <span className="text-4xl font-bold text-cyan-500">98.4%</span>
-           <div className="flex items-center gap-4 mt-2 text-xs font-medium">
-              <span className="text-[var(--text-secondary)]">0.6% Échoué</span>
-              <span className="text-[var(--text-secondary)]">1.0% In-Flight</span>
-           </div>
-        </Card>
-
-        <Card className="p-6 rounded-2xl flex flex-col relative overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-           <div className="absolute top-0 right-0 p-4 opacity-10">
-             <Globe className="w-12 h-12" />
-           </div>
-           <span className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">Dépenses par pays (Top 3)</span>
-           <div className="space-y-2 mt-2">
-              <div className="flex justify-between items-center text-sm">
-                 <span className="text-[var(--text-primary)] font-medium">France</span>
-                 <span className="text-[var(--text-secondary)] font-mono">$1,240</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                 <span className="text-[var(--text-primary)] font-medium">États-Unis</span>
-                 <span className="text-[var(--text-secondary)] font-mono">$890</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                 <span className="text-[var(--text-primary)] font-medium">Canada</span>
-                 <span className="text-[var(--text-secondary)] font-mono">$450</span>
-              </div>
-           </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-         {/* Configuration: Messaging Profiles */}
-         <Card className="p-8 rounded-2xl hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
-               <Settings className="text-cyan-500" />
-               Profils de Messagerie (Messaging Profiles)
-            </h2>
-            <p className="text-sm text-[var(--text-secondary)] mb-6">Configurez les profils pour différencier les usages marketing et transactionnels, et assurer la conformité A2P 10DLC.</p>
-            
-            <div className="space-y-4">
-               <div className="p-4 border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] rounded-xl flex justify-between items-center">
-                  <div>
-                     <h3 className="font-bold text-[var(--text-primary)]">Profil Marketing US</h3>
-                     <p className="text-xs text-[var(--text-secondary)]">Campagnes promotionnelles (A2P 10DLC Enregistré)</p>
-                  </div>
-                  <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold rounded-full">Actif</span>
-               </div>
-               <div className="p-4 border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] rounded-xl flex justify-between items-center">
-                  <div>
-                     <h3 className="font-bold text-[var(--text-primary)]">Alertes & 2FA Global</h3>
-                     <p className="text-xs text-[var(--text-secondary)]">Codes OTP et notifications critiques (Alphanumeric Sender ID)</p>
-                  </div>
-                  <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold rounded-full">Actif</span>
-               </div>
-            </div>
-            <Button className="mt-6 w-full" size="lg">
-               + Créer un nouveau Profil
-            </Button>
-         </Card>
-
-         {/* Outils de Réduction de Coûts */}
-         <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
-               <DollarSign className="text-emerald-500" />
-               Outils de Réduction de Coûts
-            </h2>
-
-            {/* Smart Encoding */}
-            <div className="p-5 border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] rounded-xl mb-4 flex gap-4 items-start">
-               <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-500 shrink-0"><Zap className="w-5 h-5" /></div>
-               <div className="flex-1">
-                  <div className="flex justify-between items-center mb-1">
-                     <h3 className="font-bold text-[var(--text-primary)]">Smart Encoding</h3>
-                     <button 
-                        onClick={() => setSmartEncoding(!smartEncoding)}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${smartEncoding ? 'bg-cyan-500' : 'bg-gray-600'}`}
-                     >
-                        <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${smartEncoding ? 'translate-x-6' : ''}`}></div>
-                     </button>
-                  </div>
-                  <p className="text-xs text-[var(--text-secondary)]">
-                     Remplace automatiquement les caractères spéciaux coûteux (ex: guillemets courbes, emojis cachés) par des équivalents GSM-7 pour éviter de diviser la longueur des SMS et de facturer des segments supplémentaires.
-                  </p>
-               </div>
-            </div>
-
-            {/* Spend Limits */}
-            <div className="p-5 border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] rounded-xl">
-               <h3 className="font-bold text-[var(--text-primary)] mb-1">Plafond de Dépenses (Daily Spend Limit)</h3>
-               <p className="text-xs text-[var(--text-secondary)] mb-4">
-                  Définit le montant maximum quotidien autorisé pour éviter les abus ou erreurs de campagne.
-               </p>
-               <div className="flex items-center gap-4">
-                  <input 
-                     type="range" 
-                     min="10" max="2000" step="10"
-                     value={spendLimit}
-                     onChange={(e) => setSpendLimit(parseInt(e.target.value))}
-                     className="flex-1 accent-cyan-500"
-                  />
-                  <div className="font-mono font-bold text-lg text-cyan-500 w-24 text-right">
-                     ${spendLimit}
-                  </div>
-               </div>
-            </div>
-         </Card>
-      </div>
-
-      {/* Fonctionnalités avancées : Number Pool */}
-      <Card className="p-8 rounded-2xl hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-         <div className="flex justify-between items-center mb-6">
-            <div>
-               <h2 className="text-xl font-bold flex items-center gap-2 text-[var(--text-primary)]">
-                  <Hash className="text-violet-500" />
-                  Number Pool (Rotation de Numéros)
-               </h2>
-               <p className="text-sm text-[var(--text-secondary)] mt-1">Distribuez les campagnes sur plusieurs numéros pour éviter le filtrage opérateur (Geo-Match & Sticky Sender).</p>
-            </div>
-            <Button size="sm">Gérer les Pools</Button>
-         </div>
-         
-         <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-               <thead>
-                  <tr className="border-b border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                     <th className="pb-3 font-semibold">Nom du Pool</th>
-                     <th className="pb-3 font-semibold">Numéros Associés</th>
-                     <th className="pb-3 font-semibold">Algorithme</th>
-                     <th className="pb-3 font-semibold">Statut</th>
-                  </tr>
-               </thead>
-               <tbody>
-                  <tr className="border-b border-[var(--border-subtle)]">
-                     <td className="py-4 font-bold text-[var(--text-primary)]">Campagne USA Est</td>
-                     <td className="py-4 text-[var(--text-secondary)] font-mono">15 numéros (+1 212...)</td>
-                     <td className="py-4 text-[var(--text-primary)]">Geo-Match prioritaire</td>
-                     <td className="py-4"><span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold rounded-md">Actif</span></td>
-                  </tr>
-                  <tr>
-                     <td className="py-4 font-bold text-[var(--text-primary)]">Marketing France</td>
-                     <td className="py-4 text-[var(--text-secondary)] font-mono">3 numéros (+33 6...)</td>
-                     <td className="py-4 text-[var(--text-primary)]">Round Robin (Rotation)</td>
-                     <td className="py-4"><span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold rounded-md">Actif</span></td>
-                  </tr>
-               </tbody>
-            </table>
-         </div>
-      </Card>
-    </div>
-  );
+      {!data.profiles.length && <p>Aucun profil associé à une organisation. Créez un profil depuis la section SMS du compte client.</p>}
+      <div className="grid lg:grid-cols-2 gap-4">{data.profiles.map(p => <ProfileEditor key={p.id + JSON.stringify(p)} profile={p} refresh={refresh} />)}</div>
+    </>}
+  </div>;
 }

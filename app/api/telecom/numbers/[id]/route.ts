@@ -1,85 +1,27 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
-
-const API_BASE = 'https://api.telnyx.com/v2';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
+import { getConfiguredTelnyxClient } from '@/lib/telnyx';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user?.organizationId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
-    const session = await auth();
-    if (!session?.user?.organizationId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { messagingProfileId } = await request.json(); // This is the Prisma CUID of the profile
-    const { id: numberId } = await params; // This is the Prisma CUID of the number
-
-    const org = await prisma.organization.findUnique({
-      where: { id: session.user.organizationId }
-    });
-    const apiKey = org?.telnyxApiKey || process.env.TELNYX_API_KEY;
-
-    if (!apiKey) {
-      return NextResponse.json({ error: "No Telnyx API key configured" }, { status: 500 });
-    }
-
-    // 1. Verify the number belongs to the org
-    const phoneNumber = await prisma.phoneNumber.findUnique({
-      where: { id: numberId }
-    });
-
-    if (!phoneNumber || phoneNumber.organizationId !== session.user.organizationId) {
-      return NextResponse.json({ error: "Phone number not found or unauthorized" }, { status: 404 });
-    }
-
-    // 2. Fetch the target messaging profile from DB to get its Telnyx ID
-    let telnyxMessagingProfileId = null;
+    const { messagingProfileId } = await request.json();
+    const number = await prisma.phoneNumber.findFirst({ where: { id: (await params).id, organizationId: session.user.organizationId } });
+    if (!number) return NextResponse.json({ error: 'Numéro introuvable' }, { status: 404 });
+    let providerProfileId = '';
     if (messagingProfileId) {
-      const targetProfile = await prisma.messagingProfile.findUnique({
-        where: { id: messagingProfileId }
-      });
-      
-      if (!targetProfile || targetProfile.organizationId !== session.user.organizationId) {
-        return NextResponse.json({ error: "Messaging profile not found" }, { status: 404 });
-      }
-      telnyxMessagingProfileId = targetProfile.telnyxId;
+      const profile = await prisma.messagingProfile.findFirst({ where: { id: messagingProfileId, organizationId: number.organizationId } });
+      if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 });
+      providerProfileId = profile.telnyxId;
     }
-
-    // 3. Call Telnyx to update the phone number's messaging profile
-    // Note: Telnyx endpoint is /v2/phone_numbers/{telnyxId}
-    const telnyxUpdatePayload: any = {};
-    if (telnyxMessagingProfileId) {
-      telnyxUpdatePayload.messaging_profile_id = telnyxMessagingProfileId;
-    } else {
-      // To unlink in Telnyx, you typically send a null or empty string, or remove the profile ID
-      telnyxUpdatePayload.messaging_profile_id = ""; 
-    }
-
-    const res = await fetch(`${API_BASE}/phone_numbers/${phoneNumber.telnyxId}`, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify(telnyxUpdatePayload)
-    });
-
-    if (!res.ok) {
-      const errData = await res.json();
-      console.error("Telnyx Phone Number Update Error:", errData);
-      return NextResponse.json({ error: errData.errors?.[0]?.detail || "Failed to link number in Telnyx" }, { status: res.status });
-    }
-
-    // 4. Update in our DB
-    const updatedNumber = await prisma.phoneNumber.update({
-      where: { id: numberId },
-      data: { messagingProfileId: messagingProfileId || null }
-    });
-
-    return NextResponse.json({ number: updatedNumber });
-  } catch (error: any) {
-    console.error("[Phone Number PATCH Error]", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    const telnyx = await getConfiguredTelnyxClient();
+    await telnyx.phoneNumbers.messaging.update(number.telnyxId, { messaging_profile_id: providerProfileId });
+    const updated = await prisma.phoneNumber.update({ where: { id: number.id }, data: { messagingProfileId: messagingProfileId || null } });
+    return NextResponse.json({ number: updated });
+  } catch (error) {
+    console.error('[SMS number association]', error);
+    return NextResponse.json({ error: 'Association non confirmée. Actualisez avant de réessayer.' }, { status: 502 });
   }
 }

@@ -147,6 +147,71 @@ export async function chargeForSms(organizationId: string, count: number = 1) {
   return await chargeWallet(organizationId, amount, `Facturation de ${count} SMS`);
 }
 
+/**
+ * Réserve et débite réellement le prix d'un SMS avant de contacter Telnyx.
+ * `reservationId` doit être unique par tentative d'envoi. La contrainte
+ * existante (callControlId, type) rend l'opération idempotente.
+ */
+export async function reserveSmsCharge(organizationId: string, reservationId: string) {
+  if (!reservationId) throw new Error('SMS reservation ID is required');
+  const reference = `sms:${reservationId}`;
+  return prisma.$transaction(async tx => {
+    const existing = await tx.walletTransaction.findFirst({
+      where: { callControlId: reference, type: 'SMS' },
+    });
+    if (existing) return { amount: existing.amount.toNumber(), reference };
+
+    const rates = await tx.systemSettings.findUnique({ where: { id: 'default' } });
+    const amount = rates?.smsRate ?? new Prisma.Decimal('0.05');
+    if (amount.lte(0)) throw new Error('Le tarif SMS doit être supérieur à zéro.');
+    const debited = await debitWalletAtomically(tx, organizationId, amount.toNumber());
+    if (!debited) throw new Error('Insufficient funds in wallet');
+    await tx.walletTransaction.create({
+      data: {
+        organizationId,
+        amount: amount.neg(),
+        type: 'SMS',
+        callControlId: reference,
+        description: 'Réservation pour envoi SMS Telnyx',
+      },
+    });
+    return { amount: amount.toNumber(), reference };
+  });
+}
+
+export async function confirmSmsCharge(reference: string, telnyxMessageId: string) {
+  await prisma.walletTransaction.updateMany({
+    where: { callControlId: reference, type: 'SMS' },
+    data: { description: `Facturation SMS Telnyx ${telnyxMessageId}` },
+  });
+}
+
+/** Rembourse une réservation refusée avec certitude par le fournisseur. */
+export async function refundSmsCharge(organizationId: string, reference: string, reason: string) {
+  return prisma.$transaction(async tx => {
+    const debit = await tx.walletTransaction.findFirst({
+      where: { organizationId, callControlId: reference, type: 'SMS' },
+    });
+    if (!debit) return false;
+    const existing = await tx.walletTransaction.findFirst({
+      where: { callControlId: reference, type: 'SMS_REFUND' },
+    });
+    if (existing) return false;
+    const amount = debit.amount.abs();
+    await creditWalletAtomically(tx, organizationId, amount.toNumber());
+    await tx.walletTransaction.create({
+      data: {
+        organizationId,
+        amount,
+        type: 'SMS_REFUND',
+        callControlId: reference,
+        description: `Remboursement SMS : ${reason.slice(0, 160)}`,
+      },
+    });
+    return true;
+  });
+}
+
 export async function chargeForWhatsApp(organizationId: string, count: number = 1) {
   const rates = await getSystemRates();
   const amount = rates.whatsappRate.toNumber() * count;

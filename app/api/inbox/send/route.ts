@@ -1,45 +1,28 @@
-import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
-
-// Temporary mock telnyx import
-const telnyx = {
-  messages: {
-    create: async (data: any) => {
-      console.log("Mock Telnyx message created:", data);
-      return { id: `mock_telnyx_${Date.now()}` };
-    }
-  }
-};
+import { prisma } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { POST as sendSms } from '@/app/api/sms/send/route';
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session || !session.user || !session.user.id) {
-      return new NextResponse("Unauthorized", { status: 401 });
+    if (!session?.user?.id || !session.user.organizationId) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
     const { contactId, body, type = "SMS" } = await req.json();
 
-    if (!contactId || !body) {
-      return new NextResponse("Missing contactId or body", { status: 400 });
+    if (type !== 'SMS') {
+      return NextResponse.json({ error: 'Ce canal n’est pas encore disponible en production.' }, { status: 501 });
+    }
+    if (!contactId || typeof body !== 'string') {
+      return NextResponse.json({ error: 'Contact et texte requis.' }, { status: 400 });
     }
 
-    const userId = session.user.id;
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { organization: true },
-    });
-
-    if (!user || !user.organization) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    const organizationId = user.organization.id;
+    const organizationId = session.user.organizationId;
 
     // Verify contact belongs to the organization
-    const contact = await prisma.contact.findUnique({
+    const contact = await prisma.contact.findFirst({
       where: {
         id: contactId,
         organizationId,
@@ -50,72 +33,27 @@ export async function POST(req: Request) {
       return new NextResponse("Contact not found", { status: 404 });
     }
 
-    // Determine the outbound number to use
-    let fromNumber = "";
-    
-    if (type === "WHATSAPP") {
-      const whatsappAccount = await prisma.whatsAppAccount.findUnique({
-        where: { organizationId }
-      });
-      if (!whatsappAccount) {
-        return new NextResponse("WhatsApp account not configured", { status: 400 });
-      }
-      fromNumber = whatsappAccount.phoneNumber;
-      
-      // TODO: Call WhatsApp Cloud API to send the message
-      console.log(`Sending WhatsApp from ${fromNumber} to ${contact.phone}: ${body}`);
-      
-    } else {
-      const phoneNumber = await prisma.phoneNumber.findFirst({
-        where: { organizationId }
-      });
-      if (!phoneNumber) {
-        return new NextResponse("Phone number not configured", { status: 400 });
-      }
-      fromNumber = phoneNumber.number;
-
-      try {
-        if (process.env.TELNYX_API_KEY) {
-          // If we had real telnyx configured we would import it properly
-          // await telnyx.messages.create({ ... })
-          console.log(`Sending real SMS via Telnyx:`, body);
-        } else {
-          await telnyx.messages.create({
-            from: fromNumber,
-            to: contact.phone,
-            text: body,
-          });
-        }
-      } catch (err) {
-        console.error("Error sending Telnyx SMS:", err);
-        return new NextResponse("Provider Error", { status: 502 });
-      }
-    }
-
-    // Store the sent message in DB
-    const smsMessage = await prisma.smsMessage.create({
-      data: {
-        telnyxMessageId: `manual_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-        direction: "OUTBOUND",
-        body,
-        type,
-        status: "DELIVERED",
-        fromNumber,
-        toNumber: contact.phone,
-        organizationId,
-        contactId,
-        userId: user.id, // Track which user sent it
-        agentMessage: "true"
-      }
+    const sender = await prisma.phoneNumber.findFirst({
+      where: { organizationId, status: 'ACTIVE', messagingProfileId: { not: null } },
+      orderBy: { createdAt: 'asc' },
     });
+    if (!sender) return NextResponse.json({ error: 'Aucun numéro SMS actif avec profil de messagerie.' }, { status: 422 });
+    const result = await sendSms(new Request(req.url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: req.headers.get('cookie') || '' },
+      body: JSON.stringify({ from: sender.number, to: contact.phone, text: body }),
+    }));
+    if (!result.ok) return result;
+    const sent = await result.json();
+    await prisma.smsMessage.update({ where: { id: sent.data.id }, data: { agentMessage: 'true' } });
 
     // Ensure botMode is disabled since a human just replied
     await prisma.contact.update({
       where: { id: contact.id },
-      data: { botMode: false, assignedUserId: user.id }
+      data: { botMode: false, assignedUserId: session.user.id }
     });
 
-    return NextResponse.json({ message: smsMessage });
+    return NextResponse.json({ message: { ...sent.data, agentMessage: 'true' } });
   } catch (error: any) {
     console.error("[INBOX_SEND_POST]", error);
     return new NextResponse("Internal Error", { status: 500 });

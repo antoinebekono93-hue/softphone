@@ -11,30 +11,39 @@ export async function updatePricingSettings(settings: any) {
   }
 
   try {
+    const numericKeys = [
+      'phoneNumberMarkupMultiplier', 'phoneNumberMarkupFixed', 'smsRate',
+      'callBaseRatePerMinute', 'callMarkupPercent', 'aiAgentRatePerMinute', 'whatsappRate',
+    ] as const;
+    const values = Object.fromEntries(numericKeys.map(key => [key, Number(settings?.[key])])) as Record<typeof numericKeys[number], number>;
+    if (numericKeys.some(key => !Number.isFinite(values[key]) || values[key] < 0)) {
+      return { error: 'Tous les tarifs doivent être des nombres positifs ou nuls.' };
+    }
+    if (values.smsRate <= 0) return { error: 'Le prix client par SMS doit être supérieur à zéro.' };
     await prisma.systemSettings.upsert({
       where: { id: "default" },
       update: {
-        phoneNumberMarkupMultiplier: settings.phoneNumberMarkupMultiplier,
-        phoneNumberMarkupFixed: settings.phoneNumberMarkupFixed,
-        smsRate: settings.smsRate,
+        phoneNumberMarkupMultiplier: values.phoneNumberMarkupMultiplier,
+        phoneNumberMarkupFixed: values.phoneNumberMarkupFixed,
+        smsRate: values.smsRate,
         // Legacy rate remains in sync for older screens/API consumers. The
         // billing engine reads base + markup below.
-        callRatePerMinute: Number(settings.callBaseRatePerMinute) * (1 + Number(settings.callMarkupPercent) / 100),
-        callBaseRatePerMinute: settings.callBaseRatePerMinute,
-        callMarkupPercent: settings.callMarkupPercent,
-        aiAgentRatePerMinute: settings.aiAgentRatePerMinute,
-        whatsappRate: settings.whatsappRate
+        callRatePerMinute: values.callBaseRatePerMinute * (1 + values.callMarkupPercent / 100),
+        callBaseRatePerMinute: values.callBaseRatePerMinute,
+        callMarkupPercent: values.callMarkupPercent,
+        aiAgentRatePerMinute: values.aiAgentRatePerMinute,
+        whatsappRate: values.whatsappRate
       },
       create: {
         id: "default",
-        phoneNumberMarkupMultiplier: settings.phoneNumberMarkupMultiplier,
-        phoneNumberMarkupFixed: settings.phoneNumberMarkupFixed,
-        smsRate: settings.smsRate,
-        callRatePerMinute: Number(settings.callBaseRatePerMinute) * (1 + Number(settings.callMarkupPercent) / 100),
-        callBaseRatePerMinute: settings.callBaseRatePerMinute,
-        callMarkupPercent: settings.callMarkupPercent,
-        aiAgentRatePerMinute: settings.aiAgentRatePerMinute,
-        whatsappRate: settings.whatsappRate
+        phoneNumberMarkupMultiplier: values.phoneNumberMarkupMultiplier,
+        phoneNumberMarkupFixed: values.phoneNumberMarkupFixed,
+        smsRate: values.smsRate,
+        callRatePerMinute: values.callBaseRatePerMinute * (1 + values.callMarkupPercent / 100),
+        callBaseRatePerMinute: values.callBaseRatePerMinute,
+        callMarkupPercent: values.callMarkupPercent,
+        aiAgentRatePerMinute: values.aiAgentRatePerMinute,
+        whatsappRate: values.whatsappRate
       }
     });
 

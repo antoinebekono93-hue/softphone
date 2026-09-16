@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { telnyx } from "@/lib/telnyx";
+import { POST as sendSms } from '@/app/api/sms/send/route';
 
 export async function POST(req: Request) {
   try {
@@ -11,17 +11,23 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { name, content, audience } = body;
+    const { name, content, channel } = body;
+
+    if (channel !== 'SMS') return NextResponse.json({ error: 'Seules les campagnes SMS sont prises en charge ici en production.' }, { status: 501 });
 
     if (!content) {
       return new NextResponse("Content required", { status: 400 });
     }
 
-    // 1. Fetch all contacts for this organization (mock audience filtering)
-    // In a real scenario, you'd filter by 'audience' tags
+    const sender = await prisma.phoneNumber.findFirst({
+      where: { organizationId: session.user.organizationId, status: 'ACTIVE', messagingProfileId: { not: null } },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!sender) return NextResponse.json({ error: 'Aucun numéro SMS actif avec profil de messagerie.' }, { status: 422 });
+    // Limite explicite pour éviter une requête HTTP longue et des envois en masse accidentels.
     const contacts = await prisma.contact.findMany({
-      where: { organizationId: session.user.organizationId },
-      take: 5 // Limit to 5 for safety in sandbox
+      where: { organizationId: session.user.organizationId, optedOut: false },
+      take: 20,
     });
 
     if (contacts.length === 0) {
@@ -31,7 +37,9 @@ export async function POST(req: Request) {
     // 2. Create the campaign
     const campaign = await prisma.campaign.create({
       data: {
-        name: name || "Campagne WhatsApp",
+        name: name || "Campagne SMS",
+        channel: 'SMS',
+        phoneNumberId: sender.id,
         status: "SENDING",
         body: content,
         organizationId: session.user.organizationId,
@@ -47,9 +55,7 @@ export async function POST(req: Request) {
       }
     });
 
-    const fromNumber = process.env.TELNYX_WHATSAPP_NUMBER || "+123456789";
-
-    // 3. Send message to all recipients asynchronously
+    // Envoi réel ; les accusés de livraison arrivent ensuite via webhook.
     let successCount = 0;
     let failCount = 0;
 
@@ -59,37 +65,19 @@ export async function POST(req: Request) {
           throw new Error("No phone number for contact");
         }
 
-        let personalizedContent = content.replace(/\{\{name\}\}/g, recipient.contact.name || "Client");
-        let telnyxMessageId = `cmp_msg_${Date.now()}_${recipient.id}`;
-
-        if (process.env.TELNYX_API_KEY) {
-          const response = await telnyx.messages.create({
-            from: fromNumber,
-            to: recipient.contact.phone,
-            text: personalizedContent,
-          });
-          if (response.data?.id) {
-            telnyxMessageId = response.data.id;
-          }
-        }
+        const personalizedContent = content.replace(/\{\{name\}\}/g, recipient.contact.name || "Client");
+        const response = await sendSms(new Request(req.url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', cookie: req.headers.get('cookie') || '' },
+          body: JSON.stringify({ from: sender.number, to: recipient.contact.phone, text: personalizedContent }),
+        }));
+        if (!response.ok) throw new Error(`Envoi SMS refusé (${response.status})`);
+        const sent = await response.json();
+        const telnyxMessageId = sent.data.telnyxMessageId;
 
         await prisma.campaignRecipient.update({
           where: { id: recipient.id },
           data: { status: 'SENT', messageId: telnyxMessageId }
-        });
-
-        await prisma.smsMessage.create({
-          data: {
-            telnyxMessageId,
-            direction: 'OUTBOUND',
-            body: personalizedContent,
-            type: 'WHATSAPP',
-            fromNumber,
-            toNumber: recipient.contact.phone,
-            organizationId: session.user.organizationId,
-            userId: session.user.id,
-            contactId: recipient.contactId
-          }
         });
 
         successCount++;
@@ -103,7 +91,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Mark campaign as COMPLETED
+    // La campagne est terminée côté soumission, pas nécessairement livrée.
     await prisma.campaign.update({
       where: { id: campaign.id },
       data: { 

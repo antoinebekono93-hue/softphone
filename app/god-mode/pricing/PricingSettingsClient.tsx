@@ -117,12 +117,12 @@ export function PricingSettingsClient({ initialSettings }: { initialSettings: an
             </div>
             <label className="block text-sm mb-2">Prix par SMS ($)</label>
             <input 
-              type="number" step="0.001" 
+              type="number" min="0.000001" step="0.000001"
               value={settings.smsRate}
               onChange={(e) => handleChange("smsRate", e.target.value)}
               className="w-full px-4 py-2 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg outline-none focus:border-cyan-500"
             />
-            <p className="text-xs text-[var(--text-secondary)] mt-2">Coût Telnyx moyen : ~0.004$</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-2">Montant réellement débité du portefeuille avant chaque SMS accepté pour envoi. Le coût opérateur final reste enregistré depuis le webhook Telnyx.</p>
           </div>
 
           <div className="p-4 bg-[var(--bg-surface-hover)] rounded-xl border border-[var(--border-subtle)]">

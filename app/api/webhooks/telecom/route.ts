@@ -142,6 +142,26 @@ async function processEvent(event: any) {
 
     const callControlId = event.payload?.call_control_id;
     const eventType = event.event_type;
+    // Delivery callbacks may arrive before the sending request persists its row.
+    // Persist the signed provider message first so a final status is not lost.
+    if (eventType === 'message.sent' || eventType === 'message.finalized') {
+      const payload = event.payload;
+      const sender = typeof payload.from === 'string' ? payload.from : payload.from?.phone_number;
+      const destination = payload.to?.[0]?.phone_number;
+      const source = canonicalizePhoneNumber(sender);
+      const target = canonicalizePhoneNumber(destination);
+      if (source && target && typeof payload.id === 'string' && ['SMS', 'MMS'].includes(payload.type)) {
+        const number = await prisma.phoneNumber.findUnique({ where: { number: source } });
+        if (number) await prisma.smsMessage.upsert({
+          where: { telnyxMessageId: payload.id }, update: {},
+          create: {
+            telnyxMessageId: payload.id, organizationId: number.organizationId, phoneNumberId: number.id,
+            direction: 'OUTBOUND', fromNumber: source, toNumber: target, body: payload.text || '',
+            type: payload.type === 'MMS' ? 'MMS' : 'SMS', status: 'QUEUED',
+          },
+        });
+      }
+    }
     if (eventType.startsWith('call.') &&
         (typeof callControlId !== 'string' || callControlId.length === 0 || callControlId.length > 200)) {
       console.error(`[Telnyx Webhook] Invalid call_control_id for ${eventType}`);
@@ -860,8 +880,10 @@ async function processEvent(event: any) {
         });
 
         if (phoneNumber) {
-          const smsMessage = await prisma.smsMessage.create({
-            data: {
+          const smsMessage = await prisma.smsMessage.upsert({
+            where: { telnyxMessageId: messageId },
+            update: {},
+            create: {
               telnyxMessageId: messageId,
               direction: 'INBOUND',
               body: text || '',
@@ -898,7 +920,7 @@ async function processEvent(event: any) {
       const messageId = event.payload.id;
       console.log(`[Telnyx Webhook] Message ${messageId} sent to carrier`);
       await prisma.smsMessage.updateMany({
-        where: { telnyxMessageId: messageId },
+        where: { telnyxMessageId: messageId, status: { in: ['PENDING', 'QUEUED', 'IN_FLIGHT', 'SENDING'] } },
         data: { status: 'SENT' }
       });
     }
@@ -907,17 +929,19 @@ async function processEvent(event: any) {
       const messageId = event.payload.id;
       const toArray = event.payload.to;
       const status = toArray && toArray.length > 0 ? toArray[0].status : null; // 'delivered' or 'delivery_failed'
-      const cost = event.payload.cost?.amount ? parseFloat(event.payload.cost.amount) : 0;
+      const cost = event.payload.cost?.amount != null ? Number(event.payload.cost.amount) : null;
       
       console.log(`[Telnyx Webhook] Message ${messageId} finalized with status: ${status}`);
       
-      const newStatus = status === 'delivered' ? 'DELIVERED' : (status === 'delivery_failed' ? 'FAILED' : 'FINALIZED');
+      const newStatus = status === 'delivered' ? 'DELIVERED'
+        : ['delivery_failed', 'sending_failed'].includes(status) ? 'FAILED'
+        : status === 'delivery_unconfirmed' ? 'DELIVERY_UNCONFIRMED' : 'FINALIZED';
 
       await prisma.smsMessage.updateMany({
         where: { telnyxMessageId: messageId },
         data: { 
           status: newStatus,
-          cost: cost
+          ...(cost !== null && Number.isFinite(cost) && cost >= 0 ? { cost } : {})
         }
       });
 

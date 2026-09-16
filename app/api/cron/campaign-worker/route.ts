@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCronSecret } from "@/lib/security";
+import { getConfiguredTelnyxClient } from '@/lib/telnyx';
+import { validateSms, messagingWebhookUrl } from '@/lib/sms-policy';
+import { randomUUID } from 'crypto';
+import { confirmSmsCharge, refundSmsCharge, reserveSmsCharge } from '@/lib/billing';
 
 export async function GET(req: Request) {
   try {
@@ -11,10 +15,9 @@ export async function GET(req: Request) {
 
     // Find campaigns that are in SENDING status
     const activeCampaigns = await prisma.campaign.findMany({
-      where: { status: "SENDING" },
+      where: { status: "SENDING", channel: 'SMS' },
       include: {
-        phoneNumber: true, // The sender number
-        template: true,    // WhatsApp Template (if any)
+        phoneNumber: { include: { messagingProfile: true } },
       }
     });
 
@@ -25,19 +28,19 @@ export async function GET(req: Request) {
     let totalProcessed = 0;
 
     for (const campaign of activeCampaigns) {
-      if (!campaign.phoneNumber) {
+      if (!campaign.phoneNumber || campaign.phoneNumber.organizationId !== campaign.organizationId || campaign.phoneNumber.status !== 'ACTIVE' || !campaign.phoneNumber.messagingProfile || campaign.phoneNumber.messagingProfile.organizationId !== campaign.organizationId) {
         console.error(`[Campaign Worker] Campaign ${campaign.id} has no sender number assigned. Marking as FAILED.`);
         await prisma.campaign.update({ where: { id: campaign.id }, data: { status: "FAILED" } });
         continue;
       }
 
-      // Fetch a batch of PENDING recipients (Batch size of 50 to avoid timeout)
+      // Borne le nombre d'envois par exécution pour respecter la durée Vercel.
       const pendingRecipients = await prisma.campaignRecipient.findMany({
         where: {
           campaignId: campaign.id,
           status: "PENDING"
         },
-        take: 50,
+        take: 20,
         include: {
           contact: true
         }
@@ -56,11 +59,6 @@ export async function GET(req: Request) {
       // Process the batch
       for (const recipient of pendingRecipients) {
         try {
-          // Determine the channel (SMS, WHATSAPP, RCS). 
-          // For now, let's assume if it has a WhatsApp template, it's WhatsApp.
-          // Otherwise, we default to SMS.
-          const channel = campaign.template ? "WHATSAPP" : "SMS";
-          
           // Format the message body (allow variable replacement like {{firstName}})
           let text = campaign.body || "";
           if (recipient.contact) {
@@ -70,48 +68,63 @@ export async function GET(req: Request) {
             text = text.replace("{{lastName}}", contactName.split(" ").slice(1).join(" ") || "");
           }
 
-          // Call the Unified Messaging Engine internally
-          // We can't easily fetch to our own route in Serverless without an absolute URL,
-          // so we'll directly call the Telnyx API from here for maximum speed.
-          
-          const telnyxPayload: any = {
-            from: campaign.phoneNumber.number,
-            to: recipient.contact.phone,
-          };
-
-          if (channel === "WHATSAPP" && campaign.template) {
-            telnyxPayload.type = "whatsapp";
-            telnyxPayload.whatsapp = {
-              type: "template",
-              template: {
-                name: campaign.template.name,
-                language: { code: campaign.template.language || "fr" },
-                components: [] // We could dynamically inject contact fields here
-              }
-            };
-          } else {
-            telnyxPayload.text = text;
+          if (recipient.contact.optedOut) {
+            await prisma.campaignRecipient.update({ where: { id: recipient.id }, data: { status: 'FAILED' } });
+            totalProcessed++;
+            continue;
           }
-
-          const res = await fetch("https://api.telnyx.com/v2/messages", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${process.env.TELNYX_API_KEY}`,
-              "Content-Type": "application/json",
-              "Accept": "application/json"
+          const sms = validateSms({ from: campaign.phoneNumber.number, to: recipient.contact.phone, text });
+          const client = await getConfiguredTelnyxClient();
+          const webhookUrl = messagingWebhookUrl();
+          let reservation;
+          try { reservation = await reserveSmsCharge(campaign.organizationId, randomUUID()); }
+          catch (error) {
+            const insufficient = error instanceof Error && error.message === 'Insufficient funds in wallet';
+            if (insufficient) {
+              await prisma.campaign.update({ where: { id: campaign.id }, data: { status: 'FAILED' } });
+            }
+            throw error;
+          }
+          let response;
+          try {
+            response = await client.messages.send({
+              from: sms.from,
+              to: sms.to,
+              text: sms.text,
+              messaging_profile_id: campaign.phoneNumber.messagingProfile.telnyxId,
+              webhook_url: webhookUrl,
+              use_profile_webhooks: true,
+            }, { maxRetries: 0 });
+          } catch (error: any) {
+            const status = Number(error?.status ?? error?.statusCode);
+            if (status >= 400 && status < 500) await refundSmsCharge(campaign.organizationId, reservation.reference, `Refus Telnyx ${status}`);
+            throw error;
+          }
+          const messageId = response.data?.id;
+          if (!messageId) throw new Error('Telnyx n’a pas renvoyé de message ID');
+          await confirmSmsCharge(reservation.reference, messageId);
+          await prisma.smsMessage.upsert({
+            where: { telnyxMessageId: messageId },
+            update: { contactId: recipient.contactId },
+            create: {
+              telnyxMessageId: messageId,
+              direction: 'OUTBOUND',
+              body: sms.text || '',
+              type: 'SMS',
+              status: 'QUEUED',
+              fromNumber: sms.from,
+              toNumber: sms.to,
+              organizationId: campaign.organizationId,
+              phoneNumberId: campaign.phoneNumber.id,
+              contactId: recipient.contactId,
             },
-            body: JSON.stringify(telnyxPayload)
           });
-
-          const data = await res.json();
-
-          if (res.ok) {
             // Update recipient status to SENT
             await prisma.campaignRecipient.update({
               where: { id: recipient.id },
               data: { 
                 status: "SENT",
-                messageId: data.data?.id
+                messageId
               }
             });
             // Update Campaign sent count
@@ -119,14 +132,6 @@ export async function GET(req: Request) {
               where: { id: campaign.id },
               data: { sentCount: { increment: 1 } }
             });
-          } else {
-            // Mark as failed
-            await prisma.campaignRecipient.update({
-              where: { id: recipient.id },
-              data: { status: "FAILED" }
-            });
-            console.error(`[Campaign Worker] Telnyx Error for ${recipient.contact.phone}:`, data);
-          }
         } catch (err) {
           console.error(`[Campaign Worker] Error sending to ${recipient.contact.phone}:`, err);
           await prisma.campaignRecipient.update({
