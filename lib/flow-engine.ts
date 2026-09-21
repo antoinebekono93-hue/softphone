@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { Prisma } from "@prisma/client";
+import { sendWhatsAppForOrganization } from "@/lib/whatsapp";
 
 export type FlowNodeType = 'triggerNode' | 'messageNode' | 'delayNode' | 'aiAgentNode';
 
@@ -147,55 +148,13 @@ async function sendWhatsAppMessage(enrollment: any, text: string) {
   if (!text) return;
 
   try {
-    // 1. Trouver le compte WhatsApp de l'org pour avoir le numéro émetteur
-    const waAccount = await prisma.whatsAppAccount.findFirst({
-      where: { organizationId: enrollment.organizationId }
-    });
-
-    if (!waAccount) {
-      console.error(`[FlowEngine] Aucun compte WhatsApp trouvé pour l'org ${enrollment.organizationId}`);
-      return;
-    }
-
-    const fromNumber = waAccount.phoneNumber;
     const toNumber = enrollment.contact.phone;
-
-    // 2. Appel natif à Telnyx
-    const res = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: fromNumber,
-        to: toNumber,
-        whatsapp_message: {
-          type: 'text',
-          text: { body: text, preview_url: false }
-        }
-      })
+    await sendWhatsAppForOrganization({
+      organizationId: enrollment.organizationId,
+      to: toNumber,
+      content: { type: 'text', text: { body: text, preview_url: false } },
     });
-
-    if (res.ok) {
-      // 3. Tracer dans l'historique
-      await prisma.smsMessage.create({
-        data: {
-          telnyxMessageId: `flow-${Date.now()}`, // ID temporaire (vrai ID dans webhook sortant si on le trace, mais Telnyx v2 renvoie pas tjrs direct)
-          direction: "OUTBOUND",
-          body: text,
-          status: "DELIVERED",
-          type: "WHATSAPP",
-          fromNumber: fromNumber,
-          toNumber: toNumber,
-          organizationId: enrollment.organizationId,
-          contactId: enrollment.contact.id,
-        }
-      });
-      console.log(`[FlowEngine] Message envoyé à ${toNumber}: "${text.substring(0, 30)}..."`);
-    } else {
-      console.error(`[FlowEngine] Erreur Telnyx: ${res.status}`, await res.text());
-    }
+    console.log(`[FlowEngine] Message WhatsApp mis en file vers ${toNumber}`);
   } catch (e) {
     console.error(`[FlowEngine] Exception envoi WhatsApp:`, e);
   }

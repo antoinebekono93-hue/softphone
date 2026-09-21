@@ -23,6 +23,7 @@ export function GodModeSidebar() {
     { label: "Telnyx API Control", href: "/god-mode/telnyx" },
     { label: "Number Inventory", href: "/god-mode/numbers" },
     { label: "SMS / Messaging", href: "/god-mode/messaging" },
+    { label: "WhatsApp", href: "/god-mode/whatsapp" },
     { label: "Voice / AI Agents", href: "/god-mode/voice" },
     { label: "eSIM & IoT", href: "/god-mode/esim" },
   ];

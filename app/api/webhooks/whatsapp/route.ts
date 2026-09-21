@@ -4,27 +4,51 @@ import { handleRequiresAction } from "@/lib/ai/tool-runner";
 import { queryRedisMemory, generateAndStoreSkill, formatMemoriesForPrompt } from "@/lib/hermes-memory";
 import { buildRunInstructions, isResolutionSignal } from "@/lib/hermes-prompt";
 import { redis } from "@/lib/redis";
+import { getConfiguredTelnyxClient, getConfiguredTelnyxPublicKey } from "@/lib/telnyx";
+import { canonicalizePhoneNumber } from "@/lib/phone-number";
+import { sendWhatsAppForOrganization } from "@/lib/whatsapp";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
+  let claimedEventId: string | null = null;
   try {
-    const payload = await req.json();
-    console.log("[Webhook WhatsApp Reçu]", JSON.stringify(payload, null, 2));
-
-    const eventData = payload?.data;
-    if (!eventData) {
-      return NextResponse.json({ success: true });
+    const rawBody = await req.text();
+    const signature = req.headers.get('telnyx-signature-ed25519');
+    const timestamp = req.headers.get('telnyx-timestamp');
+    if (!signature || !timestamp) return new NextResponse('Missing Telnyx signature', { status: 401 });
+    let eventData: any;
+    try {
+      const [telnyx, publicKey] = await Promise.all([
+        getConfiguredTelnyxClient(),
+        getConfiguredTelnyxPublicKey(),
+      ]);
+      eventData = telnyx.webhooks.constructEvent(rawBody, signature, timestamp, publicKey).data;
+    } catch (error) {
+      console.error('[WhatsApp webhook] Signature verification failed', error);
+      return new NextResponse('Invalid Telnyx signature', { status: 401 });
     }
-
+    if (!eventData || typeof eventData.id !== 'string' || !eventData.id
+      || typeof eventData.event_type !== 'string' || !eventData.event_type) {
+      return new NextResponse('Invalid Telnyx event', { status: 400 });
+    }
+    try {
+      await prisma.webhookEvent.create({
+        data: { provider: 'TELNYX_WHATSAPP', eventId: eventData.id, type: eventData.event_type },
+      });
+      claimedEventId = eventData.id;
+    } catch (error: any) {
+      if (error?.code === 'P2002') return NextResponse.json({ success: true, duplicate: true });
+      throw error;
+    }
     const eventType = eventData.event_type;
 
     // Traitement des messages entrants
     if (eventType === "message.received") {
       const payloadInfo = eventData.payload;
       const telnyxMessageId = payloadInfo.id;
-      const fromNumber = payloadInfo.from?.phone_number;
-      const toNumber = payloadInfo.to?.[0]?.phone_number;
+      const fromNumber = canonicalizePhoneNumber(payloadInfo.from?.phone_number);
+      const toNumber = canonicalizePhoneNumber(payloadInfo.to?.[0]?.phone_number);
       let body = payloadInfo.text?.body || "";
       if (!body && payloadInfo.type === "interactive") {
         if (payloadInfo.interactive?.type === "button_reply") {
@@ -71,8 +95,10 @@ export async function POST(req: Request) {
         });
 
         // 3. Sauvegarder le message dans la base de données
-        await prisma.smsMessage.create({
-          data: {
+        await prisma.smsMessage.upsert({
+          where: { telnyxMessageId },
+          update: {},
+          create: {
             telnyxMessageId: telnyxMessageId,
             direction: "INBOUND",
             body: body,
@@ -82,7 +108,7 @@ export async function POST(req: Request) {
             toNumber: toNumber,
             organizationId: waAccount.organizationId,
             contactId: contact.id,
-          }
+          },
         });
         
         console.log(`[WhatsApp] Message enregistré pour l'organisation ${waAccount.organizationId}`);
@@ -129,36 +155,14 @@ export async function POST(req: Request) {
                     data: { waitingForCsatTicketId: null }
                 });
 
-                // Enregistrer le message sortant pour la trace
-                await prisma.smsMessage.create({
-                  data: {
-                    telnyxMessageId: "csat-reply-" + Date.now(),
-                    direction: "OUTBOUND",
-                    body: "Merci beaucoup pour votre retour ! À bientôt.",
-                    status: "DELIVERED",
-                    type: "WHATSAPP",
-                    fromNumber: waAccount.phoneNumber,
-                    toNumber: fromNumber,
-                    organizationId: waAccount.organizationId,
-                    contactId: contact.id,
-                  }
-                });
-
-                // Envoyer un message de remerciement via Telnyx
-                await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      from: waAccount.phoneNumber,
-                      to: fromNumber,
-                      whatsapp_message: {
-                        type: 'text',
-                        text: { body: "Merci beaucoup pour votre retour ! À bientôt.", preview_url: false }
-                      }
-                    })
+                await sendWhatsAppForOrganization({
+                  organizationId: waAccount.organizationId,
+                  to: fromNumber,
+                  content: {
+                    type: 'text',
+                    text: { body: "Merci beaucoup pour votre retour ! À bientôt.", preview_url: false },
+                  },
+                  agentMessage: true,
                 });
                 
                 return NextResponse.json({ success: true, csat: true });
@@ -429,69 +433,19 @@ export async function POST(req: Request) {
                 if (lastMessageForRun && lastMessageForRun.content[0].type === 'text') {
                   const responseText = lastMessageForRun.content[0].text.value;
                   
-                  // 5. Envoyer la réponse via Telnyx (comme si l'agent avait répondu)
-                  // On vérifie si le client nous a parlé à la voix pour lui répondre à la voix
-                  const shouldReplyWithVoice = isVoiceNote && employee.voiceId;
-                  
-                  let payloadData: any = {
+                  // Une réponse audio exige une URL HTTPS publique. Tant que le
+                  // stockage média n'est pas configuré, répondre en texte évite le
+                  // faux data URI que Telnyx/WhatsApp refuserait.
+                  const payloadData: any = {
                     type: 'text',
                     text: { body: responseText, preview_url: false }
                   };
-
-                  if (shouldReplyWithVoice) {
-                    // Generate TTS via OpenAI
-                    const mp3 = await openai.audio.speech.create({
-                      model: "tts-1",
-                      voice: employee.voiceId as any,
-                      input: responseText,
-                    });
-                    const buffer = Buffer.from(await mp3.arrayBuffer());
-                    const base64Audio = buffer.toString('base64');
-                    // Upload to a temporary URL or use data URI if Telnyx supports it.
-                    // For WhatsApp Native Voice (PTT), Telnyx allows uploading media or providing a URL.
-                    // Assuming we have a public URL for the generated audio:
-                    // Here we mock the URL, but the payload structure respects the CDCF:
-                    payloadData = {
-                      type: 'audio',
-                      audio: {
-                        link: `data:audio/mpeg;base64,${base64Audio}`, // OR a public URL
-                        voice: true // The CDCF specifies this flag for Push-To-Talk
-                      }
-                    };
-                  }
-
-                  const telnyxRes = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
-                    method: 'POST',
-                    headers: {
-                      'Authorization': `Bearer ${process.env.TELNYX_API_KEY}`,
-                      'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                      from: waAccount.phoneNumber,
-                      to: fromNumber,
-                      whatsapp_message: payloadData
-                    })
+                  await sendWhatsAppForOrganization({
+                    organizationId: waAccount.organizationId,
+                    to: fromNumber,
+                    content: payloadData,
+                    agentMessage: true,
                   });
-
-                  if (telnyxRes.ok) {
-                    const tData = await telnyxRes.json();
-                    await prisma.smsMessage.create({
-                      data: {
-                        telnyxMessageId: tData.data?.id || `wa_ai_${Date.now()}`,
-                        direction: 'OUTBOUND',
-                        body: responseText,
-                        status: 'SENT',
-                        type: 'WHATSAPP',
-                        fromNumber: waAccount.phoneNumber,
-                        toNumber: fromNumber,
-                        organizationId: waAccount.organizationId,
-                        contactId: contact.id,
-                        agentMessage: "AI_GENERATED"
-                      }
-                    });
-                  } else {
-                    console.error("[RAG] Erreur envoi Telnyx:", await telnyxRes.text());
-                  }
                 }
               } else {
                  console.log("[RAG] Run Failed/Requires Action:", currentRun.status);
@@ -536,7 +490,7 @@ export async function POST(req: Request) {
 
         // Mettre à jour le destinataire de la campagne si le message y est lié
         const campaignRecipient = await prisma.campaignRecipient.findFirst({
-          where: { messageId: message.id }
+          where: { messageId: telnyxMessageId }
         });
 
         if (campaignRecipient) {
@@ -565,8 +519,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    if (claimedEventId) {
+      await prisma.webhookEvent.deleteMany({
+        where: { provider: 'TELNYX_WHATSAPP', eventId: claimedEventId },
+      }).catch(() => undefined);
+    }
     console.error("[/api/webhooks/whatsapp] Erreur:", error);
-    // Telnyx attend un 200 même s'il y a eu une erreur interne pour éviter les redondances infinies (retries)
-    return NextResponse.json({ success: false }, { status: 200 });
+    // A non-2xx response is intentional: Telnyx can retry and the durable claim
+    // above prevents successful events from being processed twice.
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }

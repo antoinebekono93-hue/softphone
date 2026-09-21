@@ -591,16 +591,31 @@ model WebhookEvent {
 }
 
 model WhatsAppAccount {
-  id             String       @id @default(cuid())
-  wabaId         String
-  phoneNumberId  String
-  phoneNumber    String
-  accessToken    String
-  status         String       @default("ACTIVE")
-  organizationId String       @unique
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                         String       @id @default(cuid())
+  telnyxId                   String?      @unique
+  wabaId                     String
+  phoneNumberId              String
+  phoneNumber                String
+  // Legacy only. New integrations use the global Telnyx credential managed
+  // by God Mode and never persist Meta/Telnyx access tokens per tenant.
+  accessToken                String?
+  status                     String       @default("PENDING")
+  accountReviewStatus        String?
+  businessVerificationStatus String?
+  qualityRating              String?
+  enabled                    Boolean      @default(false)
+  callingEnabled             Boolean      @default(false)
+  webhookEnabled             Boolean      @default(false)
+  timezone                   String?
+  messagingProfileId         String?
+  organizationId             String       @unique
+  createdAt                  DateTime     @default(now())
+  updatedAt                  DateTime     @updatedAt
+  organization               Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([wabaId])
+  @@index([phoneNumberId])
+  @@index([phoneNumber])
 }
 
 model Campaign {
@@ -647,19 +662,23 @@ model CampaignRecipient {
 }
 
 model WhatsAppTemplate {
-  id             String       @id @default(cuid())
-  name           String
-  language       String       @default("fr")
-  category       String       @default("MARKETING")
-  status         String       @default("APPROVED")
-  content        String
-  organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  campaigns      Campaign[]
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id              String       @id @default(cuid())
+  telnyxId        String?      @unique
+  metaTemplateId  String?
+  name            String
+  language        String       @default("fr")
+  category        String       @default("MARKETING")
+  status          String       @default("PENDING")
+  rejectionReason String?
+  content         String
+  organizationId  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  campaigns       Campaign[]
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
+  @@index([metaTemplateId])
 }
 
 model Opportunity {
