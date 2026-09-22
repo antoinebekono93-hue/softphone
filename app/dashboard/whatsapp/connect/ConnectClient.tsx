@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Phone, CheckCircle2, AlertTriangle, ShieldCheck, LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -113,10 +114,11 @@ export default function ConnectClient({ phoneNumbers, existingAccount }: { phone
         throw new Error(data.error || 'Échec de la connexion WhatsApp');
       }
 
-      alert('Numéro WhatsApp Business connecté avec succès !');
+      toast.success('Numéro WhatsApp Business connecté avec succès !');
       router.refresh(); // Refresh to show connected state
     } catch (err: any) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setIsLoading(false);
     }
@@ -132,7 +134,7 @@ export default function ConnectClient({ phoneNumbers, existingAccount }: { phone
       if (!res.ok) throw new Error("Erreur lors de la déconnexion");
       router.refresh();
     } catch (err: any) {
-      alert(err.message);
+      toast.error(err.message || "Erreur lors de la déconnexion");
     } finally {
       setIsLoading(false);
     }

@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquarePlus, Clock, CheckCircle2, AlertCircle, FileText, Plus } from "lucide-react";
+import { MessageSquarePlus, AlertCircle, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function TemplatesClient({ initialTemplates, hasAccount }: { initialTemplates: any[], hasAccount: boolean }) {
   const [templates, setTemplates] = useState(initialTemplates);
@@ -61,8 +64,9 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
       setButtonText("");
       setButtonUrl("");
       router.refresh();
+      toast.success("Modèle soumis, en attente de validation par Meta.");
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message || "Impossible de soumettre le modèle.");
     } finally {
       setIsSubmitting(false);
     }
@@ -83,18 +87,16 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-            <FileText className="text-emerald-500" /> Modèles (Templates) WhatsApp
-          </h1>
-          <p className="text-[var(--text-secondary)] mt-2">Créez et gérez vos modèles approuvés par Meta pour initier des conversations.</p>
-        </div>
-        <Button onClick={() => setIsModalOpen(true)} className="px-6 py-3 flex items-center gap-2">
-          <MessageSquarePlus className="w-5 h-5" />
-          Nouveau Modèle
-        </Button>
-      </div>
+      <PageHeader
+        title="Modèles (Templates) WhatsApp"
+        description="Créez et gérez vos modèles approuvés par Meta pour initier des conversations."
+        actions={
+          <Button onClick={() => setIsModalOpen(true)} className="px-6 py-3 flex items-center gap-2">
+            <MessageSquarePlus className="w-5 h-5" />
+            Nouveau Modèle
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {templates.map(template => {
@@ -135,8 +137,12 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
           )
         })}
         {templates.length === 0 && (
-          <div className="col-span-full p-12 text-center text-[var(--text-secondary)] border-2 border-dashed border-[var(--border-subtle)] rounded-2xl">
-            Aucun modèle pour le moment. Créez-en un pour démarrer.
+          <div className="col-span-full rounded-2xl border-2 border-dashed border-[var(--border-subtle)]">
+            <EmptyState
+              icon={FileText}
+              title="Aucun modèle pour le moment"
+              description="Créez votre premier modèle WhatsApp pour initier des conversations."
+            />
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, MessageCircle, Mail, Phone, Plus, Package, Hand } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export type OmnichannelEvent = {
   id: string;
@@ -135,7 +136,7 @@ export default function UnifiedInboxClient({
       setContactAssignments(prev => ({ ...prev, [currentContactId]: userId }));
       router.refresh();
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message || "Erreur lors de l'assignation");
     } finally {
       setIsAssigning(false);
     }
@@ -155,7 +156,7 @@ export default function UnifiedInboxClient({
       
       setContactSummaries(prev => ({ ...prev, [currentContactId]: data.summary }));
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message || "Erreur de résumé");
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -210,7 +211,7 @@ export default function UnifiedInboxClient({
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert("Failed to send reply");
+      toast.error("Impossible d'envoyer la réponse.");
     } finally {
       setIsSending(false);
     }
@@ -519,7 +520,7 @@ export default function UnifiedInboxClient({
                             [currentContactId]: { status: 'NONE', reason: null, botMode: true }
                           }));
                         } catch (e) {
-                          alert("Erreur lors de la réactivation");
+                          toast.error("Erreur lors de la réactivation");
                         }
                      }}
                      className="text-xs font-bold bg-amber-500 text-white px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors"

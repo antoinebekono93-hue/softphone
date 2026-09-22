@@ -27,8 +27,29 @@ export async function POST(req: Request) {
 
     const apiKey = process.env.TELNYX_API_KEY;
 
-    // Call Telnyx API to create template
-    const response = await fetch(`https://api.telnyx.com/v2/whatsapp/${account.wabaId}/message_templates`, {
+    // Meta exige des valeurs d'exemple pour chaque variable {{N}} du corps.
+    // Telnyx transmet les composants tels quels à Meta ; sans "example",
+    // les modèles à variables sont rejetés dès la soumission.
+    const normalizedComponents = components.map((component: any) => {
+      if (!component || component.type !== "BODY" || typeof component.text !== "string") {
+        return component;
+      }
+      const variableCount = (component.text.match(/\{\{\d+\}\}/g) || []).length;
+      if (variableCount === 0 || (component.example && component.example.body_text)) {
+        return component;
+      }
+      return {
+        ...component,
+        example: {
+          body_text: [Array.from({ length: variableCount }, (_, i) => `Exemple ${i + 1}`)],
+        },
+      };
+    });
+
+    // Call Telnyx API to create template.
+    // Endpoint officiel : POST /v2/whatsapp/message_templates avec l'identifiant
+    // du compte WhatsApp (waba_id) dans le corps, pas dans l'URL.
+    const response = await fetch(`https://api.telnyx.com/v2/whatsapp/message_templates`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -36,17 +57,19 @@ export async function POST(req: Request) {
         'Accept': 'application/json'
       },
       body: JSON.stringify({
+        waba_id: account.wabaId,
         name,
         category: category || 'MARKETING',
         language: language || 'fr',
-        components
+        components: normalizedComponents
       })
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('[Create WhatsApp Template Error]', errorData);
-      return NextResponse.json({ error: errorData.errors?.[0]?.detail || 'Failed to create template on Meta' }, { status: response.status });
+      const detail = errorData.errors?.[0]?.detail || errorData.error || 'Failed to create template on Meta';
+      return NextResponse.json({ error: detail }, { status: response.status });
     }
 
     const telnyxData = await response.json();

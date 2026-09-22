@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Megaphone, Users, MessageSquare, Play, CalendarClock, Target } from "lucide-react";
+import { Megaphone, Target, CheckCircle2, Play, CalendarClock, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { formatDateFR, formatDateTimeFR } from "@/lib/utils";
 
 export default function CampaignsClient({ groups, templates, facebookAccounts, initialCampaigns }: any) {
   const [campaigns, setCampaigns] = useState(initialCampaigns);
@@ -27,9 +32,9 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
 
   const handleCreateCampaign = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (channel === 'WHATSAPP' && !templateId) return alert("Sélectionnez un modèle WhatsApp.");
-    if (channel === 'MESSENGER' && (!socialAccountId || !messageText)) return alert("Sélectionnez une Page Facebook et rédigez un message.");
-    if (selectedGroups.length === 0) return alert("Sélectionnez au moins un groupe de contacts.");
+    if (channel === 'WHATSAPP' && !templateId) return toast.error("Sélectionnez un modèle WhatsApp.");
+    if (channel === 'MESSENGER' && (!socialAccountId || !messageText)) return toast.error("Sélectionnez une Page Facebook et rédigez un message.");
+    if (selectedGroups.length === 0) return toast.error("Sélectionnez au moins un groupe de contacts.");
 
     setIsSubmitting(true);
     try {
@@ -64,9 +69,9 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
       setBotEnabled(false);
       setAiGoal("");
       router.refresh();
-      alert("Campagne lancée avec succès !");
+      toast.success("Campagne lancée avec succès !");
     } catch (error: any) {
-      alert(error.message);
+      toast.error(error.message || "Impossible de lancer la campagne.");
     } finally {
       setIsSubmitting(false);
     }
@@ -74,35 +79,46 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-            <Megaphone className="text-emerald-500" /> Campagnes Sociales
-          </h1>
-          <p className="text-[var(--text-secondary)] mt-2">Envoyez des messages groupés via WhatsApp ou Facebook Messenger.</p>
-        </div>
-        <Button onClick={() => setIsModalOpen(true)} className="px-6 py-3 flex items-center gap-2">
-          <Play className="w-5 h-5" />
-          Lancer une campagne
-        </Button>
+      <PageHeader
+        title="Campagnes Sociales"
+        description="Envoyez des messages groupés via WhatsApp ou Facebook Messenger."
+        actions={
+          <Button onClick={() => setIsModalOpen(true)} className="px-6 py-3 flex items-center gap-2">
+            <Play className="w-5 h-5" />
+            Lancer une campagne
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <StatCard title="Total Campagnes" value={campaigns.length} icon={Target} accent="brand" />
+        <StatCard
+          title="Messages Envoyés"
+          value={campaigns.reduce((acc: number, c: any) => acc + (c.sentCount || 0), 0)}
+          icon={CheckCircle2}
+          accent="success"
+        />
+        <StatCard
+          title="Dernière activité"
+          value={campaigns[0] ? formatDateFR(campaigns[0].createdAt) : "Jamais"}
+          icon={CalendarClock}
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <Card className="p-6 flex items-center gap-4 hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-          <div className="p-4 rounded-xl bg-blue-500/10 text-blue-500"><Target className="w-8 h-8" /></div>
-          <div><p className="text-[var(--text-secondary)] text-sm">Total Campagnes</p><p className="text-2xl font-bold text-[var(--text-primary)]">{campaigns.length}</p></div>
-        </Card>
-        <Card className="p-6 flex items-center gap-4 hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-          <div className="p-4 rounded-xl bg-emerald-500/10 text-emerald-500"><CheckCircle /></div>
-          <div><p className="text-[var(--text-secondary)] text-sm">Messages Envoyés</p><p className="text-2xl font-bold text-[var(--text-primary)]">{campaigns.reduce((acc: number, c: any) => acc + (c.sentCount || 0), 0)}</p></div>
-        </Card>
-        <Card className="p-6 flex items-center gap-4 hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
-          <div className="p-4 rounded-xl bg-amber-500/10 text-amber-500"><CalendarClock className="w-8 h-8" /></div>
-          <div><p className="text-[var(--text-secondary)] text-sm">Dernière activité</p><p className="text-xl font-bold text-[var(--text-primary)]">{campaigns[0] ? new Date(campaigns[0].createdAt).toLocaleDateString() : 'Jamais'}</p></div>
-        </Card>
-      </div>
-
-      <Card className="overflow-hidden hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
+      <Card className="overflow-hidden">
+        {campaigns.length === 0 ? (
+          <EmptyState
+            icon={Megaphone}
+            title="Aucune campagne pour le moment"
+            description="Créez votre première campagne WhatsApp ou Messenger."
+            action={
+              <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
+                <Play className="w-4 h-4" />
+                Lancer une campagne
+              </Button>
+            }
+          />
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -116,11 +132,7 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
               </tr>
             </thead>
             <tbody>
-              {campaigns.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-8 text-center text-[var(--text-secondary)]">Aucune campagne lancée.</td>
-                </tr>
-              ) : campaigns.map((campaign: any) => (
+              {campaigns.map((campaign: any) => (
                 <tr key={campaign.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors">
                   <td className="p-4">
                     <div className="font-bold text-[var(--text-primary)]">{campaign.name}</div>
@@ -137,12 +149,13 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
                     {campaign.channel === 'WHATSAPP' ? campaign.template?.name : (campaign.body?.substring(0, 20) + "...")}
                   </td>
                   <td className="p-4 text-[var(--text-secondary)]">{campaign.sentCount} contacts</td>
-                  <td className="p-4 text-[var(--text-secondary)]">{new Date(campaign.createdAt).toLocaleDateString()}</td>
+                  <td className="p-4 text-[var(--text-secondary)] whitespace-nowrap">{formatDateTimeFR(campaign.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        )}
       </Card>
 
       {/* Modal */}
@@ -275,5 +288,3 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
     </div>
   );
 }
-
-const CheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>;

@@ -154,7 +154,8 @@ export function DashboardSidebar({
 
       {/* Sidebar */}
       <div 
-        className={`fixed md:relative top-0 left-0 h-screen z-50 flex flex-col bg-[var(--bg-base)] border-r border-[var(--border-subtle)] transition-all duration-300 ease-out
+        className={`fixed md:relative top-0 left-0 z-50 flex flex-col bg-[var(--bg-base)] border-r border-[var(--border-subtle)] transition-all duration-300 ease-out
+          h-screen md:h-[calc(100vh-4rem)]
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
           ${isCollapsed ? 'w-[72px]' : 'w-[260px]'}
         `}

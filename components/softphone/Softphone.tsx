@@ -5,7 +5,6 @@ import { useTelnyx } from "@/contexts/TelnyxContext";
 import { useAppCall } from "@/contexts/AppCallContext";
 import { useCallRouter } from "@/hooks/useCallRouter";
 import { StatusDot } from "@/components/ui/status-dot";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Dialpad } from "./Dialpad";
 import { CallControls } from "./CallControls";
 import { AudioVisualizer } from "./AudioVisualizer";
@@ -13,6 +12,10 @@ import { AppCallPanel } from "./AppCallPanel";
 import { TelemetryStrip } from "./TelemetryStrip";
 import { PSTN_STATUS_TEXT, pstnPulse, pstnTone } from "./status-labels";
 import { formatPhoneNumber } from "@/lib/utils";
+
+// La télémétrie technique (PSTN idle, APP idle, DIR) reste disponible en debug
+// mais n'est plus affichée dans l'interface utilisateur.
+const SHOW_TECHNICAL_TELEMETRY = false;
 
 type CallerIdNumber = {
   id: string;
@@ -98,13 +101,13 @@ export function Softphone() {
           />
           <span className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider truncate">
             {isRegistered
-              ? "PSTN connecté"
+              ? "Buster Call Connect"
               : registrationError
-              ? registrationError
-              : "Connexion à Telnyx…"}
+              ? "Connexion impossible"
+              : "Connexion…"}
           </span>
         </div>
-        <TelemetryStrip />
+        {SHOW_TECHNICAL_TELEMETRY && <TelemetryStrip />}
       </div>
 
       {/* Main Content Area */}
@@ -155,7 +158,7 @@ export function Softphone() {
                 onClick={() => setMode("pstn")}
                 className={`px-3 py-1.5 rounded-full transition-colors ${mode === "pstn" && !appCallActive ? "bg-[var(--brand)] text-[var(--brand-foreground)]" : "text-[var(--text-secondary)]"}`}
               >
-                PSTN
+                Externe
               </button>
               <button
                 onClick={() => setMode("app")}
@@ -176,7 +179,6 @@ export function Softphone() {
                     ? "Appel entrant"
                     : PSTN_STATUS_TEXT[callState]}
                 </span>
-                <StatusBadge status={callState} />
               </div>
               <div className="text-3xl font-semibold text-[var(--text-primary)] overflow-hidden text-ellipsis whitespace-nowrap">
                 {formatPhoneNumber(incomingCallerId || "Inconnu")}

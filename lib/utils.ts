@@ -76,6 +76,82 @@ export function formatRelativeTime(date: Date): string {
 }
 
 /**
+ * Coerce a date-like value into a valid Date, or null when the value is absent
+ * or invalid (never returns an "Invalid Date").
+ */
+function toValidDate(value: Date | string | number | null | undefined): Date | null {
+  if (value === null || value === undefined || value === "") return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+const DATE_FULL = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "short",
+});
+
+const DATE_FULL_YEAR = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+const TIME = new Intl.DateTimeFormat("fr-FR", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+/**
+ * Formats a date in French. Same day -> "Aujourd'hui", yesterday -> "Hier",
+ * otherwise a French date ("21 sept." or "21 sept. 2026").
+ * Returns "Date indisponible" only when the value is absent or invalid.
+ */
+export function formatDateFR(value: Date | string | number | null | undefined): string {
+  const date = toValidDate(value);
+  if (!date) return "Date indisponible";
+  const now = new Date();
+
+  if (isSameDay(date, now)) return "Aujourd'hui";
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (isSameDay(date, yesterday)) return "Hier";
+
+  if (date.getFullYear() === now.getFullYear()) {
+    return DATE_FULL.format(date);
+  }
+  return DATE_FULL_YEAR.format(date);
+}
+
+/**
+ * Formats a time in French 24h format ("14:32").
+ * Returns "Date indisponible" only when the value is absent or invalid.
+ */
+export function formatTimeFR(value: Date | string | number | null | undefined): string {
+  const date = toValidDate(value);
+  if (!date) return "Date indisponible";
+  return TIME.format(date);
+}
+
+/**
+ * Formats a date + time in French ("Aujourd'hui, 14:32", "Hier, 09:05",
+ * "21 sept., 14:32", "21 sept. 2026, 14:32").
+ * Returns "Date indisponible" only when the value is absent or invalid.
+ */
+export function formatDateTimeFR(value: Date | string | number | null | undefined): string {
+  const date = toValidDate(value);
+  if (!date) return "Date indisponible";
+  return `${formatDateFR(date)}, ${formatTimeFR(date)}`;
+}
+
+/**
  * Normalizes a phone number to E.164 format.
  * Assumes North American numbers if no country code is provided.
  */

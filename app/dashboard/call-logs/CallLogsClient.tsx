@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Clock, Play, FileText, Bot, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { formatDateTimeFR } from "@/lib/utils";
 
 export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
   const [logs, setLogs] = useState(initialLogs);
@@ -22,10 +24,10 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
           setSelectedLog({ ...selectedLog, transcriptionText: data.text });
         }
       } else {
-        alert("Transcription failed: " + (data.error || "Unknown error"));
+        toast.error("Transcription impossible : " + (data.error || "Erreur inconnue."));
       }
     } catch (e) {
-      alert("Error transcribing audio");
+      toast.error("Erreur lors de la transcription de l'audio.");
     } finally {
       setIsTranscribing(false);
     }
@@ -38,14 +40,8 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
     return `${m}:${s}`;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString([], { 
-      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-  };
-
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-64px)] w-full overflow-hidden">
+    <div className="flex flex-col md:flex-row h-full min-h-0 w-full overflow-hidden">
       {/* Main Table Area */}
       <div className={`flex-1 overflow-y-auto p-4 md:p-8 transition-all ${selectedLog ? 'md:pr-[400px]' : ''}`}>
         <div className="flex items-center justify-between mb-8">
@@ -88,7 +84,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                       className={`border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors cursor-pointer ${isSelected ? 'bg-[var(--bg-surface-hover)]' : ''}`}
                     >
                       <td className="p-4 text-sm text-[var(--text-primary)] whitespace-nowrap">
-                        {formatDate(log.startedAt)}
+                        {formatDateTimeFR(log.startedAt)}
                       </td>
                       <td className="p-4">
                          <div className="flex items-center gap-2">
@@ -170,7 +166,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                    </div>
                  )}
                  <div className="text-[var(--text-secondary)] text-sm">
-                   {formatDate(selectedLog.startedAt)}
+                   {formatDateTimeFR(selectedLog.startedAt)}
                  </div>
               </div>
 

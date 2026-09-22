@@ -17,8 +17,10 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Plus, Save, ArrowLeft, Settings2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { formatDateFR } from "@/lib/utils";
 
 // Import Custom Nodes and Sidebar
 import TriggerNode from "./nodes/TriggerNode";
@@ -117,9 +119,9 @@ function FlowBuilder({ flows, selectedFlow, setSelectedFlow, setFlows }: any) {
       body: JSON.stringify({ nodes, edges })
     });
     if (res.ok) {
-      alert("Séquence sauvegardée avec succès !");
+      toast.success("Séquence sauvegardée avec succès !");
     } else {
-      alert("Erreur lors de la sauvegarde.");
+      toast.error("Erreur lors de la sauvegarde.");
     }
   };
 
@@ -343,7 +345,7 @@ export default function FlowBuilderClient({ initialFlows }: { initialFlows: any[
                   {flow.isActive ? 'Actif' : 'Inactif'}
                 </span>
               </div>
-              <p className="text-sm text-[var(--text-secondary)]">Dernière modification : {new Date(flow.updatedAt).toLocaleDateString()}</p>
+              <p className="text-sm text-[var(--text-secondary)]">Dernière modification : {formatDateFR(flow.updatedAt)}</p>
             </Card>
           ))}
           {flows.length === 0 && (

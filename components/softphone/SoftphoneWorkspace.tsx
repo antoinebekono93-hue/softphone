@@ -6,6 +6,25 @@ import { Search, History, Users, Voicemail, PhoneMissed, PhoneForwarded, PhoneIn
 
 import Link from "next/link";
 import { useCallRouter } from "@/hooks/useCallRouter";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { formatDateFR, formatTimeFR, formatDateTimeFR } from "@/lib/utils";
+
+const CALL_STATUS_FR: Record<string, string> = {
+  COMPLETED: "Terminé",
+  NO_ANSWER: "Sans réponse",
+  MISSED: "Manqué",
+  FAILED: "Échec",
+  BUSY: "Occupé",
+  CANCELLED: "Annulé",
+  INITIATED: "En cours",
+  RINGING: "Sonnerie",
+};
+
+function callStatusFR(status: string | null | undefined): string {
+  if (!status) return "—";
+  return CALL_STATUS_FR[status.toUpperCase()] ?? status;
+}
 
 export function SoftphoneWorkspace() {
   const [activeTab, setActiveTab] = useState<'history' | 'contacts' | 'voicemail'>('history');
@@ -61,7 +80,7 @@ export function SoftphoneWorkspace() {
   };
 
   return (
-    <div className="flex flex-col-reverse lg:flex-row w-full h-auto lg:h-[calc(100vh-5rem)] gap-4 lg:gap-0 rounded-2xl overflow-hidden glass-panel border border-[var(--border-subtle)]">
+    <div className="flex flex-col-reverse lg:flex-row w-full h-auto lg:h-full min-h-0 gap-4 lg:gap-0 rounded-2xl overflow-hidden glass-panel border border-[var(--border-subtle)]">
       {/* Left Panel: Sidebar */}
       <div className="w-full lg:w-[400px] flex flex-col lg:max-h-none border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/50 max-h-[70vh] overflow-hidden">
         {/* Header & Search */}
@@ -96,7 +115,7 @@ export function SoftphoneWorkspace() {
             onClick={() => setActiveTab('voicemail')}
             className={`flex-1 flex items-center justify-center gap-2 pb-3 text-sm font-semibold transition-colors border-b-2 ${activeTab === 'voicemail' ? 'border-[var(--brand)] text-[var(--brand)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
           >
-            <Voicemail className="w-4 h-4" /> Voicemails
+            <Voicemail className="w-4 h-4" /> Messages vocaux
           </button>
         </div>
 
@@ -111,29 +130,51 @@ export function SoftphoneWorkspace() {
               {/* HISTORY TAB */}
               {activeTab === 'history' && (
                 <div className="divide-y divide-[var(--border-subtle)]">
-                  {history.length === 0 && <div className="p-8 text-center text-[var(--text-secondary)] text-sm">Aucun historique d'appel</div>}
-                  {history.map((call) => (
-                    <div key={call.id} className="p-4 hover:bg-[var(--bg-surface-hover)] transition-colors cursor-pointer flex items-center justify-between">
-                      <div className="flex flex-col gap-1">
-                        <div className="font-medium text-[var(--text-primary)] flex items-center gap-2">
-                          {getCallIcon(call.status === 'missed' ? 'missed' : call.direction === 'inbound' ? 'incoming' : 'outgoing')}
-                          <span className={call.status === 'missed' ? 'text-[var(--danger)]' : ''}>{call.fromNumber} &rarr; {call.toNumber}</span>
-                        </div>
-                        <div className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
-                          <span>{new Date(call.createdAt).toLocaleString()}</span>
-                          {call.duration > 0 && (
-                            <>
-                              <span>•</span>
-                              <span>{Math.floor(call.duration/60)}m {call.duration%60}s</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <button className="p-2 text-[var(--text-secondary)] hover:text-[var(--brand)] hover:bg-[var(--brand)]/10 rounded-full transition-colors">
-                        <PhoneForwarded className="w-4 h-4" />
-                      </button>
+                  {history.length === 0 && <div className="p-8 text-center flex flex-col items-center">
+                    <div className="w-16 h-16 rounded-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] flex items-center justify-center mb-4">
+                      <History className="w-8 h-8 text-[var(--text-secondary)]" />
                     </div>
-                  ))}
+                    <p className="text-[var(--text-secondary)]">Aucun historique d'appel pour le moment.</p>
+                  </div>}
+                  {history.map((call) => {
+                    const dir = String(call.direction ?? "").toLowerCase();
+                    const isInbound = dir === "inbound" || dir === "incoming";
+                    const statusKey = String(call.status ?? "").toUpperCase();
+                    const isMissed = statusKey === "MISSED" || statusKey === "NO_ANSWER";
+                    const displayNumber = call.contact?.name || (isInbound ? call.fromNumber : call.toNumber) || "Numéro inconnu";
+                    const callbackNumber = isInbound ? call.fromNumber : call.toNumber;
+                    return (
+                      <div key={call.id} className="p-4 hover:bg-[var(--bg-surface-hover)] transition-colors flex items-center justify-between gap-3">
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <div className="font-medium text-[var(--text-primary)] flex items-center gap-2">
+                            {getCallIcon(isMissed ? 'missed' : isInbound ? 'incoming' : 'outgoing')}
+                            <span className={`truncate ${isMissed ? 'text-[var(--danger)]' : ''}`}>{displayNumber}</span>
+                          </div>
+                          <div className="text-xs text-[var(--text-secondary)] flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="capitalize">{isInbound ? "Entrant" : "Sortant"}</span>
+                            <span>•</span>
+                            <span>{formatDateFR(call.startedAt)}</span>
+                            <span>à {formatTimeFR(call.startedAt)}</span>
+                            {Number(call.duration) > 0 && (
+                              <>
+                                <span>•</span>
+                                <span>{Math.floor(call.duration / 60)}m {call.duration % 60}s</span>
+                              </>
+                            )}
+                            <span>•</span>
+                            <span>{callStatusFR(call.status)}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => routeCall(callbackNumber)}
+                          title="Rappeler"
+                          className="p-2 shrink-0 text-[var(--text-secondary)] hover:text-[var(--brand)] hover:bg-[var(--brand)]/10 rounded-full transition-colors"
+                        >
+                          <PhoneForwarded className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -141,7 +182,7 @@ export function SoftphoneWorkspace() {
               {activeTab === 'contacts' && (
                 <div className="divide-y divide-[var(--border-subtle)]">
                   <div className="p-4 flex justify-end">
-                    <Link href="/dashboard/contacts" className="apple-btn btn-primary px-3 py-1.5 text-xs flex items-center gap-2">
+                    <Link href="/dashboard/contacts" className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium bg-[var(--accent-primary)] text-[var(--accent-foreground)] hover:opacity-90 transition-colors">
                       <UserPlus className="w-4 h-4" />
                       Créer un contact
                     </Link>
@@ -179,7 +220,7 @@ export function SoftphoneWorkspace() {
                       {expandedContactId === contact.id && (
                         <div className="flex gap-3 pl-8 mt-2 animate-in slide-in-from-top-2 duration-200">
                           <button 
-                            onClick={(e) => { e.stopPropagation(); alert("Lancement d'un appel via l'Agent IA (À implémenter)"); }}
+                            onClick={(e) => { e.stopPropagation(); toast.info("Lancement d'un appel via l'Agent IA (À implémenter)"); }}
                             className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl text-sm font-semibold text-[var(--text-primary)] transition-colors shadow-sm"
                           >
                             <Bot className="w-4 h-4 text-violet-500" />
@@ -212,7 +253,7 @@ export function SoftphoneWorkspace() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="font-semibold text-[var(--text-primary)]">{message.fromNumber}</div>
-                        <div className="text-xs text-[var(--text-secondary)]">{new Date(message.startedAt).toLocaleString()}</div>
+                        <div className="text-xs text-[var(--text-secondary)]">{formatDateTimeFR(message.startedAt)}</div>
                       </div>
                       <Voicemail className="w-5 h-5 text-[var(--brand)]" />
                     </div>

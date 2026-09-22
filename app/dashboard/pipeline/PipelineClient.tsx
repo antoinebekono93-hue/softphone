@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { GripVertical, Plus, DollarSign, User, Phone, CheckCircle, FileText, Send, Trash2, MessageSquare, PhoneCall } from "lucide-react";
+import { GripVertical, Plus, DollarSign, User, Phone, CheckCircle, FileText, Send, Trash2, MessageSquare, PhoneCall, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal, Drawer } from "@/components/ui/modal";
+import { EmptyState } from "@/components/ui/empty-state";
+import { formatDateTimeFR } from "@/lib/utils";
 
 const STAGES = [
   { id: "NEW", title: "Nouveau", color: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
@@ -193,6 +195,20 @@ export default function PipelineClient({ initialOpportunities, contacts }: { ini
         </Button>
       </div>
 
+      {opportunities.length === 0 ? (
+        <EmptyState
+          className="flex-1 mt-6"
+          icon={Users}
+          title="Aucune opportunité pour le moment"
+          description="Créez votre première opportunité pour démarrer votre pipeline de ventes."
+          action={
+            <Button onClick={() => setIsNewModalOpen(true)} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Créer une opportunité
+            </Button>
+          }
+        />
+      ) : (
       <div className="flex-1 flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
         <DragDropContext onDragEnd={onDragEnd}>
           {STAGES.map(stage => {
@@ -270,6 +286,7 @@ export default function PipelineClient({ initialOpportunities, contacts }: { ini
           })}
         </DragDropContext>
       </div>
+      )}
 
       <Modal open={isNewModalOpen} onClose={() => setIsNewModalOpen(false)} title="Nouvelle Opportunité" size="md">
         <form onSubmit={handleCreate} className="space-y-4">
@@ -365,7 +382,7 @@ export default function PipelineClient({ initialOpportunities, contacts }: { ini
                       {detailedOpp.contact.callLogs.slice(0, 3).map((log: any) => (
                         <div key={log.id} className="text-xs bg-[var(--bg-surface-solid)] p-2 rounded flex justify-between">
                           <span className={log.status === 'NO_ANSWER' ? 'text-rose-500' : 'text-emerald-500'}>{log.status}</span>
-                          <span className="text-gray-500">{new Date(log.createdAt).toLocaleDateString()}</span>
+                          <span className="text-gray-500">{formatDateTimeFR(log.startedAt)}</span>
                         </div>
                       ))}
                     </div>
@@ -401,7 +418,7 @@ export default function PipelineClient({ initialOpportunities, contacts }: { ini
                 detailedOpp.internalNotes?.map((note: any) => (
                   <div key={note.id} className="bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl p-4">
                     <p className="text-sm text-[var(--text-primary)] mb-2 whitespace-pre-wrap">{note.content}</p>
-                    <span className="text-xs text-gray-500">{new Date(note.createdAt).toLocaleString()}</span>
+                    <span className="text-xs text-gray-500">{formatDateTimeFR(note.createdAt)}</span>
                   </div>
                 ))
               )}

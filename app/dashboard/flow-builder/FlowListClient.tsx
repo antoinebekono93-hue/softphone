@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, GitMerge, MoreVertical } from "lucide-react";
 import { toast } from "sonner";
+import { formatDateFR } from "@/lib/utils";
 
 export function FlowListClient({ initialFlows }: { initialFlows: any[] }) {
   const [flows, setFlows] = useState(initialFlows);
@@ -58,7 +59,7 @@ export function FlowListClient({ initialFlows }: { initialFlows: any[] }) {
               </div>
             </div>
             <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">{flow.name}</h3>
-            <p className="text-sm text-[var(--text-secondary)]">Dernière modif : {new Date(flow.updatedAt).toLocaleDateString()}</p>
+            <p className="text-sm text-[var(--text-secondary)]">Dernière modif : {formatDateFR(flow.updatedAt)}</p>
           </div>
         ))}
         {flows.length === 0 && (
