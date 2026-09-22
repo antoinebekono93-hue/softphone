@@ -2,7 +2,6 @@ import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { POST as sendSms } from '@/app/api/sms/send/route';
-import { sendWhatsAppForOrganization, WhatsAppSendError } from '@/lib/whatsapp';
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +12,9 @@ export async function POST(req: Request) {
 
     const { contactId, body, type = "SMS" } = await req.json();
 
-    if (!['SMS', 'WHATSAPP'].includes(type)) return NextResponse.json({ error: 'Canal non pris en charge.' }, { status: 400 });
+    if (type !== 'SMS') {
+      return NextResponse.json({ error: 'Ce canal n’est pas encore disponible en production.' }, { status: 501 });
+    }
     if (!contactId || typeof body !== 'string') {
       return NextResponse.json({ error: 'Contact et texte requis.' }, { status: 400 });
     }
@@ -30,28 +31,6 @@ export async function POST(req: Request) {
 
     if (!contact) {
       return new NextResponse("Contact not found", { status: 404 });
-    }
-
-    if (type === 'WHATSAPP') {
-      try {
-        const sent = await sendWhatsAppForOrganization({
-          organizationId,
-          userId: session.user.id,
-          to: contact.phone,
-          content: { type: 'text', text: { body, preview_url: false } },
-          agentMessage: true,
-        });
-        await prisma.contact.update({
-          where: { id: contact.id },
-          data: { botMode: false, assignedUserId: session.user.id },
-        });
-        return NextResponse.json({ message: sent.message, chargedAmount: sent.chargedAmount });
-      } catch (error) {
-        if (error instanceof WhatsAppSendError) {
-          return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
-        }
-        throw error;
-      }
     }
 
     const sender = await prisma.phoneNumber.findFirst({

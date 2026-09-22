@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/auth';
 import OpenAI from 'openai';
-import { sendWhatsAppForOrganization } from '@/lib/whatsapp';
+import { debitWalletAtomically } from '@/lib/billing';
 
 export async function POST(req: Request) {
   try {
@@ -67,6 +67,19 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid or unapproved template' }, { status: 400 });
       }
 
+      const account = await prisma.whatsAppAccount.findUnique({
+        where: { organizationId },
+        include: { organization: true }
+      });
+
+      if (!account || !account.phoneNumberId) {
+        return NextResponse.json({ error: 'WhatsApp account not fully connected' }, { status: 400 });
+      }
+
+      if (account.organization.walletBalance.toNumber() <= 0) {
+        return NextResponse.json({ error: 'Fonds insuffisants.' }, { status: 402 });
+      }
+
       campaign = await prisma.campaign.create({
         data: {
           name,
@@ -80,25 +93,39 @@ export async function POST(req: Request) {
         }
       });
 
+      const apiKey = process.env.TELNYX_API_KEY;
+      
       for (const contact of targetContacts) {
         try {
-          const sent = await sendWhatsAppForOrganization({
-            organizationId,
-            userId: session.user.id,
-            to: contact.phone,
-            content: {
-              type: 'template',
-              template: template.telnyxId
-                ? { template_id: template.telnyxId }
-                : { name: template.name, language: { policy: 'deterministic', code: template.language } },
+          const telnyxRes = await fetch(`https://api.telnyx.com/v2/whatsapp_messages/${account.phoneNumberId}/messages`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
             },
+            body: JSON.stringify({
+              to: contact.phone,
+              messaging_product: "whatsapp",
+              recipient_type: "individual",
+              type: "template",
+              template: {
+                name: template.name,
+                language: { policy: "deterministic", code: template.language },
+                components: JSON.parse(template.content || "[]")
+              }
+            })
           });
-          await prisma.campaignRecipient.create({
+
+          if (telnyxRes.ok) {
+            const data = await telnyxRes.json();
+            const messageId = data.data?.messages?.[0]?.id || data.data?.id;
+
+            await prisma.campaignRecipient.create({
               data: {
                 campaignId: campaign.id,
                 contactId: contact.id,
-                status: 'QUEUED',
-                messageId: sent.message.telnyxMessageId,
+                status: 'SENT',
+                messageId
               }
             });
             sentCount++;
@@ -118,10 +145,28 @@ export async function POST(req: Request) {
                 content: `[SYSTEM MESSAGE - CAMPAGNE MARKETING OUTBOUND]\nNous venons d'envoyer la campagne marketing '${campaign.name}' à ce contact.\nSi le client répond, voici ton objectif : ${aiGoal}`
               });
             }
+          }
         } catch (err) {
           console.error(`Failed to send WA campaign message to ${contact.phone}`, err);
         }
       }
+
+      const whatsappCost = sentCount * 0.05;
+      await prisma.$transaction(async (tx) => {
+        // Débit atomique avec garde de solde (jamais négatif).
+        const debited = await debitWalletAtomically(tx, organizationId, whatsappCost);
+        if (!debited) {
+          throw new Error("INSUFFICIENT_FUNDS");
+        }
+        await tx.walletTransaction.create({
+          data: {
+            organizationId,
+            amount: -whatsappCost,
+            type: "WHATSAPP_CAMPAIGN",
+            description: `Campagne WhatsApp (${sentCount} messages)`,
+          },
+        });
+      });
     } 
     // ----------------------------------------------------
     // MESSENGER CAMPAIGN LOGIC

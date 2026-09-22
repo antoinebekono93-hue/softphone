@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendWhatsAppForOrganization } from "@/lib/whatsapp";
 
 export async function POST(req: Request) {
   try {
@@ -97,18 +96,46 @@ export async function POST(req: Request) {
       await prisma.cartItem.createMany({ data: itemsToCreate });
     }
 
-    // 4. Send through the production SDK + wallet reservation path.
-    const account = await prisma.whatsAppAccount.findUnique({ where: { organizationId: store.organizationId } });
-    if (account?.enabled) {
+    // 4. Send initial WhatsApp Template
+    // We fetch our own local API to send the message to reuse existing Telnyx Logic
+    // In Next.js App Router, we can just call the POST handler of our send API if we want, or do a fetch.
+    // For simplicity, we do a fetch to localhost if we know the domain, but in production we might not.
+    // Let's replicate the Telnyx sending logic for speed and reliability, or use the base URL.
+    
+    // Using Telnyx directly
+    const account = await prisma.whatsAppAccount.findUnique({
+      where: { organizationId: store.organizationId }
+    });
+
+    if (account?.phoneNumber) {
+      const apiKey = process.env.TELNYX_API_KEY;
       const firstName = payload.customer?.first_name || "là";
       const itemsString = payload.line_items?.map((i:any) => i.title).join(", ") || "vos articles";
+
+      // Envoi du message RAG initial
       const messageText = `Bonjour ${firstName} 👋\n\nVous avez oublié ${itemsString} dans votre panier. Souhaitez-vous de l'aide ou avez-vous une question sur un produit ? Répondez-moi ici !`;
-      await sendWhatsAppForOrganization({
-        organizationId: store.organizationId,
-        to: phone,
-        content: { type: 'text', text: { body: messageText, preview_url: false } },
+
+      const response = await fetch('https://api.telnyx.com/v2/messages/whatsapp', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          from: account.phoneNumber,
+          to: phone,
+          whatsapp_message: {
+            type: 'text',
+            text: { body: messageText, preview_url: false }
+          }
+        })
       });
-      // Inject the business context only after Telnyx confirms queueing.
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // --- NOUVEAU: INJECTION DU CONTEXTE DANS LE THREAD OPENAI ---
         try {
           const OpenAI = (await import('openai')).default;
           const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -143,6 +170,24 @@ Ton rôle : Si le client répond, essaie de comprendre pourquoi il a abandonné 
         } catch (e) {
           console.error("[Ecommerce] Erreur injection contexte OpenAI:", e);
         }
+        // -------------------------------------------------------------
+
+        await prisma.smsMessage.create({
+          data: {
+            telnyxMessageId: data.data?.id || `wa_${Date.now()}`,
+            direction: 'OUTBOUND',
+            body: messageText,
+            status: 'SENT',
+            type: 'WHATSAPP',
+            fromNumber: account.phoneNumber,
+            toNumber: phone,
+            organizationId: store.organizationId,
+            contactId: contact.id
+          }
+        });
+      } else {
+        console.error("Telnyx send failed in webhook", await response.text());
+      }
     }
 
     return NextResponse.json({ success: true, cartId: cart.id });

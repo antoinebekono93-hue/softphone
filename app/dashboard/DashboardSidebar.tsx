@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -82,7 +82,6 @@ export function DashboardSidebar({
         items: [
           { name: t("dashboard.numbers"), href: "/dashboard/numbers", icon: Hash },
           { name: t("dashboard.ivr"), href: "/dashboard/ivr", icon: GitMerge },
-          { name: "Mes eSIMs", href: "/dashboard/esim", icon: Wifi },
           { name: t("dashboard.settings"), href: "/dashboard/settings", icon: Settings },
         ]
       }
@@ -107,16 +106,16 @@ export function DashboardSidebar({
           { name: "CRM Pipeline", href: "/dashboard/pipeline", icon: Users },
           { name: "Flux WhatsApp", href: "/dashboard/whatsapp/flows", icon: Workflow },
           { name: "Templates", href: "/dashboard/whatsapp/templates", icon: BookUser },
-          { name: "NumÃ©ros & eSIM", href: "/dashboard/numbers", icon: Smartphone },
-          { name: "ParamÃ¨tres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
+          { name: "Numéros & eSIM", href: "/dashboard/numbers", icon: Smartphone },
+          { name: "Paramètres API", href: "/dashboard/whatsapp/connect", icon: ShieldCheck },
         ]
       }
     ],
     ai: [
       {
-        title: t("dashboard.ai_automation") || "DÃ©lÃ©gation de Support",
+        title: t("dashboard.ai_automation") || "Délégation de Support",
         items: [
-          { name: t("dashboard.ai_agents") || "Mon Ã‰quipe IA", href: "/dashboard/ai-team", icon: UsersRound },
+          { name: t("dashboard.ai_agents") || "Mon Équipe IA", href: "/dashboard/ai-team", icon: UsersRound },
           { name: t("dashboard.ai_tickets") || "Tickets Support", href: "/dashboard/tickets", icon: CreditCard },
           { name: t("dashboard.ai_automations") || "Automatisations", href: "/dashboard/automations", icon: Workflow },
           { name: t("dashboard.ai_voices") || "Voix IA", href: "/dashboard/voice-lab", icon: Mic2 },
@@ -138,7 +137,7 @@ export function DashboardSidebar({
           <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-sm shadow-sm">
             {organizationName?.charAt(0) || "A"}
           </div>
-          AntigravitÃ©
+          Antigravité
         </div>
         <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
           <Menu className="w-6 h-6" />
@@ -216,7 +215,7 @@ export function DashboardSidebar({
 
           <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-red-500 transition-colors cursor-pointer ${isCollapsed ? 'justify-center' : ''}`}>
              <LogOut className="w-5 h-5 shrink-0" />
-             {!isCollapsed && <span className="truncate font-medium">DÃ©connexion</span>}
+             {!isCollapsed && <span className="truncate font-medium">Déconnexion</span>}
           </div>
           
           <button 
@@ -224,11 +223,10 @@ export function DashboardSidebar({
             className={`hidden md:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] transition-colors ${isCollapsed ? 'justify-center' : ''}`}
           >
             {isCollapsed ? <PanelLeftOpen className="w-5 h-5 shrink-0" /> : <PanelLeftClose className="w-5 h-5 shrink-0" />}
-            {!isCollapsed && <span className="font-medium">RÃ©duire la barre</span>}
+            {!isCollapsed && <span className="font-medium">Réduire la barre</span>}
           </button>
         </div>
       </div>
     </>
   );
 }
-

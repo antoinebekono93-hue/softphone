@@ -1,67 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Wifi, Activity, QrCode, Download, Database, AlertTriangle, ShieldCheck, Search, Plus, RefreshCw, Smartphone } from "lucide-react";
+import { useState } from "react";
+import { Wifi, Activity, QrCode, Download, Database, AlertTriangle, ShieldCheck, Search, Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getSimCards, purchaseEsim, updateSimCard, setSimCardStatus, createDataUsageNotification, getEsimActivationCode, EsimStatus } from "@/lib/telnyx-esim";
-import { EsimQrDialog } from "@/components/esim-qr-dialog";
 
 export default function GodModeEsimPage() {
   const [dataLimit, setDataLimit] = useState(10);
-  const [simCards, setSimCards] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [purchasing, setPurchasing] = useState(false);
-  const [selectedSimForQr, setSelectedSimForQr] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchSimCards();
-  }, []);
-
-  const fetchSimCards = async () => {
-    setLoading(true);
-    const res = await getSimCards();
-    if (res.success && res.data) {
-      setSimCards(res.data);
-    }
-    setLoading(false);
-  };
-
-  const handlePurchaseEsim = async () => {
-    if (!confirm("Voulez-vous vraiment commander une nouvelle eSIM ? Cela sera facturé sur votre compte Telnyx.")) return;
-    setPurchasing(true);
-    const res = await purchaseEsim(1);
-    if (res.success) {
-      alert("eSIM commandée avec succès !");
-      fetchSimCards();
-    } else {
-      alert("Erreur lors de l'achat: " + res.error);
-    }
-    setPurchasing(false);
-  };
-
-  const handleStatusChange = async (simId: string, status: EsimStatus) => {
-    const res = await setSimCardStatus(simId, status);
-    if (res.success) {
-      fetchSimCards();
-    } else {
-      alert("Erreur lors du changement de statut: " + res.error);
-    }
-  };
-
-  const applyDataLimitToAll = async () => {
-    if (!confirm(`Voulez-vous appliquer une limite de ${dataLimit} GB et créer des alertes pour toutes vos eSIMs ?`)) return;
-    
-    for (const sim of simCards) {
-      await updateSimCard(sim.id, {
-        data_limit: { amount: dataLimit.toString(), unit: "GB" }
-      });
-      // Optionally create a notification alert (80% of data limit, etc)
-      await createDataUsageNotification(sim.id, (dataLimit * 0.8).toString(), "GB");
-    }
-    alert("Limites de données appliquées.");
-    fetchSimCards();
-  };
 
   return (
     <div className="w-full">
@@ -73,13 +18,14 @@ export default function GodModeEsimPage() {
           </h1>
           <p className="text-[var(--text-secondary)]">Déploiement et contrôle de la connectivité globale pour flottes IoT et mobiles.</p>
         </div>
-        <Button onClick={handlePurchaseEsim} disabled={purchasing} className="bg-cyan-600 hover:bg-cyan-700 text-white">
-           {purchasing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />} 
-           Nouvelle flotte eSIM
+        <Button>
+           <Plus className="w-4 h-4" /> Nouvelle flotte eSIM
         </Button>
       </div>
 
+      {/* Configuration d'Application Vocale (Adapted for eSIM) - Data Plans & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+         {/* Gestion des Profils & QR Codes */}
          <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <QrCode className="text-violet-500" />
@@ -90,6 +36,7 @@ export default function GodModeEsimPage() {
             </p>
 
             <div className="space-y-4 flex-1">
+               {/* Download vs Activate */}
                <div className="p-5 border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] rounded-xl relative overflow-hidden">
                   <div className="flex justify-between items-center mb-2">
                      <div className="flex items-center gap-2">
@@ -106,18 +53,22 @@ export default function GodModeEsimPage() {
                <div className="p-5 border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] rounded-xl relative overflow-hidden">
                   <div className="flex justify-between items-center mb-2">
                      <div className="flex items-center gap-2">
-                        <Smartphone className="w-4 h-4 text-emerald-500" />
-                        <h3 className="font-bold text-[var(--text-primary)]">Activation par sélection</h3>
+                        <QrCode className="w-4 h-4 text-emerald-500" />
+                        <h3 className="font-bold text-[var(--text-primary)]">Activation immédiate (QR Code)</h3>
                      </div>
                      <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase rounded">Smartphones</span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mb-3">
-                     Sélectionnez une eSIM depuis la liste d'inventaire ci-dessous pour afficher son QR Code d'activation.
+                     Idéal pour les employés. Le forfait est activé dès le premier scan.
                   </p>
+                  <button className="w-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] py-2 rounded-lg text-sm font-semibold hover:bg-[var(--bg-surface-hover)] transition-colors">
+                     Générer QR Code de test
+                  </button>
                </div>
             </div>
          </Card>
 
+         {/* Contrôle de consommation & Forfaits */}
          <Card className="p-8 rounded-2xl flex flex-col hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]">
                <Database className="text-emerald-500" />
@@ -125,17 +76,24 @@ export default function GodModeEsimPage() {
             </h2>
 
             <div className="space-y-6 flex-1">
+               <div>
+                  <h3 className="font-bold text-[var(--text-primary)] mb-2 text-sm">Type de Forfait</h3>
+                  <select className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-4 py-3 text-[var(--text-primary)] text-sm focus:border-emerald-500 outline-none transition-colors">
+                     <option>Pay-as-you-go (Facturation au MB)</option>
+                     <option>Forfait Fixe 1GB Global</option>
+                     <option>Forfait IoT Bas Débit (50MB/mois)</option>
+                  </select>
+               </div>
+
                <div className="p-5 border border-rose-500/20 bg-rose-500/5 rounded-xl">
-                  <div className="flex items-center justify-between mb-2">
-                     <div className="flex items-center gap-2">
-                        <AlertTriangle className="w-4 h-4 text-rose-500" />
-                        <h3 className="font-bold text-[var(--text-primary)] text-sm">Alerte & Blocage (Data Limit)</h3>
-                     </div>
+                  <div className="flex items-center gap-2 mb-2">
+                     <AlertTriangle className="w-4 h-4 text-rose-500" />
+                     <h3 className="font-bold text-[var(--text-primary)] text-sm">Alerte & Blocage Automatique (Data Limit)</h3>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mb-4">
-                     Définit la limite maximale par eSIM. Au-delà, l'eSIM est suspendue temporairement. Des webhooks seront déclenchés à 80% du seuil.
+                     Définit la limite maximale par eSIM. Au-delà, l'eSIM est suspendue temporairement.
                   </p>
-                  <div className="flex items-center gap-4 mb-4">
+                  <div className="flex items-center gap-4">
                      <input 
                         type="range" 
                         min="1" max="100" step="1"
@@ -147,21 +105,21 @@ export default function GodModeEsimPage() {
                         {dataLimit} GB
                      </div>
                   </div>
-                  <Button onClick={applyDataLimitToAll} className="w-full bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs py-2 h-auto">
-                     Appliquer à toutes les eSIMs
-                  </Button>
                </div>
-               
+
                <div>
-                  <label className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Instructions Webhook</label>
-                  <div className="p-4 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-[var(--text-secondary)] text-xs leading-relaxed">
-                     Configurez l'URL de réception dans le portail <strong>Mission Control</strong> de Telnyx (Wireless &gt; Network Preferences) pour intercepter les événements d'alerte de data (`sim.data_usage.threshold_reached`).
-                  </div>
+                  <label className="block text-sm font-semibold text-[var(--text-primary)] mb-2">Webhook d'Alerte</label>
+                  <input 
+                     type="text"
+                     defaultValue="https://api.antigravity.io/v1/esim/alerts"
+                     className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-4 py-2 text-[var(--text-secondary)] font-mono text-xs focus:border-emerald-500 outline-none"
+                  />
                </div>
             </div>
          </Card>
       </div>
 
+      {/* Vue d'ensemble de la flotte (Table) */}
       <Card className="p-8 rounded-2xl hover:border-[var(--border-glow)] hover:bg-[var(--bg-surface-hover)] hover:shadow-[var(--shadow-hover)]">
          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
             <div>
@@ -169,20 +127,15 @@ export default function GodModeEsimPage() {
                   <Activity className="text-cyan-500" />
                   Flotte Active (Inventaire eSIM)
                </h2>
-               <p className="text-sm text-[var(--text-secondary)] mt-1">Vue globale des cartes SIM physiques et eSIM virtuelles déployées via l'API Telnyx.</p>
+               <p className="text-sm text-[var(--text-secondary)] mt-1">Vue globale des cartes SIM physiques et eSIM virtuelles déployées.</p>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-               <Button onClick={fetchSimCards} variant="icon" className="shrink-0 border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] w-9 h-9 p-0">
-                  <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-               </Button>
-               <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
-                  <input 
-                     type="text"
-                     placeholder="Rechercher par ICCID..."
-                     className="w-full pl-9 pr-4 py-2 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-sm text-[var(--text-primary)] focus:border-cyan-500 outline-none"
-                  />
-               </div>
+            <div className="relative w-full sm:w-64">
+               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" />
+               <input 
+                  type="text"
+                  placeholder="Rechercher par EID ou statut..."
+                  className="w-full pl-9 pr-4 py-2 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg text-sm text-[var(--text-primary)] focus:border-cyan-500 outline-none"
+               />
             </div>
          </div>
          
@@ -190,91 +143,66 @@ export default function GodModeEsimPage() {
             <table className="w-full text-left text-sm">
                <thead>
                   <tr className="border-b border-[var(--border-subtle)] text-[var(--text-secondary)]">
-                     <th className="pb-3 font-semibold">ICCID / EID</th>
-                     <th className="pb-3 font-semibold">Type</th>
+                     <th className="pb-3 font-semibold">EID (Identifiant Unique)</th>
+                     <th className="pb-3 font-semibold">Forfait Assigné</th>
                      <th className="pb-3 font-semibold">Consommation (Mois)</th>
+                     <th className="pb-3 font-semibold">Réseau / État</th>
                      <th className="pb-3 font-semibold">Statut</th>
-                     <th className="pb-3 font-semibold text-right">Actions</th>
                   </tr>
                </thead>
                <tbody>
-                  {loading && simCards.length === 0 ? (
-                     <tr>
-                        <td colSpan={5} className="py-8 text-center text-[var(--text-secondary)]">Chargement de l'inventaire...</td>
-                     </tr>
-                  ) : simCards.length === 0 ? (
-                     <tr>
-                        <td colSpan={5} className="py-8 text-center text-[var(--text-secondary)]">Aucune eSIM trouvée dans votre flotte Telnyx.</td>
-                     </tr>
-                  ) : (
-                     simCards.map((sim: any) => (
-                        <tr key={sim.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors">
-                           <td className="py-4">
-                              <div className="font-mono text-xs text-[var(--text-primary)]">{sim.iccid}</div>
-                              {sim.eid && <div className="font-mono text-[10px] text-[var(--text-secondary)] mt-1">EID: {sim.eid}</div>}
-                           </td>
-                           <td className="py-4 text-[var(--text-secondary)]">
-                              {sim.type === 'esim' ? (
-                                 <span className="flex items-center gap-1"><Smartphone className="w-3 h-3" /> eSIM</span>
-                              ) : (
-                                 <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> Physique</span>
-                              )}
-                           </td>
-                           <td className="py-4 font-mono text-cyan-500 font-medium">
-                              {sim.current_billing_period_consumed_data?.amount || "0"} {sim.current_billing_period_consumed_data?.unit || "MB"}
-                              <span className="text-[var(--text-secondary)] text-xs"> / {sim.data_limit?.amount || "∞"} {sim.data_limit?.unit}</span>
-                           </td>
-                           <td className="py-4">
-                              {sim.status === 'enabled' && <span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase rounded-md">Actif</span>}
-                              {sim.status === 'disabled' && <span className="px-2 py-1 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-[10px] font-bold uppercase rounded-md">Inactif</span>}
-                              {sim.status === 'standby' && <span className="px-2 py-1 bg-amber-500/10 text-amber-500 text-[10px] font-bold uppercase rounded-md">Standby</span>}
-                              {sim.status === 'data_limit_exceeded' && <span className="px-2 py-1 bg-rose-500/10 text-rose-500 text-[10px] font-bold uppercase rounded-md">Quota Atteint</span>}
-                           </td>
-                           <td className="py-4 text-right space-x-2">
-                              {sim.type === 'esim' && (
-                                 <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => setSelectedSimForQr(sim.id)}
-                                    className="border-violet-500/30 text-violet-500 hover:bg-violet-500/10 h-8 text-xs"
-                                 >
-                                    QR Code
-                                 </Button>
-                              )}
-                              {sim.status === 'enabled' ? (
-                                 <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => handleStatusChange(sim.id, 'standby')}
-                                    className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10 h-8 text-xs"
-                                 >
-                                    Suspendre
-                                 </Button>
-                              ) : (
-                                 <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => handleStatusChange(sim.id, 'enabled')}
-                                    className="border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-8 text-xs"
-                                 >
-                                    Activer
-                                 </Button>
-                              )}
-                           </td>
-                        </tr>
-                     ))
-                  )}
+                  <tr className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors">
+                     <td className="py-4 font-mono text-xs text-[var(--text-primary)]">
+                        89049032005008882600000000001234
+                     </td>
+                     <td className="py-4 text-[var(--text-secondary)]">Pay-as-you-go</td>
+                     <td className="py-4 font-mono text-cyan-500 font-medium">
+                        2.4 GB <span className="text-[var(--text-secondary)] text-xs">/ ∞</span>
+                     </td>
+                     <td className="py-4 text-[var(--text-secondary)]">
+                        <div className="flex items-center gap-2">
+                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                           Connecté (Orange FR)
+                        </div>
+                     </td>
+                     <td className="py-4"><span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase rounded-md">Actif</span></td>
+                  </tr>
+                  <tr className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors">
+                     <td className="py-4 font-mono text-xs text-[var(--text-primary)]">
+                        89049032005008882600000000005678
+                     </td>
+                     <td className="py-4 text-[var(--text-secondary)]">Forfait IoT 50MB</td>
+                     <td className="py-4 font-mono text-cyan-500 font-medium">
+                        48 MB <span className="text-rose-500 text-xs">/ 50 MB (Alerte)</span>
+                     </td>
+                     <td className="py-4 text-[var(--text-secondary)]">
+                        <div className="flex items-center gap-2">
+                           <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                           Hors ligne (Depuis 2j)
+                        </div>
+                     </td>
+                     <td className="py-4"><span className="px-2 py-1 bg-cyan-500/10 text-cyan-500 text-[10px] font-bold uppercase rounded-md">Téléchargé</span></td>
+                  </tr>
+                  <tr className="hover:bg-[var(--bg-surface-hover)] transition-colors">
+                     <td className="py-4 font-mono text-xs text-[var(--text-primary)]">
+                        89049032005008882600000000009012
+                     </td>
+                     <td className="py-4 text-[var(--text-secondary)]">Forfait Fixe 1GB</td>
+                     <td className="py-4 font-mono text-[var(--text-secondary)]">
+                        0 MB <span className="text-xs">/ 1 GB</span>
+                     </td>
+                     <td className="py-4 text-[var(--text-secondary)]">
+                        <div className="flex items-center gap-2">
+                           <span className="w-2 h-2 rounded-full bg-gray-600"></span>
+                           Jamais connecté
+                        </div>
+                     </td>
+                     <td className="py-4"><span className="px-2 py-1 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-[10px] font-bold uppercase rounded-md">Inactif</span></td>
+                  </tr>
                </tbody>
             </table>
          </div>
       </Card>
-
-      <EsimQrDialog 
-         open={!!selectedSimForQr} 
-         onClose={() => setSelectedSimForQr(null)} 
-         simId={selectedSimForQr} 
-         fetchActivationCode={getEsimActivationCode}
-      />
     </div>
   );
 }
