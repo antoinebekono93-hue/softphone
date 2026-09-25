@@ -6,7 +6,7 @@
         "dev": "next dev",
         "dev:ws": "tsx server/media-server.ts",
         "worker:pstn-forward": "tsx server/pstn-forward-worker.ts",
-        "build": "prisma migrate deploy && next build --webpack",
+        "build": "node scripts/migrate-deploy.mjs && next build --webpack",
         "db:migrate": "prisma migrate deploy",
         "start": "next start",
         "lint": "eslint",
