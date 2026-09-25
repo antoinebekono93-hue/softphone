@@ -27,8 +27,8 @@ export async function GET(request: Request) {
     });
 
     return NextResponse.json({
-      balance: org.walletBalance,
-      transactions: transactions
+      balance: org.walletBalance.toNumber(),
+      transactions: transactions.map((t) => ({ ...t, amount: t.amount.toNumber() })),
     });
   } catch (error: any) {
     console.error('[Billing Data] Erreur:', error);

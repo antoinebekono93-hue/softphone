@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 export default async function GlobalUsersPage() {
-  const users = await prisma.user.findMany({
+  const usersRaw = await prisma.user.findMany({
     include: {
       organization: {
         select: {
@@ -21,10 +21,30 @@ export default async function GlobalUsersPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const plans = await prisma.pricingPlan.findMany({
+  const users = usersRaw.map((u) => ({
+    ...u,
+    organization: u.organization
+      ? {
+          ...u.organization,
+          pricingPlan: u.organization.pricingPlan
+            ? {
+                ...u.organization.pricingPlan,
+                monthlyPrice: u.organization.pricingPlan.monthlyPrice.toNumber(),
+              }
+            : null,
+        }
+      : u.organization,
+  }));
+
+  const plansRaw = await prisma.pricingPlan.findMany({
     where: { isActive: true },
     orderBy: { monthlyPrice: "asc" },
   });
+
+  const plans = plansRaw.map((p) => ({
+    ...p,
+    monthlyPrice: p.monthlyPrice.toNumber(),
+  }));
 
   return <UsersClient initialUsers={users} plans={plans} />;
 }

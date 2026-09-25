@@ -6,7 +6,7 @@ export const metadata = {
 };
 
 export default async function TenantsPage() {
-  const tenants = await prisma.organization.findMany({
+  const tenantsRaw = await prisma.organization.findMany({
     include: {
       _count: {
         select: { users: true, phoneNumbers: true },
@@ -16,9 +16,22 @@ export default async function TenantsPage() {
     orderBy: { createdAt: "desc" },
   });
 
-  const plans = await prisma.pricingPlan.findMany({
+  const tenants = tenantsRaw.map((t) => ({
+    ...t,
+    walletBalance: t.walletBalance.toNumber(),
+    pricingPlan: t.pricingPlan
+      ? { ...t.pricingPlan, monthlyPrice: t.pricingPlan.monthlyPrice.toNumber() }
+      : null,
+  }));
+
+  const plansRaw = await prisma.pricingPlan.findMany({
     where: { isActive: true },
   });
+
+  const plans = plansRaw.map((p) => ({
+    ...p,
+    monthlyPrice: p.monthlyPrice.toNumber(),
+  }));
 
   return <TenantsClient initialTenants={tenants} plans={plans} />;
 }

@@ -62,7 +62,7 @@ export default function UsageReportClient() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono font-bold text-emerald-400 text-lg">${item.cost.toFixed(4)}</div>
+                  <div className="font-mono font-bold text-emerald-400 text-lg">${Number(item.cost ?? 0).toFixed(4)}</div>
                 </div>
               </div>
             ))}

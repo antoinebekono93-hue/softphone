@@ -6,10 +6,15 @@ export const metadata = {
 };
 
 export default async function GodModePlansPage() {
-  const plans = await prisma.pricingPlan.findMany({ 
+  const plansRaw = await prisma.pricingPlan.findMany({ 
     include: { features: true },
     orderBy: { monthlyPrice: 'asc' }
   });
+
+  const plans = plansRaw.map((p) => ({
+    ...p,
+    monthlyPrice: p.monthlyPrice.toNumber(),
+  }));
 
   return <PlansClient initialPlans={plans} />;
 }

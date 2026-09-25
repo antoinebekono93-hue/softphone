@@ -214,7 +214,7 @@ export default function BuyNumberPage() {
                     <Phone className="w-6 h-6 text-[var(--text-primary)] group-hover:text-cyan-400 transition-colors" />
                   </div>
                   <div className="text-right">
-                    <span className="block text-lg font-bold text-emerald-400">${num.cost.toFixed(2)}</span>
+                    <span className="block text-lg font-bold text-emerald-400">${Number(num.cost || 0).toFixed(2)}</span>
                     <span className="text-xs font-medium text-[var(--text-secondary)]">/ mois</span>
                   </div>
                 </div>

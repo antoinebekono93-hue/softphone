@@ -24,8 +24,8 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      balance: org.walletBalance,
-      transactions
+      balance: org.walletBalance.toNumber(),
+      transactions: transactions.map((t) => ({ ...t, amount: t.amount.toNumber() })),
     });
   } catch (error) {
     console.error("[/api/billing/wallet GET] Error:", error);

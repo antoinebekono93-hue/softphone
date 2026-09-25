@@ -15,7 +15,9 @@ export async function getTenantsWallets() {
       },
       orderBy: { name: "asc" }
     });
-    return { data: orgs };
+    return {
+      data: orgs.map((o) => ({ ...o, walletBalance: o.walletBalance.toNumber() })),
+    };
   } catch (e: any) {
     return { error: e.message };
   }
@@ -31,7 +33,9 @@ export async function getGlobalTransactions() {
       orderBy: { createdAt: "desc" },
       take: 50
     });
-    return { data: tx };
+    return {
+      data: tx.map((t) => ({ ...t, amount: t.amount.toNumber() })),
+    };
   } catch (e: any) {
     return { error: e.message };
   }
@@ -61,7 +65,7 @@ export async function adjustTenantBalance(orgId: string, amount: number, descrip
     });
 
     revalidatePath("/god-mode/billing");
-    return { success: true, balance: result.org.walletBalance };
+    return { success: true, balance: result.org.walletBalance.toNumber() };
   } catch (e: any) {
     return { error: e.message };
   }
