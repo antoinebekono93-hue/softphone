@@ -4,6 +4,9 @@ on:
   schedule:
     # GitHub Actions: fréquence minimale supportée = 5 minutes (UTC).
     - cron: "*/5 * * * *"
+    # Gardien anti-veille Nhost : décalé de 3 min du job frequent pour
+    # que la base reçoive un SELECT 1 toutes les ~2-3 minutes en moyenne.
+    - cron: "3-59/5 * * * *"
     # Réconciliation Telnyx toutes les 15 minutes, décalée des heures pleines.
     - cron: "2,17,32,47 * * * *"
     # Analyses quotidiennes à 02:23 UTC.
@@ -19,6 +22,7 @@ on:
         type: choice
         options:
           - frequent
+          - keepalive
           - billing
           - daily
           - monthly
@@ -104,6 +108,31 @@ jobs:
           call_endpoint GET  "/api/cron/flows"
           call_endpoint GET  "/api/cron/campaign-worker"
           call_endpoint POST "/api/workers/dialer"
+
+  keepalive:
+    name: Gardien anti-veille base Nhost (5 min, décalé)
+    if: >-
+      github.event.schedule == '3-59/5 * * * *' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.group == 'keepalive' || inputs.group == 'all'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: production-cron-keepalive
+      cancel-in-progress: false
+    steps:
+      - name: Réveiller la base (SELECT 1)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$PROD_URL" || { echo "Secret PROD_URL manquant"; exit 1; }
+          test -n "$CRON_SECRET" || { echo "Secret CRON_SECRET manquant"; exit 1; }
+          curl --fail-with-body --silent --show-error --location \
+            --retry 2 --retry-delay 5 --retry-all-errors \
+            --connect-timeout 10 --max-time 60 --request GET \
+            --header "Authorization: Bearer $CRON_SECRET" \
+            --header "Accept: application/json" \
+            "${PROD_URL%/}/api/cron/keepalive"
 
   billing:
     name: Réconciliation des coûts Telnyx (15 min)
