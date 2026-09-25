@@ -1,7 +1,8 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any -- Template components are stored JSON from Telnyx and vary by component type. */
 
 import { useState } from "react";
-import { MessageSquarePlus, AlertCircle, FileText } from "lucide-react";
+import { MessageSquarePlus, AlertCircle, FileText, RefreshCw, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,31 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+
+  const refreshTemplate = async (id: string) => {
+    try {
+      const response = await fetch(`/api/whatsapp/templates/${id}`, { cache: 'no-store' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Synchronisation impossible.');
+      setTemplates(current => current.map(item => item.id === id ? data.template : item));
+      toast.success('État du modèle synchronisé depuis Telnyx.');
+    } catch (error: any) {
+      toast.error(error.message || 'Synchronisation impossible.');
+    }
+  };
+
+  const deleteTemplate = async (id: string, templateName: string) => {
+    if (!window.confirm(`Supprimer définitivement le modèle « ${templateName} » chez Telnyx ?`)) return;
+    try {
+      const response = await fetch(`/api/whatsapp/templates/${id}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Suppression impossible.');
+      setTemplates(current => current.filter(item => item.id !== id));
+      toast.success('Modèle supprimé chez Telnyx.');
+    } catch (error: any) {
+      toast.error(error.message || 'Suppression impossible.');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +103,7 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
       <Card className="p-8 text-center border-rose-500/30">
         <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Compte WhatsApp non connecté</h2>
-        <p className="text-[var(--text-secondary)] mb-6">Vous devez d'abord lier votre compte WhatsApp Business pour créer des modèles.</p>
+        <p className="text-[var(--text-secondary)] mb-6">Vous devez d&apos;abord lier votre compte WhatsApp Business pour créer des modèles.</p>
         <Button onClick={() => router.push('/dashboard/whatsapp/connect')} className="px-6 py-3">
           Connecter WhatsApp
         </Button>
@@ -132,6 +158,11 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
                     ))}
                   </div>
                 )}
+              </div>
+              {template.rejectionReason && <p className="mb-3 text-xs text-rose-500">Refus Meta : {template.rejectionReason}</p>}
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => void refreshTemplate(template.id)} className="flex-1 gap-2"><RefreshCw className="h-4 w-4" />Synchroniser</Button>
+                <Button type="button" variant="outline" onClick={() => void deleteTemplate(template.id, template.name)} className="text-rose-500 hover:text-rose-600" aria-label={`Supprimer ${template.name}`}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </Card>
           )
@@ -197,7 +228,7 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
                 {buttonType !== "NONE" && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">Texte du bouton (ex: M'inscrire)</label>
+                      <label className="block text-xs font-bold text-[var(--text-secondary)] mb-1">Texte du bouton (ex: M&apos;inscrire)</label>
                       <input 
                         type="text" required value={buttonText} onChange={e => setButtonText(e.target.value)} maxLength={25}
                         className="w-full bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-2 text-[var(--text-primary)] focus:border-emerald-500 outline-none"
