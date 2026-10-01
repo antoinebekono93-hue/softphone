@@ -26,8 +26,11 @@ if (prismaUrl && prismaUrl.includes('nhost.run') && !prismaUrl.includes('pgbounc
 if (prismaUrl) {
   const separator = prismaUrl.includes("?") ? "&" : "?";
   if (!prismaUrl.includes("connection_limit=")) {
-    // Nhost PgBouncer handles pooling, but we set a reasonable limit
-    prismaUrl += `${separator}connection_limit=20&pool_timeout=30`;
+    // Chaque fonction serverless crée son propre client Prisma : un pool de
+    // 20 par instance sature instantanément le PgBouncer Nhost (pool ~20 slots)
+    // dès quelques invocations simultanées (query_wait_timeout puis crash).
+    // En serverless on garde un pool minimal (recommandation Prisma : 1).
+    prismaUrl += `${separator}connection_limit=2&pool_timeout=15`;
   }
 }
 
