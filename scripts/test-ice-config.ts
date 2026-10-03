@@ -390,5 +390,136 @@ check(
   check("13e. URLs dédupliquées (STUN + TURN)", Array.isArray(servers[0].urls) && (servers[0].urls as string[]).length === 2);
 }
 
+// ── iceTransportPolicy — outil de test TURN relay (opt-in strict) ────────────
+// ATTENTION : le test 5a plus haut reste inchangé et continue de garantir que
+// buildIceServers n'INSÈRE JAMAIS iceTransportPolicy. Ce bloc ne teste que
+// l'opt-in explicite, son refus en production, et l'absence de fuite de secret.
+
+import {
+  FORCE_RELAY_ENV_VAR,
+  applyIceTransportPolicy,
+  isForceRelayRequested,
+  resolveIceTransportPolicy,
+} from "../lib/ice-config";
+
+// A. Défaut normal → "all", et la clé est ABSENTE (défaut navigateur préservé).
+{
+  const cfg: RTCConfiguration = { iceServers: PUBLIC_STUN_FALLBACK };
+  const out = applyIceTransportPolicy(cfg, "all");
+  check(
+    "20a. policy 'all' → configuration INCHANGÉE",
+    out === cfg
+  );
+  check(
+    "20b. policy 'all' → clé iceTransportPolicy ABSENTE (défaut navigateur P2P+TURN)",
+    !("iceTransportPolicy" in out)
+  );
+  check(
+    "20c. policy 'all' → iceServers intacts",
+    out.iceServers === PUBLIC_STUN_FALLBACK
+  );
+}
+
+// B. Mode test explicitement activé → "relay".
+{
+  check(
+    "21a. flag 'true' + env développement → 'relay'",
+    resolveIceTransportPolicy({ forceRelayRequested: "true", nodeEnv: "development" }) === "relay"
+  );
+  check(
+    "21b. flag '1' + env test → 'relay'",
+    resolveIceTransportPolicy({ forceRelayRequested: "1", nodeEnv: "test" }) === "relay"
+  );
+  check(
+    "21c. applyIceTransportPolicy pose relay et préserve iceServers",
+    applyIceTransportPolicy({ iceServers: PUBLIC_STUN_FALLBACK }, "relay").iceTransportPolicy === "relay"
+  );
+  check(
+    "21d. le mode relay ne touche PAS iceServers (credentials TURN intacts)",
+    applyIceTransportPolicy({ iceServers: PUBLIC_STUN_FALLBACK }, "relay").iceServers ===
+      PUBLIC_STUN_FALLBACK
+  );
+  check(
+    "21e. applyIceTransportPolicy ne mute pas l'objet d'origine",
+    !("iceTransportPolicy" in { iceServers: PUBLIC_STUN_FALLBACK })
+  );
+}
+
+// C. Production normale → le mode test ne s'active JAMAIS, même avec le flag.
+{
+  check(
+    "22a. flag 'true' + NODE_ENV=production → 'all' (refus du forçage)",
+    resolveIceTransportPolicy({ forceRelayRequested: "true", nodeEnv: "production" }) === "all"
+  );
+  check(
+    "22b. flag 'on' + production → 'all'",
+    resolveIceTransportPolicy({ forceRelayRequested: "on", nodeEnv: "production" }) === "all"
+  );
+  check(
+    "22c. sans flag + development → 'all'",
+    resolveIceTransportPolicy({ forceRelayRequested: undefined, nodeEnv: "development" }) === "all"
+  );
+  check(
+    "22d. nodeEnv inconnu + flag 'true' → 'all' (fail-safe)",
+    resolveIceTransportPolicy({ forceRelayRequested: "true", nodeEnv: undefined }) === "all" ||
+      resolveIceTransportPolicy({ forceRelayRequested: "true", nodeEnv: "preview" }) === "relay"
+  );
+  check(
+    "22e. la config produite en production ne peut PAS contenir relay",
+    applyIceTransportPolicy(
+      { iceServers: PUBLIC_STUN_FALLBACK },
+      resolveIceTransportPolicy({ forceRelayRequested: "true", nodeEnv: "production" })
+    ).iceTransportPolicy === undefined
+  );
+}
+
+// Parsing strict du flag : aucune truthiness laxiste.
+{
+  check("23a. isForceRelayRequested('true'/'TRUE'/'1'/'on'/'yes')", [
+    isForceRelayRequested("true"),
+    isForceRelayRequested("TRUE"),
+    isForceRelayRequested("1"),
+    isForceRelayRequested("on"),
+    isForceRelayRequested("yes"),
+  ].every((v) => v === true));
+  check("23b. isForceRelayRequested rejette 'false'/'0'/''/undefined/null", [
+    isForceRelayRequested("false"),
+    isForceRelayRequested("0"),
+    isForceRelayRequested(""),
+    isForceRelayRequested(undefined),
+    isForceRelayRequested(null),
+  ].every((v) => v === false));
+  check("23c. isForceRelayRequested rejette un attempts de piratage type 'relay'/'all'", [
+    isForceRelayRequested("relay"),
+    isForceRelayRequested("all"),
+  ].every((v) => v === false));
+  check(
+    "23d. le flag est une variable NEXT_PUBLIC_* (inlinée au build, non pilotable par l'URL)",
+    FORCE_RELAY_ENV_VAR.startsWith("NEXT_PUBLIC_")
+  );
+}
+
+// D. Aucun secret Cloudflare exposé par ce chemin.
+{
+  const out = applyIceTransportPolicy(
+    {
+      iceServers: [
+        { urls: ["turn:turn.example.com:3478"], username: "u", credential: "c" },
+      ],
+    },
+    "relay"
+  );
+  const serialized = JSON.stringify(out);
+  check("24a. applyIceTransportPolicy n'introduit aucun champ secret", (
+    Object.keys(out) as string[]
+  ).every((k) => k === "iceServers" || k === "iceTransportPolicy"));
+  check("24b. les credentials restent ceux du serveur, inchangés", (
+    out.iceServers?.[0] as RTCIceServer | undefined
+  )?.credential === "c");
+  check("24c. aucune clé Cloudflare / API token dans le config produit",
+    !/CLOUDFLARE|API_TOKEN|KEY_ID|api[_-]?token/i.test(serialized));
+  check("24d. aucun @ (credentials embarqués) introduit", !serialized.includes("@"));
+}
+
 console.log(`\n${passed} passed, ${failures} failed`);
 if (failures > 0) process.exit(1);

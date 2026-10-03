@@ -1,11 +1,12 @@
 /// <reference lib="webworker" />
 
-// @ts-ignore - prevent typescript errors for self
-declare const self: ServiceWorkerGlobalScope;
+// On utilise un cast forcé pour que TypeScript accepte les événements ServiceWorker
+// sans modifier le tsconfig.json global (qui est configuré pour le DOM/Next.js)
+const sw = self as unknown as ServiceWorkerGlobalScope;
 
 // next-pwa injects workbox methods and configuration here
 
-self.addEventListener("push", (event: PushEvent) => {
+sw.addEventListener("push", (event: PushEvent) => {
   if (!event.data) return;
 
   try {
@@ -23,13 +24,13 @@ self.addEventListener("push", (event: PushEvent) => {
       actions: data.actions || [],
     };
 
-    event.waitUntil(self.registration.showNotification(data.title, options));
+    event.waitUntil(sw.registration.showNotification(data.title, options));
   } catch (err) {
     console.error("Error processing push event:", err);
   }
 });
 
-self.addEventListener("notificationclick", (event: NotificationEvent) => {
+sw.addEventListener("notificationclick", (event: NotificationEvent) => {
   event.notification.close();
 
   const data = event.notification.data;
@@ -49,19 +50,19 @@ self.addEventListener("notificationclick", (event: NotificationEvent) => {
 
   // This looks to see if the current is already open and focuses if it is
   event.waitUntil(
-    self.clients
+    sw.clients
       .matchAll({
         type: "window",
         includeUncontrolled: true,
       })
-      .then((clientList) => {
+      .then((clientList: readonly WindowClient[]) => {
         for (const client of clientList) {
           if (client.url.includes(urlToOpen) && "focus" in client) {
             return client.focus();
           }
         }
-        if (self.clients.openWindow) {
-          return self.clients.openWindow(urlToOpen);
+        if (sw.clients.openWindow) {
+          return sw.clients.openWindow(urlToOpen);
         }
       })
   );

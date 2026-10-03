@@ -79,9 +79,14 @@ const FAQ_ITEMS = [
       "Non. Il n'y a ni engagement de durée ni frais de résiliation. L'annulation prend effet à la fin de la période en cours.",
   },
   {
+    question: "Deux offres sont affichées au même prix : laquelle choisir ?",
+    answer:
+      "Les offres « Appels Illimités » et « Standard » sont toutes deux à 29 USD par mois mais ne couvrent pas le même usage. « Appels Illimités » porte sur les appels internes entre vos propres utilisateurs (app-to-app), avec un numéro professionnel inclus et sans minute PSTN ni SMS compris. « Standard » porte sur les appels vers le réseau téléphonique public, avec 500 minutes PSTN, 200 SMS et l'enregistrement des appels. Choisissez selon l'origine de vos appels : interne ou externe.",
+  },
+  {
     question: "Que couvrent exactement les appels illimités ?",
     answer:
-      "Les appels illimités concernent le trafic entre utilisateurs de la plateforme (app-to-app), sans coût additionnel par appel. Les appels vers le réseau téléphonique public ne sont jamais couverts par ce poste : ils sont soumis au forfait de minutes ou au solde prépayé.",
+      "Les appels illimités concernent uniquement le trafic entre utilisateurs de la plateforme (app-to-app), sans coût additionnel par appel. Ils restent soumis aux limites d'usage loyal affichées sur l'offre. Les appels vers le réseau téléphonique public ne sont jamais couverts par ce poste : ils sont soumis au forfait de minutes ou au solde prépayé.",
   },
   {
     question: "Qu'est-ce qui est facturé en plus de l'abonnement ?",
@@ -177,6 +182,16 @@ export default async function PricingPage() {
         NUMBER_POLICY[plan.name] ?? "Numéro professionnel non inclus dans l'abonnement",
       features: plan.features.map((feature) => feature.name),
       recommended: plan.name === "Premium",
+      audience: AUDIENCE[plan.name] ?? "",
+      fairUse:
+        plan.maxCallsPerHour > 0 || plan.maxCallsPerDay > 0 || plan.maxConcurrentCalls > 0
+          ? {
+              maxConcurrentCalls: plan.maxConcurrentCalls,
+              maxCallsPerHour: plan.maxCallsPerHour,
+              maxCallsPerDay: plan.maxCallsPerDay,
+              maxCallDurationMinutes: Math.round(plan.maxCallDurationSeconds / 60),
+            }
+          : null,
     }));
 
   type PlanRow = PricingPlanCard;
@@ -197,6 +212,37 @@ export default async function PricingPage() {
     {
       label: "Appels internes app-to-app",
       render: (plan) => (plan.unlimitedCalls ? <YesValue /> : <NoValue />),
+    },
+    {
+      label: "Appels simultanés",
+      render: (plan) => <ValueCell>{plan.fairUse ? plan.fairUse.maxConcurrentCalls : "—"}</ValueCell>,
+    },
+    {
+      label: "Appels max par heure",
+      render: (plan) =>
+        plan.unlimitedCalls && plan.fairUse ? (
+          <ValueCell>{plan.fairUse.maxCallsPerHour}</ValueCell>
+        ) : (
+          <ValueCell>—</ValueCell>
+        ),
+    },
+    {
+      label: "Appels max par jour",
+      render: (plan) =>
+        plan.unlimitedCalls && plan.fairUse ? (
+          <ValueCell>{plan.fairUse.maxCallsPerDay}</ValueCell>
+        ) : (
+          <ValueCell>—</ValueCell>
+        ),
+    },
+    {
+      label: "Durée max par appel",
+      render: (plan) =>
+        plan.fairUse ? (
+          <ValueCell>{plan.fairUse.maxCallDurationMinutes} min</ValueCell>
+        ) : (
+          <ValueCell>—</ValueCell>
+        ),
     },
     {
       label: "Minutes PSTN incluses",
@@ -328,8 +374,9 @@ export default async function PricingPage() {
           </div>
           <div className="px-6 py-6 text-xs leading-relaxed text-[var(--text-secondary)] font-medium">
             Les consommations hors forfait (minutes PSTN, SMS, messages) sont facturées au tarif de
-            la destination. Des protections techniques d&apos;usage loyal s&apos;appliquent et ne
-            constituent pas un quota commercial.
+            la destination. Les limites d&apos;usage loyal affichées ci-dessus sont des bornes
+            techniques qui bloquent l&apos;appel au-delà du seuil : elles ne sont pas un quota
+            commercial et ne sont pas facturées.
           </div>
         </div>
       </section>
