@@ -5,12 +5,12 @@ import { TrustBar, ComplianceBadges, FinalCTA } from "@/components/landing";
 export const metadata = {
   title: "Réceptionniste IA 24/7 | Antigravity",
   description:
-    "Ne manquez plus jamais un appel. Votre réceptionniste IA répond en 0,5 seconde, qualifie les prospects, prend les rendez-vous et protège votre marque — 24h/24, 7j/7.",
+    "Ne manquez plus jamais un appel. Votre réceptionniste IA décroche à votre place, qualifie les prospects, prend les rendez-vous et protège votre marque — 24h/24, 7j/7.",
 };
 
 const benefits = [
   {
-    title: "Répond en 0,5 seconde",
+    title: "Décroche automatiquement",
     description: "Aucun appel perdu, aucun « rappelez-nous ». Votre IA décroche dès la première sonnerie, même à 2h du matin.",
     icon: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z",
   },
@@ -130,7 +130,7 @@ const useCases = [
             Statut de commande, question de facturation, incident technique : votre réceptionniste IA répond avec la mémoire de vos documents et remonte les cas sensibles à un humain.
           </p>
           <ul className="space-y-3">
-            {["Réponses depuis votre base RAG", "Escalade automatique vers un agent", "Résolution sans attente ni menu vocal"].map((p) => (
+            {["Import de vos documents internes", "Escalade automatique vers un agent", "Résolution sans attente ni menu vocal"].map((p) => (
               <li key={p} className="flex items-center gap-3 text-sm font-bold text-[var(--text-primary)]">
                 <span className="w-6 h-6 rounded-full n8n-gradient-bg flex items-center justify-center text-white text-xs">✓</span>
                 {p}
@@ -208,27 +208,10 @@ const deepFeatures = [
   { title: "Mémoire de conversation", description: "Chaque client est identifié au numéro : historique, préférences et contexte disponibles." },
   { title: "Rétention de mémoire (RAG)", description: "Réponses basées sur vos documents internes (tarifs, FAQ, CGV) avec sources." },
   { title: "Vocabulaire métier", description: "Termes sectoriels, noms de produits et expressions propres à votre activité." },
-  { title: "Text-to-Speech / ElevenLabs", description: "Clonage vocal et voix multilingues au choix depuis le laboratoire vocal." },
+  { title: "Synthèse vocale", description: "Voix générées pour la lecture des réponses de l'agent, avec choix de la voix." },
   { title: "Transfert assisté", description: "Résumé synthétique transmis à l'agent humain avant connexion du client." },
   { title: "Anonymisation des données", description: "Données personnelles détectées et masquées dans les transcriptions et extractions." },
-  { title: "Multilingue 30+ langues", description: "La même IA répond dans la langue de votre client, automatiquement." },
-];
-
-const testimonials = [
-  {
-    quote:
-      "Nous ne manquons plus un appel depuis 6 mois. Le répondeur IA qualifie nos prospects la nuit et nos commerciaux les rappellent le matin avec une fiche déjà complète.",
-    author: "Directrice commerciale",
-    company: "Cabinet immobilier · Lyon",
-    initials: "CI",
-  },
-  {
-    quote:
-      "La prise de rendez-vous automatique a libéré deux jours par mois à notre standard. Et les patients apprécient de pouvoir appeler à 22h.",
-    author: "Responsable accueil",
-    company: "Centre médical · Bordeaux",
-    initials: "CM",
-  },
+  { title: "Import de documents", description: "Ajoutez vos documents internes (tarifs, FAQ, CGV) pour alimenter les réponses des agents." },
 ];
 
 const faqItems = [
@@ -267,10 +250,10 @@ export default function AIReceptionistPage() {
         accent="cyan"
         title={
           <>
-            Fini les appels manqués : <span className="n8n-gradient-text">votre réceptionniste IA répond en 0,5 seconde</span>
+            Fini les appels manqués : <span className="n8n-gradient-text">votre réceptionniste IA décroche à votre place</span>
           </>
         }
-        subtitle="Il décroche à votre place, qualifie, prend les rendez-vous et protège votre marque — jour et nuit, en 30+ langues."
+        subtitle="Il décroche à votre place, qualifie, prend les rendez-vous et protège votre marque — jour et nuit."
       >
         <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Activer le répondeur IA
@@ -307,7 +290,7 @@ export default function AIReceptionistPage() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <ROIBand
           stats={[
-            { value: "0,5s", label: "pour répondre à chaque appel" },
+            { value: "Appels internes", label: "illimités entre utilisateurs (app-to-app)" },
             { value: "24/7", label: "disponibilité, sans congé" },
             { value: "Numéros inclus", label: "par utilisateur de l'organisation" },
             { value: "Appels internes", label: "illimités entre utilisateurs" },
@@ -366,32 +349,6 @@ export default function AIReceptionistPage() {
             <div key={f.title} className="rounded-[20px] glass-panel-premium p-6 flex flex-col gap-3 border-t-2 border-t-cyan-500/40">
               <h3 className="text-sm font-extrabold text-[var(--text-primary)]">{f.title}</h3>
               <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">{f.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Témoignages */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <SectionHeading title="Ils ne manquent plus un appel" />
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-          {testimonials.map((t) => (
-            <div key={t.author} className="rounded-[24px] glass-panel-premium p-8 flex flex-col gap-6">
-              <div className="flex items-center gap-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg key={i} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-amber-400"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                ))}
-              </div>
-              <p className="text-[var(--text-primary)] font-medium leading-relaxed">« {t.quote} »</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full n8n-gradient-bg flex items-center justify-center text-white font-bold text-sm">
-                  {t.initials}
-                </div>
-                <div>
-                  <div className="text-sm font-extrabold text-[var(--text-primary)]">{t.author}</div>
-                  <div className="text-xs font-bold text-[var(--text-secondary)]">{t.company}</div>
-                </div>
-              </div>
             </div>
           ))}
         </div>

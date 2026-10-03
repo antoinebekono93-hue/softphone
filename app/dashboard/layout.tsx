@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requiresBillingRedirect } from "@/lib/account-session";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { TopNavbar } from "./TopNavbar";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 export default async function DashboardLayout({
   children,
@@ -38,14 +39,16 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex flex-col h-screen bg-[var(--bg-base)] overflow-hidden text-[var(--text-primary)] font-sans">
-      <TopNavbar 
+    <div className="flex flex-col h-[100dvh] bg-[var(--bg-base)] overflow-hidden text-[var(--text-primary)] font-sans">
+      {/* TopNavbar — desktop uniquement */}
+      <TopNavbar
         organizationName={session?.user?.organizationName}
         walletBalance={walletBalance}
       />
-      
-      <div className="flex flex-1 overflow-hidden pt-16">
-        <DashboardSidebar 
+
+      <div className="flex flex-1 overflow-hidden md:pt-16">
+        {/* Sidebar — desktop uniquement */}
+        <DashboardSidebar
           organizationName={session?.user?.organizationName}
           planName={session?.user?.plan}
           planStatus={session?.user?.planStatus}
@@ -53,11 +56,19 @@ export default async function DashboardLayout({
           isSuperAdmin={session?.user?.isSuperAdmin}
         />
 
-        {/* Main Content */}
-        <main className="flex-1 relative overflow-y-auto bg-transparent">
+        {/* Main Content
+            Desktop : pas de padding top (pt-16 sur le flex parent via md:pt-16)
+            Mobile : padding top = hauteur header (3.5rem) + safe-area top
+                     padding bottom = hauteur bottomnav (3.5rem) + safe-area bottom */}
+        <main
+          className="flex-1 relative overflow-y-auto bg-transparent main-dashboard-content"
+        >
           {children}
         </main>
       </div>
+
+      {/* Navigation mobile en bas — uniquement visible sur mobile */}
+      <MobileBottomNav />
     </div>
   );
 }

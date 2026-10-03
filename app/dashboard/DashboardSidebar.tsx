@@ -131,16 +131,30 @@ export function DashboardSidebar({
 
   return (
     <>
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 glass-panel rounded-none border-t-0 border-x-0 flex items-center justify-between px-4 z-40">
-        <div className="font-bold text-[var(--text-primary)] flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-sm shadow-sm">
-            {organizationName?.charAt(0) || "A"}
+      {/* Mobile Header — remplace la TopNavbar desktop sur petits écrans
+          La navigation principale est dans MobileBottomNav. Ce header est
+          uniquement identitaire (logo + accès rapide settings). */}
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 bg-[var(--bg-base)]/90 backdrop-blur-xl border-b border-[var(--border-subtle)]"
+        style={{ 
+          height: "calc(3.5rem + env(safe-area-inset-top))",
+          paddingTop: "env(safe-area-inset-top)",
+        }}
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-[var(--brand)] text-white flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
+            {organizationName?.charAt(0)?.toUpperCase() || "A"}
           </div>
-          Antigravité
+          <span className="font-semibold text-sm text-[var(--text-primary)] tracking-tight">
+            {organizationName || "Antigravity"}
+          </span>
         </div>
-        <button onClick={() => setIsMobileOpen(true)} className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-          <Menu className="w-6 h-6" />
+        <button
+          onClick={() => setIsMobileOpen(true)}
+          className="p-2 -mr-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-xl hover:bg-[var(--bg-surface-hover)] transition-colors"
+          aria-label="Ouvrir le menu"
+        >
+          <Menu className="w-5 h-5" />
         </button>
       </div>
 

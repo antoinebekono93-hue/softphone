@@ -588,3 +588,67 @@ tr:hover td {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--text-secondary) 55%, transparent);
 }
+
+/* ─── PWA / Mobile Native Experience ───────────────────────────────────────── */
+
+/* Hauteur viewport mobile robuste : évite les bugs avec la barre d'adresse Safari */
+.h-dvh {
+  height: 100dvh;
+}
+
+/* Supprime le tap highlight bleu sur mobile (remplacé par feedback custom) */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Empêche la sélection de texte sur les éléments interactifs (comportement app natif) */
+button, a, [role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Optimise le scroll momentum iOS (comportement natif) */
+.overflow-y-auto,
+.overflow-y-scroll,
+main {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe areas — garantit que le contenu n'est jamais caché par l'encoche / home indicator */
+.safe-top    { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+.safe-left   { padding-left: env(safe-area-inset-left); }
+.safe-right  { padding-right: env(safe-area-inset-right); }
+
+/* Animation "signal ring" (déjà utilisée dans IncomingCall) — conservée */
+@keyframes signal-ring {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.animate-signal-ring {
+  animation: signal-ring 1.8s ease-out infinite;
+}
+
+/* Feedback tactile sur les boutons mobiles (scale au press) */
+@media (max-width: 767px) {
+  .active\:scale-90:active { transform: scale(0.9); }
+  .active\:scale-95:active { transform: scale(0.95); }
+}
+
+/* Masque la scrollbar sur mobile pour un rendu plus propre type app */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
+}
+
+/* Dashboard main : padding adaptatif mobile vs desktop */
+.main-dashboard-content {
+  padding-top: calc(3.5rem + env(safe-area-inset-top));
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 768px) {
+  .main-dashboard-content {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}

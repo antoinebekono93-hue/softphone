@@ -5,6 +5,7 @@ import { GlobalAppIncomingCall } from "@/components/softphone/GlobalAppIncomingC
 import { TelnyxProvider } from "@/contexts/TelnyxContext";
 import { AppCallProvider } from "@/contexts/AppCallContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
@@ -45,6 +46,12 @@ export const metadata: Metadata = {
   authors: [{ name: "Antigravity" }],
   creator: "Antigravity",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Antigravity",
+    statusBarStyle: "black-translucent",
+  },
   openGraph: {
     type: "website",
     locale: "fr_FR",
@@ -62,15 +69,21 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon-192x192.png",
     apple: "/icon-180x180.png",
+    shortcut: "/icon-192x192.png",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0f",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0f" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  // Permet à l'app de s'étendre sous la barre de statut iOS (type island etc.)
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -81,10 +94,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/manifest.json" />
-        <link rel="apple-touch-icon" href="/icon-180x180.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        {/* Theme init (avant paint pour éviter le flash) */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("vite-ui-theme");if(t==="light"){document.documentElement.setAttribute("data-theme","light");}else{document.documentElement.setAttribute("data-theme","dark");}}catch(e){}})();`,
@@ -100,31 +110,15 @@ export default function RootLayout({
                   {children}
                   <GlobalIncomingCall />
                   <GlobalAppIncomingCall />
+                  <PwaInstallBanner />
                 </TelnyxProvider>
               </AppCallProvider>
             </LanguageProvider>
           </AuthProvider>
           <Toaster position="top-center" theme="dark" />
         </ThemeProvider>
-        {/* PWA Service Worker Registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(registration) {
-                      console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                    },
-                    function(err) {
-                      console.log('ServiceWorker registration failed: ', err);
-                    }
-                  );
-                });
-              }
-            `,
-          }}
-        />
+        {/* NOTE: Le Service Worker est enregistré automatiquement par @ducanh2912/next-pwa
+            via next.config.ts (register: true). Aucun enregistrement manuel nécessaire. */}
       </body>
     </html>
   );
