@@ -307,10 +307,10 @@ export default function AIReceptionistPage() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <ROIBand
           stats={[
-            { value: "99,99%", label: "uptime garanti de la plateforme" },
             { value: "0,5s", label: "pour répondre à chaque appel" },
             { value: "24/7", label: "disponibilité, sans congé" },
-            { value: "30+", label: "langues parlées automatiquement" },
+            { value: "Numéros inclus", label: "par utilisateur de l'organisation" },
+            { value: "Appels internes", label: "illimités entre utilisateurs" },
           ]}
         />
       </section>

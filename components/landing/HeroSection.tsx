@@ -62,7 +62,7 @@ export default function HeroSection() {
         transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
         className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
       >
-        Rejoignez plus de <span className="font-bold text-[var(--text-primary)]">10 000 entreprises</span> qui font confiance à Antigravity pour leurs communications vocales pilotées par l'IA.
+        Une plateforme pour centraliser vos appels, vos numéros professionnels et vos agents vocaux IA dans un seul softphone web.
       </motion.p>
 
       {/* CTAs */}
@@ -97,9 +97,9 @@ export default function HeroSection() {
         transition={{ duration: 0.7, delay: 1.0, ease: EASE }}
         className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-[var(--text-secondary)] mb-16"
       >
-        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>99,99% Disponibilité</span>
-        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Déploiement en 2 minutes</span>
-        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Sans carte bancaire requise</span>
+        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Softphone web, mobile et desktop</span>
+        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Numéros professionnels par utilisateur</span>
+        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Appels internes illimités entre utilisateurs</span>
       </motion.div>
 
       {/* Hero Visual Mockup */}

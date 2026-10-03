@@ -38,6 +38,7 @@ interface TelnyxContextValue {
   muteMicrophone: (muted: boolean) => void;
   sendDTMF: (digit: string) => void;
   requestAudioUnlock: () => void;
+  audioPlayFailed: boolean;
   debugLog: string;
 }
 
@@ -90,6 +91,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   const [pstnCallControlId, setPstnCallControlId] = useState<string | null>(null);
 
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
+  const [audioPlayFailed, setAudioPlayFailed] = useState(false);
   const [debugLog, setDebugLog] = useState<string>("");
 
   // ── Références stables (avoid stale closures dans les handlers liés UNE fois) ──
@@ -177,6 +179,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
     setActiveCallId(null);
     setIncomingCallerId(null);
     setRemoteStream(null);
+    setAudioPlayFailed(false);
     void cc; // l'id terminé est déjà "consommé" via currentCc ci-dessus
   }, [unregisterSdkCall]);
 
@@ -222,7 +225,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         // Demander d'abord la permission microphone (important pour Chrome)
         try {
-          await navigator.mediaDevices.getUserMedia({ audio: true });
+          const testStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+          });
+          testStream.getTracks().forEach(track => track.stop());
         } catch (e) {
           console.warn("Microphone permission not granted yet or denied", e);
         }
@@ -323,6 +329,14 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
                   if (call.direction === "inbound") {
                     logTag("CALL_INCOMING_MEDIA_CONNECTED", { callControlId: cc ?? "n/a", role: "incoming" });
                   }
+                  
+                  // Vérifier si l'autoplay a été bloqué par le navigateur
+                  window.setTimeout(() => {
+                    const el = document.getElementById("telnyx-remote-audio") as HTMLAudioElement | null;
+                    if (el && el.paused && stream) {
+                      setAudioPlayFailed(true);
+                    }
+                  }, 500);
                 }
                 // Foreign active → ignoré (tenant isolation).
               } else if (kind === "terminated") {
@@ -516,7 +530,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Check Microphone permissions explicitly before making the call
     try {
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const testStream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } 
+      });
+      testStream.getTracks().forEach(track => track.stop());
     } catch {
       console.error("Microphone access denied");
       toast.error("Veuillez autoriser l'accès au microphone dans votre navigateur pour passer des appels.");
@@ -775,9 +792,9 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   const requestAudioUnlock = useCallback(() => {
     const el = document.getElementById("telnyx-remote-audio") as HTMLAudioElement | null;
     if (el) {
-      el.play().catch(() => {
-        /* l'utilisateur devra réessayer (UI reste visible) */
-      });
+      el.play()
+        .then(() => setAudioPlayFailed(false))
+        .catch(() => setAudioPlayFailed(true));
     }
   }, []);
 
@@ -798,11 +815,12 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
         muteMicrophone,
         sendDTMF,
         requestAudioUnlock,
+        audioPlayFailed,
         debugLog, // Expose debug log
       }}
     >
       {/* Hidden audio element required for Telnyx to attach the remote stream */}
-      <audio id="telnyx-remote-audio" autoPlay className="hidden" />
+      <audio id="telnyx-remote-audio" autoPlay playsInline className="hidden" />
       {children}
     </TelnyxContext.Provider>
   );

@@ -275,7 +275,7 @@ export default function SectorsPage() {
               Demander une démo sectorielle
             </Link>
             <Link href="/etudes-de-cas" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
-              Voir les études de cas
+              Voir les scénarios d'usage
             </Link>
           </div>
         </div>

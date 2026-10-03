@@ -10,7 +10,7 @@ const navLinks = [
   { href: "/ia", label: "IA" },
   { href: "/receptionniste-ia", label: "Répondeur IA" },
   { href: "/pricing", label: "Tarifs" },
-  { href: "/etudes-de-cas", label: "Études de cas" },
+  { href: "/etudes-de-cas", label: "Scénarios d'usage" },
   { href: "/integrations", label: "Intégrations" },
 ];
 

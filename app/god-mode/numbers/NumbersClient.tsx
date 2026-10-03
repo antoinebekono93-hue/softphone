@@ -378,7 +378,7 @@ const [voicemailGreeting, setVoicemailGreeting] = useState("");
                 </td>
               </tr>
             ))}
-{visibleNumbers.length === 0 && (
+            {visibleNumbers.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-6 py-12 text-center text-[var(--text-secondary)]">
                    {managedNumbers.length === 0

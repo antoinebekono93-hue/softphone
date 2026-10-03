@@ -92,19 +92,23 @@ export default function LandingPage() {
       <section id="integrations" className="py-24 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
         <div className="max-w-4xl mx-auto px-4 text-center">
            <h2 className="text-3xl md:text-4xl font-extrabold mb-12 text-[var(--text-primary)]">S&apos;intègre avec votre <span className="text-gradient">écosystème actuel.</span></h2>
-           <div className="flex flex-wrap justify-center items-center gap-10 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-             <div className="text-2xl font-bold text-[var(--text-primary)]">Telnyx</div>
-             <div className="text-2xl font-bold text-[var(--text-primary)]">HubSpot</div>
-             <div className="text-2xl font-bold text-[var(--text-primary)]">Salesforce</div>
-             <div className="text-2xl font-bold text-[var(--text-primary)]">Zendesk</div>
-             <div className="text-2xl font-bold text-[var(--text-primary)]">Spike</div>
-           </div>
-           <Link
-             href="/integrations"
-             className="inline-block mt-10 text-sm font-bold text-[var(--text-primary)] underline underline-offset-4"
-           >
-             Voir toutes les intégrations et l&apos;API
-           </Link>
+<div className="flex flex-wrap justify-center items-center gap-10 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
+            <div className="text-2xl font-bold text-[var(--text-primary)]">Telnyx</div>
+            <div className="text-2xl font-bold text-[var(--text-primary)]">WhatsApp Business</div>
+            <div className="text-2xl font-bold text-[var(--text-primary)]">Meta</div>
+            <div className="text-2xl font-bold text-[var(--text-primary)]">OpenAI</div>
+            <div className="text-2xl font-bold text-[var(--text-primary)]">Cloudflare TURN</div>
+          </div>
+          <p className="mt-6 text-xs font-medium text-[var(--text-secondary)] max-w-2xl mx-auto">
+            Ces éditeurs fournissent les briques techniques utilisées par la plateforme. Leur mention n&apos;implique
+            aucun partenariat commercial ni relation client.
+          </p>
+          <Link
+            href="/integrations"
+            className="inline-block mt-10 text-sm font-bold text-[var(--text-primary)] underline underline-offset-4"
+          >
+            Voir les intégrations disponibles
+          </Link>
         </div>
       </section>
 

@@ -122,8 +122,8 @@ export default function ProductShowcase() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="h-full rounded-[32px] glass-panel-premium p-8 relative overflow-hidden group"
           >
-            <h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Synchronisation CRM (Bientôt)</h3>
-            <p className="text-[var(--text-secondary)] font-medium">Enregistrez vos appels directement dans HubSpot et Salesforce sans aucun effort manuel.</p>
+<h3 className="text-2xl font-bold mb-2 text-[var(--text-primary)]">Interopérabilité (webhooks)</h3>
+             <p className="text-[var(--text-secondary)] font-medium">Transmettez les appels, transcriptions et événements de la plateforme vers votre propre système via des webhooks sortants authentifiés.</p>
             <div className="absolute right-0 bottom-0 w-2/3 h-2/3 bg-gradient-to-tl from-cyan-500/10 to-transparent"></div>
           </motion.div>
         </Item>

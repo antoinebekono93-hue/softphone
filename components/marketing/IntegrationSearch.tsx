@@ -53,7 +53,7 @@ export default function IntegrationSearch({ integrations }: { integrations: Inte
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher une intégration… (HubSpot, Notion, WhatsApp, Webhook…)"
+            placeholder="Rechercher une intégration… (Telnyx, WhatsApp, Meta, Webhook…)"
             className="w-full rounded-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] py-3 pl-11 pr-5 text-sm font-medium text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20"
           />
         </div>

@@ -365,9 +365,9 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (!remoteAudioRef.current) {
-      remoteAudioRef.current = new Audio();
-      remoteAudioRef.current.autoplay = true;
-      remoteAudioRef.current.setAttribute("playsinline", "true");
+      console.warn("remoteAudioRef is null");
+      return;
+      
     }
     const audio = remoteAudioRef.current;
     if (audio.srcObject !== stream) {
@@ -592,7 +592,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
         getUserMediaInProgressRef.current = true;
         logMedia(callId, role, "microphoneRequested");
         try {
-          localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
           logMedia(callId, role, "microphoneGranted");
         } catch (err) {
           getUserMediaInProgressRef.current = false;
@@ -1297,7 +1297,12 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
     ]
   );
 
-  return <AppCallContext.Provider value={value}>{children}</AppCallContext.Provider>;
+  return (
+    <AppCallContext.Provider value={value}>
+      {children}
+      <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />
+    </AppCallContext.Provider>
+  );
 }
 
 function bodyMessage(code: string | undefined): string {

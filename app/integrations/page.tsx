@@ -6,56 +6,111 @@ import { FinalCTA } from "@/components/landing";
 export const metadata = {
   title: "Intégrations | Antigravity",
   description:
-    "Connectez Antigravity à vos outils du quotidien : CRM, helpdesk, calendriers, IA et webhooks. 50+ intégrations natives et une API complète.",
+    "Les intégrations réellement disponibles dans la plateforme : téléphonie PSTN, WhatsApp Business, Messenger et Instagram via Meta, IA vocale et webhooks sortants.",
 };
 
 const integrations: Integration[] = [
-  { name: "HubSpot", category: "CRM", description: "Synchronisation des appels, leads et rendez-vous directement dans votre pipeline CRM.", icon: "H", status: "native" },
-  { name: "Salesforce", category: "CRM", description: "Journal d'appels, fiches client et activités IA poussées en temps réel.", icon: "SF", status: "native" },
-  { name: "Pipedrive", category: "CRM", description: "Créez et mettez à jour des deals à partir de chaque appel qualifié.", icon: "P", status: "native" },
-  { name: "Zoho CRM", category: "CRM", description: "Associez vos agents IA aux leads Zoho et automatisez le suivi.", icon: "Z", status: "api" },
-  { name: "Slack", category: "Productivité", description: "Notifications d'appel, résumés IA et alertes leads dans vos canaux.", icon: "S", status: "native" },
-  { name: "Notion", category: "Productivité", description: "Exportez les notes d'appels et les comptes rendus vers votre base de connaissances.", icon: "N", status: "native" },
-  { name: "Google Calendar", category: "Productivité", description: "Prise de rendez-vous IA avec détection automatique des créneaux libres.", icon: "GC", status: "native" },
-  { name: "Outlook", category: "Productivité", description: "Synchronisation bidirectionnelle de votre agenda et des rendez-vous confirmés.", icon: "O", status: "native" },
-  { name: "Trello", category: "Productivité", description: "Créez des cartes à partir d'un appel manqué ou d'un prospect qualifié.", icon: "T", status: "api" },
-  { name: "OpenAI", category: "IA", description: "Agents vocaux entraînés sur GPT-4o pour des conversations personnalisées.", icon: "AI", status: "recommandee" },
-  { name: "ElevenLabs", category: "IA", description: "Synthèse vocale ultraréaliste et clonage de voix depuis le laboratoire vocal.", icon: "EL", status: "recommandee" },
-  { name: "Anthropic", category: "IA", description: "Raisonnement Claude pour la qualification complexe et l'analyse de sentiment.", icon: "A", status: "api" },
-  { name: "Make", category: "IA", description: "Scénarios sans code qui déclenchent des actions à chaque événement d'appel.", icon: "M", status: "native" },
-  { name: "Telnyx", category: "Téléphonie", description: "Réseau télécom de référence : numéros, qualificatifs et routage PSTN.", icon: "T", status: "recommandee" },
-  { name: "Webhooks sortants", category: "Téléphonie", description: "Push en temps réel de chaque appel, transcription et compte-rendu vers votre stack.", icon: "{}", status: "native" },
-  { name: "Zendesk", category: "Helpdesk", description: "Créez, mettez à jour et résolvez des tickets depuis les appels entrants.", icon: "Z", status: "native" },
-  { name: "Intercom", category: "Helpdesk", description: "Unifiez le parcours support : appel IA puis conversation en appli.", icon: "I", status: "native" },
-  { name: "Brevo", category: "Marketing", description: "Enrichissez vos campagnes avec les données d'appels et de qualification.", icon: "B", status: "api" },
-  { name: "Mailchimp", category: "Marketing", description: "Audience enrichie des numéros qui ont réellement appelé.", icon: "MC", status: "api" },
+  {
+    name: "Telnyx",
+    category: "Téléphonie",
+    description:
+      "Couche opérateur de la plateforme : numéros, routage PSTN, SIP/WebRTC, SMS, WhatsApp et synthèse vocale.",
+    icon: "T",
+    status: "native",
+  },
+  {
+    name: "WhatsApp Business",
+    category: "Téléphonie",
+    description:
+      "Messagerie WhatsApp via l'API Telnyx : envoi, modèles de message, conversations et transfert vers un agent humain.",
+    icon: "WA",
+    status: "native",
+  },
+  {
+    name: "Meta (Messenger, Instagram)",
+    category: "Messagerie",
+    description:
+      "Connexion OAuth Meta et réception des messages Messenger et Instagram dans la boîte de réception unifiée.",
+    icon: "M",
+    status: "native",
+  },
+  {
+    name: "OpenAI",
+    category: "IA",
+    description:
+      "Moteurs d'IA vocale : conversation temps réel, transcription de la parole et modèles de langage pour les agents.",
+    icon: "AI",
+    status: "native",
+  },
+  {
+    name: "Cloudflare TURN",
+    category: "Infrastructure",
+    description:
+      "Serveurs TURN de relais réseau pour établir les appels WebRTC lorsque le réseau direct n'est pas possible.",
+    icon: "CF",
+    status: "native",
+  },
+  {
+    name: "Webhooks sortants",
+    category: "Infrastructure",
+    description:
+      "Recevez sur votre endpoint les événements de la plateforme (appels, transcriptions, tickets, messages) signés par secret.",
+    icon: "{}",
+    status: "native",
+  },
+  {
+    name: "SMS",
+    category: "Téléphonie",
+    description:
+      "Envoi et réception de SMS avec suivi des statuts, politiques d'envoi et historique dans la boîte de réception.",
+    icon: "SMS",
+    status: "native",
+  },
 ];
 
 const apiUseCases = [
-  { title: "Callbacks & webhooks", description: "Recevez un POST à chaque événement : appel reçu, terminé, transcription, lead qualifié." },
-  { title: "Langage", description: "REST + SDKs JavaScript/TypeScript, Python, avec keys API typées." },
-  { title: "RAG privé", description: "Injectez n'importe quelle source : PDFs, Notion, base interne, pour les réponses." },
-  { title: "Comptabilisation", description: "Facturation usage minute et enregistrements horodatés pour vos clients." },
+  {
+    title: "Événements d'appels",
+    description: "Notification à votre endpoint lors d'un appel reçu, terminé ou transcrit.",
+  },
+  {
+    title: "Signature des requêtes",
+    description: "Chaque envoi sortant est authentifié par un secret propre à votre organisation.",
+  },
+  {
+    title: "Sources de connaissance",
+    description: "Importez des documents pour alimenter les réponses de vos agents vocaux.",
+  },
+  {
+    title: "Mesure d'usage",
+    description: "Historique horodaté des appels et des consommations par numéro.",
+  },
 ];
 
 export default function IntegrationsPage() {
   return (
     <MarketingLayout>
       <PageHero
-        badge="50+ intégrations · API & webhooks"
+        badge="Intégrations disponibles · API & webhooks"
         accent="violet"
         title={
           <>
-            Votre téléphonie IA, <span className="n8n-gradient-text">connectée à votre stack</span>
+            Une téléphonie IA, <span className="n8n-gradient-text">connectée à vos outils</span>
           </>
         }
-        subtitle="CRM, helpdesk, calendriers, IA : Antigravity synchronise vos appels avec les outils que votre équipe utilise déjà. Sans friction, sans codage."
+        subtitle="Voici les intégrations réellement présentes dans la plateforme aujourd'hui. Toute mention d'un éditeur signifie que ses API sont utilisées par Antigravity, et non que cette entreprise est notre cliente."
       >
-        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
-          Essayer gratuitement
+        <Link
+          href="/register"
+          className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform"
+        >
+          Créer un compte
         </Link>
-        <Link href="#api" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
-          Découvrir l'API
+        <Link
+          href="#api"
+          className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors"
+        >
+          Découvrir les webhooks
         </Link>
       </PageHero>
 
@@ -71,25 +126,37 @@ export default function IntegrationsPage() {
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-4">API & Webhooks</div>
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
-                Intégrez Antigravity à n&apos;importe quel système
+                Reliez Antigravity à votre système
               </h2>
               <p className="text-[var(--text-secondary)] font-medium leading-relaxed mb-8">
-                Pas d&apos;intégration prête à l&apos;emploi pour votre outil métier ? Notre API documentée et nos webhooks couvrent tous les cas. Vos agents deviennent programmables.
+                Pour tout outil non listé ci-dessus, les webhooks sortants permettent de transmettre les événements de
+                la plateforme vers votre propre stack, avec une authentification par secret.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href="/register" className="n8n-gradient-bg text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
-                  Obtenir mes clés API
+                <Link
+                  href="/register"
+                  className="n8n-gradient-bg text-white px-6 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform"
+                >
+                  Créer un compte
                 </Link>
-                <Link href="#" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-6 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
-                  Documentation technique
+                <Link
+                  href="/contact"
+                  className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-6 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors"
+                >
+                  Nous demander une intégration
                 </Link>
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               {apiUseCases.map((u) => (
-                <div key={u.title} className="rounded-2xl bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] p-5 flex flex-col gap-2">
+                <div
+                  key={u.title}
+                  className="rounded-2xl bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] p-5 flex flex-col gap-2"
+                >
                   <div className="text-sm font-extrabold text-[var(--text-primary)]">{u.title}</div>
-                  <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">{u.description}</p>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium leading-relaxed">
+                    {u.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -101,14 +168,20 @@ export default function IntegrationsPage() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <SectionHeading
           title="Vous utilisez un outil en plus ?"
-          subtitle="Demandez une intégration ou construisez-la vous-même en quelques minutes."
+          subtitle="Dites-nous quel outil vous utilisez et nous évaluerons la connexion."
         />
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform text-center">
+          <Link
+            href="/contact"
+            className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform text-center"
+          >
             Demander une intégration
           </Link>
-          <Link href="/etudes-de-cas" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors text-center">
-            Voir les cas clients connectés
+          <Link
+            href="/etudes-de-cas"
+            className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors text-center"
+          >
+            Voir les scénarios d&apos;usage
           </Link>
         </div>
       </section>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTelnyx } from "@/contexts/TelnyxContext";
 import { useAppCall } from "@/contexts/AppCallContext";
+import { useRingtone } from "@/hooks/useRingtone";
 import { useCallRouter } from "@/hooks/useCallRouter";
 import { StatusDot } from "@/components/ui/status-dot";
 import { Dialpad } from "./Dialpad";
@@ -35,9 +36,11 @@ export function Softphone() {
     muteMicrophone,
     sendDTMF,
     requestAudioUnlock,
+    audioPlayFailed,
   } = useTelnyx();
 
   const { appCallStatus } = useAppCall();
+  useRingtone();
   const { routeCall } = useCallRouter();
 
   const [mode, setMode] = useState<"pstn" | "app">("pstn");
@@ -208,7 +211,7 @@ export function Softphone() {
               ) : (
                 <>
                   <AudioVisualizer isActive={isCallActive} stream={remoteStream} />
-                  {callState === "active" && remoteStream && (
+                  {callState === "active" && remoteStream && audioPlayFailed && (
                     <button
                       onClick={requestAudioUnlock}
                       className="absolute bottom-1 right-3 px-3 py-1.5 rounded-full text-xs font-semibold bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"

@@ -5,7 +5,7 @@ import { TrustBar, ComplianceBadges, FinalCTA } from "@/components/landing";
 export const metadata = {
   title: "IA Vocale Antigravity | Téléphonie intelligente",
   description:
-    "Une plateforme IA qui écoute, comprend et agit sur chaque appel : agents vocaux, mémoire RAG, synthèse vocale, routage intelligent et analytiques. 10 000+ entreprises l'utilisent déjà.",
+    "Une plateforme IA qui écoute, comprend et agit sur chaque appel : agents vocaux, transcription, routage intelligent et analytiques.",
 };
 
 const flywheelSteps = [
@@ -150,10 +150,10 @@ export default function AISummaryPage() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <ROIBand
           stats={[
-            { value: "10 000+", label: "entreprises sur la plateforme" },
-            { value: "3,4 M", label: "d'appels traités par mois" },
-            { value: "30+", label: "langues parlées par l'IA" },
-            { value: "99,99%", label: "uptime garanti" },
+            { value: "0,5s", label: "pour décrocher un appel entrant" },
+            { value: "24/7", label: "disponibilité des agents vocaux" },
+            { value: "Appels internes", label: "illimités entre utilisateurs" },
+            { value: "API & webhooks", label: "pour les workflows internes" },
           ]}
         />
       </section>

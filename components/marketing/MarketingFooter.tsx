@@ -10,7 +10,7 @@ const productLinks = [
 
 const resourceLinks = [
   { href: "/receptionniste-ia", label: "Répondeur IA" },
-  { href: "/etudes-de-cas", label: "Études de cas" },
+  { href: "/etudes-de-cas", label: "Scénarios d'usage" },
   { href: "/secteurs", label: "Solutions par secteur" },
 ];
 
