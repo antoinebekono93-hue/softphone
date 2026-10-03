@@ -56,7 +56,7 @@ export default function MarketingHeader() {
             Connexion
           </Link>
           <Link href="/register" className="text-sm font-medium n8n-gradient-bg text-white px-4 py-2 rounded-full transition-transform hover:scale-105 shadow-lg shadow-cyan-500/20 hidden sm:block">
-            Essai Gratuit
+            Créer un compte
           </Link>
           <button
             onClick={() => setOpen(!open)}
@@ -107,7 +107,7 @@ export default function MarketingHeader() {
               Connexion
             </Link>
             <Link href="/register" className="n8n-gradient-bg text-white px-4 py-3 rounded-xl text-sm font-bold text-center shadow-lg shadow-cyan-500/20">
-              Essai Gratuit
+              Créer un compte
             </Link>
           </div>
         </nav>

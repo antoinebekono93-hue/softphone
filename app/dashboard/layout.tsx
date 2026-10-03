@@ -1,5 +1,8 @@
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { requiresBillingRedirect } from "@/lib/account-session";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { TopNavbar } from "./TopNavbar";
 
@@ -9,7 +12,17 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
-  
+
+  // INVARIANT D — the billing gate is enforced here, not in the middleware.
+  // `auth()` runs the JWT callback, which re-reads the user and its organization
+  // from the database on every call, so an upgrade/downgrade is honoured on the
+  // next request instead of the next login. The middleware only forwards the
+  // pathname (`x-pathname`) because `getToken` decodes a stale cookie.
+  const pathname = (await headers()).get("x-pathname") ?? "";
+  if (session?.user?.id && requiresBillingRedirect(pathname, session.user.planStatus)) {
+    redirect("/dashboard/billing");
+  }
+
   let walletBalance = 0;
   if (session?.user?.organizationId) {
     try {

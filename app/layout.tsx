@@ -27,36 +27,37 @@ validateEnv();
 
 export const metadata: Metadata = {
   title: {
-    default: "Antigravity — Cloud Softphone for Business",
+    default: "Antigravity — Téléphonie professionnelle et agents vocaux IA",
     template: "%s | Antigravity",
   },
   description:
-    "Professional cloud-based softphone platform. Make and receive business calls from anywhere — browser, mobile, or desktop. Powered by Telnyx.",
+    "Plateforme B2B de communication d'entreprise : numéros professionnels, softphone cloud, routage d'appels, SMS et WhatsApp, agents vocaux assistés par intelligence artificielle.",
   keywords: [
     "softphone",
-    "cloud phone",
-    "business phone",
-    "VoIP",
-    "Telnyx",
+    "téléphonie professionnelle",
+    "centre d'appels",
+    "standard téléphonique",
+    "répondeur IA",
+    "agent vocal IA",
+    "WhatsApp Business",
     "PWA",
-    "call center",
   ],
-  authors: [{ name: "Mego" }],
-  creator: "Mego",
+  authors: [{ name: "Antigravity" }],
+  creator: "Antigravity",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "fr_FR",
     siteName: "Antigravity",
-    title: "Antigravity — Cloud Softphone for Business",
+    title: "Antigravity — Téléphonie professionnelle et agents vocaux IA",
     description:
-      "Professional cloud-based softphone. Make and receive calls from your browser.",
+      "Numéros professionnels, softphone cloud, routage d'appels, messagerie multicanal et agents vocaux assistés par intelligence artificielle.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Antigravity — Cloud Softphone for Business",
+    title: "Antigravity — Téléphonie professionnelle et agents vocaux IA",
     description:
-      "Professional cloud-based softphone. Make and receive calls from your browser.",
+      "Numéros professionnels, softphone cloud, routage d'appels et agents vocaux assistés par intelligence artificielle.",
   },
   icons: {
     icon: "/icon-192x192.png",
@@ -78,7 +79,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-180x180.png" />

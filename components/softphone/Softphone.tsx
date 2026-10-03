@@ -56,19 +56,29 @@ export function Softphone() {
 
   // Fetch available numbers for caller ID
   useEffect(() => {
-    setIsLoadingNumbers(true);
-    fetch('/api/telecom/numbers')
-      .then(res => res.json())
+    let disposed = false;
+    const refreshNumbers = () => fetch('/api/telecom/numbers', { cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) throw new Error('Impossible de charger les numéros');
+        return res.json();
+      })
       .then(data => {
-        if (Array.isArray(data.data)) {
+        if (!disposed && Array.isArray(data.data)) {
           setAvailableNumbers(data.data as CallerIdNumber[]);
-          if (data.data.length > 0) {
-            setSelectedCallerId(data.data[0].number);
-          }
+          setSelectedCallerId(current => data.data.some((number: CallerIdNumber) => number.number === current)
+            ? current : data.data[0]?.number || "");
         }
       })
       .catch(console.error)
-      .finally(() => setIsLoadingNumbers(false));
+      .finally(() => { if (!disposed) setIsLoadingNumbers(false); });
+    void refreshNumbers();
+    window.addEventListener('focus', refreshNumbers);
+    const interval = window.setInterval(refreshNumbers, 30000);
+    return () => {
+      disposed = true;
+      window.removeEventListener('focus', refreshNumbers);
+      window.clearInterval(interval);
+    };
   }, []);
 
   // Timer for call duration

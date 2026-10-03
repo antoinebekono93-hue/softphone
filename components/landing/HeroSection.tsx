@@ -74,7 +74,7 @@ export default function HeroSection() {
       >
         {[
           <Link key="cta1" href="/register" className="text-base font-semibold n8n-gradient-bg text-white px-8 py-4 rounded-full shadow-lg shadow-cyan-500/30 hover:scale-105 transition-all flex items-center gap-2">
-            Essai gratuit 14 jours <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            Créer un compte <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </Link>,
           <Link key="cta2" href="/pricing" className="text-base font-semibold text-[var(--text-primary)] bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] px-8 py-4 rounded-full transition-all flex items-center gap-2">
             Voir les tarifs

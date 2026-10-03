@@ -1,12 +1,22 @@
-import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireCronSecret } from '@/lib/security';
 import { canonicalizePhoneNumber } from '@/lib/phone-number';
 import { preAuthorizeCall, releasePstnReservation } from '@/lib/pstn-billing';
+import {
+  CAMPAIGN_DIALER_STATUSES,
+  nextCampaignDialerRetry,
+  campaignDialerRetryRank,
+  extractStoredAttemptId,
+  newDialerAttemptId,
+  buildCampaignDialCommandId,
+  isTransientDialFailure,
+} from '@/lib/campaign-dialer-policy';
 
 export const maxDuration = 60;
 const API_BASE = 'https://api.telnyx.com/v2';
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function handle(req: Request) {
   if (!requireCronSecret(req)) {
@@ -24,8 +34,10 @@ async function handle(req: Request) {
       return NextResponse.json({ error: 'TELNYX_VOICE_NOT_CONFIGURED' }, { status: 503 });
     }
 
+    // PENDING + états de retry transitoire : un recipient en backoff est
+    // re-sélectionné, réutilisant le même attemptId → même command_id.
     const pendingRecipients = await prisma.campaignRecipient.findMany({
-      where: { status: 'PENDING', campaign: { status: 'RUNNING', channel: 'VOICE' } },
+      where: { status: { in: [...CAMPAIGN_DIALER_STATUSES] }, campaign: { status: 'RUNNING', channel: 'VOICE' } },
       include: { campaign: { include: { phoneNumber: true } }, contact: true },
       take: 10,
     });
@@ -33,7 +45,7 @@ async function handle(req: Request) {
 
     for (const recipient of pendingRecipients) {
       const claimed = await prisma.campaignRecipient.updateMany({
-        where: { id: recipient.id, status: 'PENDING' },
+        where: { id: recipient.id, status: { in: [...CAMPAIGN_DIALER_STATUSES] } },
         data: { status: 'PROCESSING' },
       });
       if (claimed.count !== 1) continue;
@@ -53,7 +65,23 @@ async function handle(req: Request) {
         continue;
       }
 
-      const attemptId = randomUUID();
+      // IDEMPOTENCE : l'attemptId (et donc le command_id) est PERSISTÉ dans
+      // messageId. Un retry transitoire réutilise le même attemptId ; seul un
+      // nouvel essai volontaire en génère un nouveau.
+      const storedAttemptId = extractStoredAttemptId(recipient.messageId);
+      const attemptId = storedAttemptId ?? newDialerAttemptId();
+      if (!storedAttemptId) {
+        await prisma.campaignRecipient.update({
+          where: { id: recipient.id },
+          data: { messageId: attemptId },
+        });
+      }
+      const commandId = buildCampaignDialCommandId({
+        campaignId: recipient.campaignId,
+        recipientId: recipient.id,
+        attemptId,
+      });
+
       const provisionalControlId = `pending:${attemptId}`;
       const callLog = await prisma.callLog.create({
         data: {
@@ -68,6 +96,8 @@ async function handle(req: Request) {
         },
       });
 
+      let dialFailure: { status: number; body: { errors?: Array<{ detail?: string; code?: string }> } | null } | null = null;
+
       try {
         const authorization = await preAuthorizeCall({
           organizationId: recipient.campaign.organizationId,
@@ -77,7 +107,7 @@ async function handle(req: Request) {
         });
         if (!authorization.authorized) {
           await prisma.callLog.update({ where: { id: callLog.id }, data: { status: 'DENIED', endedAt: new Date() } });
-          await prisma.campaignRecipient.update({ where: { id: recipient.id }, data: { status: 'FAILED' } });
+          await prisma.campaignRecipient.update({ where: { id: recipient.id }, data: { status: 'FAILED', messageId: null } });
           results.push({ recipientId: recipient.id, status: 'DENIED' });
           continue;
         }
@@ -103,10 +133,14 @@ async function handle(req: Request) {
             answering_machine_detection: 'premium',
             time_limit_secs: authorization.maxDurationSeconds ?? 3600,
             client_state: clientState,
+            // Dédup Telnyx 60 s : un retry du même appel logique ne crée
+            // qu'une seule jambe.
+            command_id: commandId,
           }),
         });
         const responseBody = await response.json().catch(() => ({}));
         if (!response.ok || !responseBody?.data?.call_control_id) {
+          dialFailure = { status: response.status, body: responseBody as { errors?: Array<{ detail?: string; code?: string }> } | null };
           throw new Error(responseBody?.errors?.[0]?.detail || `TELNYX_DIAL_FAILED_${response.status}`);
         }
         const callControlId = responseBody.data.call_control_id as string;
@@ -134,9 +168,28 @@ async function handle(req: Request) {
           where: { id: callLog.id },
           data: { status: 'FAILED', endedAt: new Date() },
         }).catch(() => undefined);
+
+        // Échec transitoire (429 / 5xx / 90103 DPS) → requeue borné avec le
+        // MÊME attemptId (messageId conservé) pour garder un seul command_id.
+        // 4xx autres / exhaustion → FAILED permanent (messageId réinitialisé).
+        if (dialFailure && isTransientDialFailure(dialFailure.status, dialFailure.body)) {
+          const currentStatus = recipient.status as string;
+          const nextStatus = nextCampaignDialerRetry(currentStatus);
+          if (nextStatus) {
+            await wait(campaignDialerRetryRank(currentStatus) * 400 + Math.random() * 800);
+            await prisma.campaignRecipient.update({
+              where: { id: recipient.id },
+              data: { status: nextStatus },
+            });
+            console.warn(`[Dialer] ${recipient.id} transitoire (${dialFailure.status}) → ${nextStatus}, attemptId=${attemptId} conservé`);
+            results.push({ recipientId: recipient.id, status: nextStatus });
+            continue;
+          }
+        }
+
         await prisma.campaignRecipient.update({
           where: { id: recipient.id },
-          data: { status: 'FAILED' },
+          data: { status: 'FAILED', messageId: null },
         });
         console.error(`[Dialer] ${recipient.id}`, error);
         results.push({ recipientId: recipient.id, status: 'FAILED' });

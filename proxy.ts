@@ -21,6 +21,17 @@ const publicPaths = [
   "/register",
   "/pricing",
   "/features",
+  "/ia",
+  "/receptionniste-ia",
+  "/secteurs",
+  "/etudes-de-cas",
+  "/integrations",
+  "/about",
+  "/contact",
+  "/terms",
+  "/privacy",
+  "/refund-policy",
+  "/acceptable-use",
   "/api/auth",
   "/api/voice/webhook",
   "/api/voice/twiml",
@@ -141,20 +152,16 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  // Plan status check for dashboard routes
-  if (pathname.startsWith("/dashboard")) {
-    const planStatus = token?.planStatus as string | undefined;
+// The middleware stays deliberately thin: authentication + rate limiting only.
+  // `getToken` only DECODES the cookie, it does not run the JWT callback, so any
+  // mutable claim read here (plan, organization) would be stale until the cookie
+  // is rewritten. The billing gate therefore lives in the server layer
+  // (`app/dashboard/layout.tsx`), where `auth()` re-reads the database on every
+  // session resolution. We only forward the pathname so that layer can decide.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-pathname", pathname);
 
-    if (pathname === "/dashboard/billing") {
-      return NextResponse.next();
-    }
-
-    if (planStatus && planStatus !== "ACTIVE" && planStatus !== "TRIALING") {
-      return NextResponse.redirect(new URL("/dashboard/billing", req.url));
-    }
-  }
-
-  return NextResponse.next();
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

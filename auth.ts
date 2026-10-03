@@ -3,6 +3,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { accountSessionClaims, accountSessionSelect } from "@/lib/account-session";
 
 if (!process.env.AUTH_SECRET) {
   process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET!;
@@ -80,37 +81,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
-  callbacks: {
+callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id as string;
-
-        // Fetch organization info
-        const dbUser = (await prisma.user.findUnique({
-          where: { id: user.id },
-          select: {
-            role: true,
-            isSuperAdmin: true,
-            organizationId: true,
-            organization: {
-              select: {
-                id: true,
-                name: true,
-                planStatus: true,
-              },
-            },
-          },
-        })) as any;
-
-        if (dbUser) {
-          token.role = dbUser.role;
-          token.isSuperAdmin = dbUser.isSuperAdmin || false;
-          token.organizationId = dbUser.organizationId;
-          token.organizationName = dbUser.organization?.name;
-          token.planStatus = dbUser.organization?.planStatus;
-        }
-      }
-      return token;
+      // INVARIANT D — identity vs mutable account state.
+      // Identity (`id`) is immutable and stays in the signed JWT.
+      // Mutable account state (role, isSuperAdmin, organization, plan,
+      // planStatus) is re-read from the database on EVERY session resolution:
+      // a 30-day JWT must not freeze a membership, a plan upgrade/downgrade or
+      // an organization change until the next login. Claims are replaced, never
+      // merged, so removing a plan or an organization clears the claim instead
+      // of leaving a stale one behind.
+      const userId = user?.id || token.id;
+      if (!userId) return null;
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: accountSessionSelect,
+      });
+      if (!dbUser) return null;
+      return { ...token, id: userId, ...accountSessionClaims(dbUser) };
     },
     async session({ session, token }) {
       // MOCK_AUTH est une backdoor d'admin (attribue isSuperAdmin=true à TOUS).
@@ -118,7 +106,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (process.env.MOCK_AUTH === "true" && process.env.NODE_ENV !== "production") {
         session.user.id = "mock-id";
         session.user.role = "USER";
-        session.user.organizationId = "cm1o6r8z00002131v3b9r9y2c"; // Wait, I need a REAL orgId from Nhost database! Let's just use a valid string and if the DB query fails, it's fine.
+        session.user.organizationId = "cm1o6r8z00002131v3b9r9y2c";
         session.user.organizationName = "Mock Org";
         session.user.isSuperAdmin = true;
         return session;
@@ -130,6 +118,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.organizationId = token.organizationId as string;
         session.user.organizationName = token.organizationName as string;
         session.user.planStatus = token.planStatus as string;
+        session.user.plan = token.plan as string;
       }
       return session;
     },

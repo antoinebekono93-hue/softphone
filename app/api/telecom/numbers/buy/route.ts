@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { getCurrentAccountContext } from "@/lib/account-context";
 import { purchaseTelnyxNumber } from "@/lib/telnyx-number-purchase";
 
 const ERROR_STATUS: Record<string, number> = {
@@ -24,22 +25,29 @@ const ERROR_STATUS: Record<string, number> = {
 export async function POST(request: Request) {
   try {
     const session = await auth();
-    if (!session?.user?.id || !session.user.organizationId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const purchaser = await prisma.user.findFirst({
-      where: { id: session.user.id, organizationId: session.user.organizationId },
-      select: { id: true },
-    });
-    if (!purchaser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // INVARIANT D — read the CURRENT organization from the database. A purchase
+    // must never land on the tenant the client last saw in its JWT.
+    const account = await getCurrentAccountContext(session.user.id);
+    if (!account?.organizationId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const body = await request.json().catch(() => null);
     const result = await purchaseTelnyxNumber({
-      organizationId: session.user.organizationId,
+      organizationId: account.organizationId,
       phoneNumber: body?.phoneNumber,
-      assignedUserId: purchaser.id,
+      // A number bought personally is owned by its buyer (INVARIANT C).
+      assignedUserId: account.userId,
     });
+
+    // The number now exists server-side: invalidate every list derived from it
+    // so the dashboard and God Mode re-read instead of showing a stale cache.
+    revalidatePath("/dashboard/numbers");
+    revalidatePath("/god-mode/numbers");
 
     return NextResponse.json(
       {

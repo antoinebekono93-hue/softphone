@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Phone, Bot, User, Plus, Loader2, Edit2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { updateNumber } from "./actions";
+import { useSyncedState } from "@/lib/use-synced-state";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,10 +14,14 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { dashboardModuleHref, resolveDashboardModule } from '@/lib/dashboard-modules';
 
 export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[], users: any[] }) {
+  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeModule = resolveDashboardModule(pathname, searchParams.get('module'));
-  const [numbers, setNumbers] = useState(initialNumbers);
+  // A Server Component refresh delivers a brand new array identity: the local
+  // copy must follow it, otherwise a number assigned in God Mode stays invisible
+  // until a full page reload.
+  const [numbers, setNumbers] = useSyncedState(initialNumbers);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedNumber, setSelectedNumber] = useState<any>(null);
   const [editName, setEditName] = useState("");
@@ -77,8 +83,11 @@ export function NumbersClient({ initialNumbers, users }: { initialNumbers: any[]
         voicemailEnabled: routing.voicemailEnabled,
         voicemailDelaySeconds: routing.voicemailDelaySeconds,
         voicemailGreeting: routing.voicemailGreeting,
-      } : n));
+} : n));
       setIsEditModalOpen(false);
+      // Re-read the server component tree so ownership, routing and plan
+      // capabilities come from the DB, not from the local copy.
+      router.refresh();
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : "Erreur de sauvegarde");
     }

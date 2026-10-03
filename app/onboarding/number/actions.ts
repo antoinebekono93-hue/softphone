@@ -4,8 +4,15 @@ import { telnyx } from "@/lib/telnyx";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { canonicalizePhoneNumber } from "@/lib/phone-number";
+import { purchaseTelnyxNumber } from "@/lib/telnyx-number-purchase";
+import { getCurrentAccountContext } from "@/lib/account-context";
 
 export async function searchNumbers(countryCode: string = "US") {
+  // A "use server" export is an HTTP endpoint: never expose the provider
+  // inventory to an anonymous caller.
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
   try {
     // Fetch available numbers from Telnyx
     const response = await telnyx.availablePhoneNumbers.list({
@@ -15,61 +22,49 @@ export async function searchNumbers(countryCode: string = "US") {
         features: ["sms", "voice"]
       }
     });
-    
+
     return { numbers: response.data };
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Search Numbers Error]", error);
     return { error: "Failed to fetch numbers from Telnyx" };
   }
 }
 
 export async function buyNumber(phoneNumber: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
   try {
-    const session = await auth();
-    if (!session?.user?.id) return { error: "Unauthorized" };
+    const account = await getCurrentAccountContext(session.user.id);
+    if (!account?.organizationId) return { error: "No organization found" };
 
     const canonicalPhoneNumber = canonicalizePhoneNumber(phoneNumber);
     if (!canonicalPhoneNumber) {
       return { error: "Le numéro doit être au format E.164 valide." };
     }
 
-    const user = await prisma.user.findUnique({ 
-      where: { id: session.user.id },
-      include: { organization: true }
-    });
-
-    if (!user?.organizationId) return { error: "No organization found" };
-
-    // Check if they already have a number
+    // Business rule: onboarding allows a single number. This BLOCKS a new
+    // purchase, it never deletes or unassigns an existing number (INVARIANT A).
     const existingCount = await prisma.phoneNumber.count({
-      where: { organizationId: user.organizationId }
+      where: { organizationId: account.organizationId },
     });
-
     if (existingCount > 0) {
       return { error: "You already have a phone number on the trial plan" };
     }
 
-    // Actually buy the number on Telnyx
-    const order = await telnyx.numberOrders.create({
-      phone_numbers: [{ phone_number: canonicalPhoneNumber }]
+    // Single purchase path. Writing the row here directly stored the Telnyx
+    // ORDER id in the unique `telnyxId` column, so the number could never be
+    // reconciled again and its ownership could never be repaired.
+    const result = await purchaseTelnyxNumber({
+      organizationId: account.organizationId,
+      phoneNumber: canonicalPhoneNumber,
+      assignedUserId: account.userId,
     });
 
-    // Wait for the order to process (In real prod we'd use Webhooks, but here we can poll or just assume success if API accepted it)
-    
-    // Save to database
-    await prisma.phoneNumber.create({
-      data: {
-        number: canonicalPhoneNumber,
-        friendlyName: "Main Number",
-        telnyxId: order.data.id || "pending_id", // Normally you'd get the actual phone_number id from Telnyx
-        organizationId: user.organizationId,
-        assignedUserId: user.id,
-      }
-    });
-
-    return { success: true };
-  } catch (error: any) {
+    return { success: true, status: result.status };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "UNKNOWN";
     console.error("[Buy Number Error]", error);
-    return { error: "Failed to purchase the number" };
+    return { error: message === "UNKNOWN" ? "Failed to purchase the number" : message };
   }
 }

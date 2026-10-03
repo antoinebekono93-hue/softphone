@@ -58,6 +58,16 @@ export async function getConfiguredTelnyxClient() {
   return configuredTelnyxInstance;
 }
 
+/** Connection_id attendu pour les legs arrivant sur ce webhook. God Mode est
+ * la source de vérité, l'env reste le fallback de déploiement. */
+export async function getConfiguredTelnyxConnectionId() {
+  const settings = await prisma.systemSettings.findUnique({
+    where: { id: 'default' },
+    select: { telnyxConnectionId: true },
+  });
+  return settings?.telnyxConnectionId?.trim() || process.env.TELNYX_SIP_CONNECTION_ID?.trim() || null;
+}
+
 // For backward compatibility - lazily evaluated
 export const telnyx = new Proxy({} as any, {
   get(_, prop) {

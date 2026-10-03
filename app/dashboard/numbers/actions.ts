@@ -4,92 +4,95 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { telnyx } from "@/lib/telnyx";
 import { canonicalizePhoneNumber } from "@/lib/phone-number";
+import { purchaseTelnyxNumber } from "@/lib/telnyx-number-purchase";
+import { getCurrentAccountContext } from "@/lib/account-context";
 import { revalidatePath } from "next/cache";
 
-export async function getNumbers() {
-  try {
-    const session = await auth();
-    if (!session?.user?.organizationId) return [];
+/**
+ * INVARIANT A — the plan is never part of the ownership query.
+ *
+ * A number belongs to the organization, not to the plan. Buying N1 and N2 with
+ * no plan, then subscribing, then upgrading or downgrading must always return
+ * the same rows. `PricingPlan` only gates capabilities elsewhere.
+ *
+ * Errors are NOT swallowed: returning `[]` on failure made a healthy database
+ * look like "all my numbers disappeared", which is exactly the bug family this
+ * audit removes. The page renders an explicit error instead.
+ */
+export async function getNumbers(organizationId: string) {
+  const numbers = await prisma.phoneNumber.findMany({
+    where: { organizationId },
+    include: {
+      aiEmployee: { select: { id: true, name: true } },
+      assignedUser: { select: { id: true, name: true, email: true } },
+      // Only display fields are selected: a Prisma `Decimal` (PricingPlan prices)
+      // cannot cross the Server Component boundary, and including the whole
+      // pricing plan made this query throw as soon as a plan was attached —
+      // which is why numbers used to vanish exactly when a plan was chosen.
+      organization: { select: { pricingPlan: { select: { hasRecording: true } } } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-    const numbers = await prisma.phoneNumber.findMany({
-      where: { organizationId: session.user.organizationId },
-      include: {
-        aiEmployee: true,
-        assignedUser: true,
-        organization: { include: { pricingPlan: true } },
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    return numbers;
-  } catch (error) {
-    console.error("Failed to get numbers:", error);
-    return [];
-  }
+  return numbers;
 }
 
 export async function getUsers() {
-  try {
-    const session = await auth();
-    if (!session?.user?.organizationId) return [];
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const account = await getCurrentAccountContext(session.user.id);
+  if (!account?.organizationId) return [];
 
-    const users = await prisma.user.findMany({
-      where: { organizationId: session.user.organizationId },
-      select: { id: true, name: true, email: true }
-    });
-
-    return users;
-  } catch (error) {
-    console.error("Failed to get users:", error);
-    return [];
-  }
+  return prisma.user.findMany({
+    where: { organizationId: account.organizationId },
+    select: { id: true, name: true, email: true },
+  });
 }
 
 export async function updateNumber(id: string, friendlyName: string, assignedUserId: string | null) {
   const session = await auth();
-  if (!session?.user?.id || !session.user.organizationId) return { error: "Unauthorized" };
+  if (!session?.user?.id) return { error: "Unauthorized" };
 
   try {
-    const [number, actor] = await Promise.all([
+    const account = await getCurrentAccountContext(session.user.id);
+    if (!account?.organizationId) return { error: "Unauthorized" };
+
+    const [number, assignee] = await Promise.all([
       prisma.phoneNumber.findFirst({
-        where: { id, organizationId: session.user.organizationId },
+        where: { id, organizationId: account.organizationId },
         select: { id: true, assignedUserId: true },
       }),
-      prisma.user.findFirst({
-        where: { id: session.user.id, organizationId: session.user.organizationId },
-        select: { id: true },
-      }),
+      assignedUserId
+        ? prisma.user.findFirst({
+            where: { id: assignedUserId, organizationId: account.organizationId },
+            select: { id: true },
+          })
+        : Promise.resolve(null),
     ]);
 
-    if (!number || !actor) return { error: "Phone number not found" };
+    // Tenant isolation: another organization's number is simply not found.
+    if (!number) return { error: "Phone number not found" };
 
     // There is no tenant-admin authority model in the schema that is safe to
     // trust here.  Until one exists, a regular member can only edit the number
     // assigned to them; global God Mode remains explicitly authorized.
-    if (!session.user.isSuperAdmin && number.assignedUserId !== actor.id) {
+    if (!account.isSuperAdmin && number.assignedUserId !== account.userId) {
       return { error: "You are not allowed to manage this phone number" };
     }
 
-    if (assignedUserId) {
-      const assignee = await prisma.user.findFirst({
-        where: {
-          id: assignedUserId,
-          organizationId: session.user.organizationId,
-        },
-        select: { id: true },
-      });
-      if (!assignee) {
-        // Never allow a cross-tenant user ID to become an owner of a number.
-        return { error: "Assigned user must belong to your organization" };
-      }
+    if (assignedUserId && !assignee) {
+      // Never allow a cross-tenant user ID to become an owner of a number.
+      return { error: "Assigned user must belong to your organization" };
     }
 
+    // Partial update only: a label edit and an ownership edit, nothing else.
+    // `organizationId`, `status`, `number` and `telnyxId` are untouched.
     await prisma.phoneNumber.update({
       where: { id: number.id },
       data: {
         friendlyName: typeof friendlyName === "string" ? friendlyName.trim().slice(0, 120) || null : null,
-        assignedUserId
-      }
+        assignedUserId: assignedUserId ?? null,
+      },
     });
 
     revalidatePath("/dashboard/numbers");
@@ -101,6 +104,11 @@ export async function updateNumber(id: string, friendlyName: string, assignedUse
 }
 
 export async function searchNumbers(countryCode: string = "US") {
+  // A "use server" export is an HTTP endpoint: an unauthenticated search would
+  // leak the provider inventory to anonymous callers.
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
   try {
     const response = await telnyx.availablePhoneNumbers.list({
       filter: {
@@ -109,58 +117,47 @@ export async function searchNumbers(countryCode: string = "US") {
         features: ["sms", "voice"]
       }
     });
-    
+
     return { numbers: response.data };
-  } catch (error: any) {
+  } catch (error) {
     console.error("[Search Numbers Error]", error);
     return { error: "Failed to fetch numbers from Telnyx" };
   }
 }
 
+/**
+ * Single purchase path (INVARIANT C).
+ *
+ * Delegates to `purchaseTelnyxNumber`, which debits the wallet, records the
+ * Telnyx order, provisions the number and assigns it to the buyer. Writing the
+ * `PhoneNumber` row here directly used to fabricate a `telnyxId`
+ * (`pending_<timestamp>`), which permanently broke every later reconciliation
+ * keyed on `telnyxId` and left the number impossible to attribute.
+ */
 export async function buyNumber(phoneNumber: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Unauthorized" };
+
   try {
-    const session = await auth();
-    if (!session?.user?.id) return { error: "Unauthorized" };
+    const account = await getCurrentAccountContext(session.user.id);
+    if (!account?.organizationId) return { error: "No organization found" };
 
     const canonicalPhoneNumber = canonicalizePhoneNumber(phoneNumber);
     if (!canonicalPhoneNumber) {
       return { error: "Le numéro doit être au format E.164 valide." };
     }
 
-    const user = await prisma.user.findUnique({ 
-      where: { id: session.user.id },
-      include: { organization: true }
-    });
-
-    if (!user?.organizationId) return { error: "No organization found" };
-
-    const connectionId = process.env.TELNYX_SIP_CONNECTION_ID;
-    if (!connectionId) {
-      return { error: "La connexion vocale Telnyx n'est pas configurée." };
-    }
-
-    const order = await telnyx.numberOrders.create({
-      phone_numbers: [{ phone_number: canonicalPhoneNumber }],
-      connection_id: connectionId,
-      ...(process.env.TELNYX_MESSAGING_PROFILE_ID
-        ? { messaging_profile_id: process.env.TELNYX_MESSAGING_PROFILE_ID }
-        : {}),
-    });
-
-    await prisma.phoneNumber.create({
-      data: {
-        number: canonicalPhoneNumber,
-        friendlyName: "New Number",
-        telnyxId: order.data?.phone_numbers?.[0]?.id || `pending_${Date.now()}`,
-        organizationId: user.organizationId,
-        assignedUserId: user.id,
-      }
+    const result = await purchaseTelnyxNumber({
+      organizationId: account.organizationId,
+      phoneNumber: canonicalPhoneNumber,
+      assignedUserId: account.userId,
     });
 
     revalidatePath("/dashboard/numbers");
-    return { success: true };
-  } catch (error: any) {
+    return { success: true, status: result.status };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "UNKNOWN";
     console.error("[Buy Number Error]", error);
-    return { error: "Failed to purchase the number" };
+    return { error: message === "UNKNOWN" ? "Failed to purchase the number" : message };
   }
 }

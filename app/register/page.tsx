@@ -52,9 +52,11 @@ export default function RegisterPage() {
       
       <div className="w-full max-w-md glass-panel p-8 sm:p-10 relative">
         <div className="relative z-10">
-<h1 className="text-3xl font-bold mb-2 tracking-tight">Create your account</h1>
-          <p className="text-[var(--text-secondary)] mb-8 text-sm">Start your 14-day free trial. No credit card required.</p>
-          
+<h1 className="text-3xl font-bold mb-2 tracking-tight">Créer votre compte</h1>
+          <p className="text-[var(--text-secondary)] mb-8 text-sm">
+            Créez votre compte pour configurer vos numéros, votre softphone et vos agents vocaux.
+          </p>
+
           {error && (
             <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm">
               {error}
@@ -63,27 +65,58 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
              <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[var(--text-secondary)]">Organization Name</label>
-              <Input required name="orgName" type="text" placeholder="Acme Corp" />
+              <label htmlFor="orgName" className="text-sm font-medium text-[var(--text-secondary)]">Nom de l'organisation</label>
+              <Input id="orgName" required name="orgName" type="text" placeholder="Acme Corp" />
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[var(--text-secondary)]">Email</label>
-              <Input required name="email" type="email" placeholder="name@company.com" />
+              <label htmlFor="email" className="text-sm font-medium text-[var(--text-secondary)]">Adresse e-mail</label>
+              <Input id="email" required name="email" type="email" placeholder="name@company.com" />
             </div>
             
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[var(--text-secondary)]">Password</label>
-              <Input required name="password" type="password" placeholder="••••••••" minLength={6} />
+              <label htmlFor="password" className="text-sm font-medium text-[var(--text-secondary)]">Mot de passe</label>
+              <Input id="password" required name="password" type="password" placeholder="••••••••" minLength={6} />
+            </div>
+
+            <div className="flex items-start gap-3">
+              <input
+                id="acceptLegal"
+                name="acceptLegal"
+                type="checkbox"
+                required
+                className="mt-1 h-4 w-4 shrink-0 accent-cyan-500"
+              />
+              <label htmlFor="acceptLegal" className="text-xs leading-relaxed text-[var(--text-secondary)]">
+                J'accepte les{" "}
+                <Link href="/terms" className="underline underline-offset-4 hover:text-[var(--text-primary)]">
+                  conditions générales
+                </Link>
+                , la{" "}
+                <Link href="/privacy" className="underline underline-offset-4 hover:text-[var(--text-primary)]">
+                  politique de confidentialité
+                </Link>{" "}
+                et la{" "}
+                <Link
+                  href="/acceptable-use"
+                  className="underline underline-offset-4 hover:text-[var(--text-primary)]"
+                >
+                  politique d'usage acceptable
+                </Link>
+                .
+              </label>
             </div>
 
             <Button disabled={isLoading} type="submit" size="lg" className="mt-4 w-full rounded-full! bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-              {isLoading ? "Creating account..." : "Continue"}
+              {isLoading ? "Création du compte..." : "Créer mon compte"}
             </Button>
           </form>
 
           <p className="mt-8 text-center text-sm text-[var(--text-secondary)]">
-            Already have an account? <Link href="/login" className="text-cyan-500 hover:text-cyan-400 transition-colors">Log in</Link>
+            Vous avez déjà un compte ?{" "}
+            <Link href="/login" className="text-cyan-500 hover:text-cyan-400 transition-colors">
+              Se connecter
+            </Link>
           </p>
         </div>
       </div>

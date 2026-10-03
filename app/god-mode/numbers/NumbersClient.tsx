@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useSyncedState } from "@/lib/use-synced-state";
 
 type DbNumber = any;
 
@@ -24,9 +25,34 @@ function missingRoutingCapabilities(number: DbNumber | null) {
   return missing;
 }
 
+/** §19 — legacy attribution states surfaced for an operator, never auto-fixed. */
+type AttributionFilter = "ALL" | "ATTRIBUTED" | "UNATTRIBUTED" | "INCONSISTENT";
+
+function matchesAttributionFilter(number: DbNumber, filter: AttributionFilter) {
+  if (filter === "ALL") return true;
+  const inconsistent =
+    !!number.assignedUserId &&
+    !!number.assignedUser &&
+    !!number.organizationId &&
+    number.assignedUser.organizationId !== number.organizationId;
+  if (filter === "INCONSISTENT") return inconsistent;
+  if (filter === "UNATTRIBUTED") return !number.assignedUserId;
+  return !!number.assignedUserId;
+}
+
+function attributionCase(number: DbNumber): "A" | "B" | "C" | "D" {
+  if (!number.organizationId) return "C";
+  if (!number.assignedUserId) return "B";
+  if (number.assignedUser && number.assignedUser.organizationId !== number.organizationId) return "D";
+  return "A";
+}
+
 export function NumbersClient({ existingNumbers, organizations = [] }: { existingNumbers: DbNumber[], organizations?: any[] }) {
   const router = useRouter();
-  const [managedNumbers, setManagedNumbers] = useState<DbNumber[]>(existingNumbers);
+  // A God Mode assignment must be reflected in this table immediately: the
+  // Server Component re-queries and delivers new props, and the local copy has
+  // to follow them instead of freezing the first render.
+  const [managedNumbers, setManagedNumbers] = useSyncedState<DbNumber[]>(existingNumbers);
   const [countryCode, setCountryCode] = useState("US");
   const [limit, setLimit] = useState("10");
   const [features, setFeatures] = useState({ voice: true, sms: true });
@@ -45,13 +71,14 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
   const [ringAppSeconds, setRingAppSeconds] = useState("15");
   const [voicemailEnabled, setVoicemailEnabled] = useState(false);
   const [voicemailDelaySeconds, setVoicemailDelaySeconds] = useState("25");
-  const [voicemailGreeting, setVoicemailGreeting] = useState("");
+const [voicemailGreeting, setVoicemailGreeting] = useState("");
   const [isSavingRouting, setIsSavingRouting] = useState(false);
   const [routingError, setRoutingError] = useState<string | null>(null);
+  const [attributionFilter, setAttributionFilter] = useState<AttributionFilter>("ALL");
 
-  useEffect(() => {
-    setManagedNumbers(existingNumbers);
-  }, [existingNumbers]);
+  const visibleNumbers = managedNumbers.filter(number => matchesAttributionFilter(number, attributionFilter));
+  const unattributedCount = managedNumbers.filter(number => !number.assignedUserId).length;
+  const inconsistentCount = managedNumbers.filter(number => matchesAttributionFilter(number, "INCONSISTENT")).length;
 
   const openRouting = (number: DbNumber) => {
     setRoutingNumber(number);
@@ -174,8 +201,9 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
         ? `${phoneNumber} a été acheté et relié à la connexion vocale.`
         : `La commande de ${phoneNumber} est acceptée par Telnyx ; l'activation est en cours.`);
       setNumbers((prev) => prev.filter(n => n.phone_number !== phoneNumber));
-      // Typically would refresh router here to see the new number in existingNumbers
-      // router.refresh();
+      // The purchase writes a new PhoneNumber row server-side: pull the fresh
+      // inventory instead of asking the operator to reload the page.
+      router.refresh();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -191,7 +219,8 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
       const res = await fetch("/api/admin/telnyx/numbers/sync", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to sync numbers");
-      setSuccess(`Synchronisation réussie ! ${data.count} numéros ajoutés/mis à jour. Actualisez la page pour les voir.`);
+      setSuccess(`Synchronisation réussie ! ${data.count} numéros ajoutés/mis à jour.`);
+      router.refresh();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -199,14 +228,18 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
     }
   };
 
-  const assignOrganization = async (numberId: string, organizationId: string) => {
+  const assignOrganization = async (numberId: string, organizationId: string, assignedUserId?: string | null) => {
     try {
       const res = await fetch(`/api/admin/telnyx/numbers/assign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ numberId, organizationId: organizationId || null }),
+        body: JSON.stringify({ numberId, organizationId, assignedUserId }),
       });
-      if (!res.ok) throw new Error("Failed to assign organization");
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to assign organization");
+      setManagedNumbers(previous => previous.map(number => number.id === numberId
+        ? { ...number, organizationId, assignedUserId: result.assignedUserId }
+        : number));
       setSuccess("Numéro réassigné avec succès.");
       router.refresh();
     } catch (err: any) {
@@ -229,6 +262,18 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
       {/* Global Numbers List */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold">Provisioned Numbers</h2>
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="Filtrer par attribution"
+            value={attributionFilter}
+            onChange={event => setAttributionFilter(event.target.value as AttributionFilter)}
+            className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-1 text-xs text-[var(--text-primary)]"
+          >
+            <option value="ALL">Toutes ({managedNumbers.length})</option>
+            <option value="ATTRIBUTED">Avec utilisateur</option>
+            <option value="UNATTRIBUTED">Non attribuées ({unattributedCount})</option>
+            <option value="INCONSISTENT">Incohérentes ({inconsistentCount})</option>
+          </select>
         <button
           onClick={syncNumbers}
           disabled={isSyncing}
@@ -249,6 +294,7 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
             </>
           )}
         </button>
+        </div>
       </div>
       
       {error && (
@@ -273,7 +319,7 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {managedNumbers.map((num: any) => (
+            {visibleNumbers.map((num: any) => (
               <tr key={num.id} className="hover:bg-[var(--bg-surface-hover)] transition-colors">
                 <td className="px-6 py-4">
                   <div className="font-bold text-[var(--text-primary)] font-mono text-base">{num.number}</div>
@@ -285,11 +331,34 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
                     onChange={(e) => assignOrganization(num.id, e.target.value)}
                     className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-1 text-sm focus:outline-none focus:border-cyan-500 text-[var(--text-primary)] min-w-[150px]"
                   >
-                    <option value="">-- Unassigned --</option>
+                    <option value="" disabled>Sélectionner une organisation</option>
                     {organizations.map(org => (
                       <option key={org.id} value={org.id}>{org.name}</option>
                     ))}
+</select>
+                  <select
+                    aria-label={`Utilisateur attribué à ${num.number}`}
+                    value={num.assignedUserId || ""}
+                    onChange={event => assignOrganization(num.id, num.organizationId, event.target.value || null)}
+                    className="mt-2 block w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded px-2 py-1 text-sm"
+                  >
+                    <option value="">Aucun utilisateur attribué</option>
+                    {(organizations.find(org => org.id === num.organizationId)?.users || []).map((user: { id: string; name: string | null; email: string }) => (
+                      <option key={user.id} value={user.id}>{user.name || user.email}</option>
+                    ))}
                   </select>
+                  {/* §19 — diagnostic only. A missing owner is never guessed:
+                      it is surfaced so an operator can resolve it explicitly. */}
+                  {!num.assignedUserId && (
+                    <span className="mt-2 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      Non attribué
+                    </span>
+                  )}
+                  {attributionCase(num) === "D" && (
+                    <span className="mt-2 ml-2 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-red-500/15 text-red-300 border border-red-500/30">
+                      Utilisateur hors organisation
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4">
                   <div className="font-semibold text-cyan-300">{num.incomingRoutingEnabled === false ? "DÉSACTIVÉ" : num.incomingRoutingMode || "APP"}</div>
@@ -309,10 +378,12 @@ export function NumbersClient({ existingNumbers, organizations = [] }: { existin
                 </td>
               </tr>
             ))}
-            {managedNumbers.length === 0 && (
+{visibleNumbers.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-6 py-12 text-center text-[var(--text-secondary)]">
-                   No numbers provisioned in the database yet.
+                   {managedNumbers.length === 0
+                     ? "No numbers provisioned in the database yet."
+                     : "Aucun numéro ne correspond à ce filtre d’attribution."}
                 </td>
               </tr>
             )}

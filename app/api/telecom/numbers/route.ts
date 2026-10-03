@@ -1,33 +1,23 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { getOwnedPhoneNumbers } from "@/lib/account-context";
 import { canonicalizePhoneNumber } from "@/lib/phone-number";
 
-export async function GET(req: Request) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id || !session.user.organizationId) {
-      return NextResponse.json({ data: [] });
+      return NextResponse.json({ data: [] }, { headers: { "Cache-Control": "no-store" } });
     }
 
-    // A softphone credential must never be able to choose another colleague's
-    // DID as caller ID.  Team inventory remains available through the secured
-    // dashboard action; this endpoint is deliberately for the current caller.
-    const numbers = await prisma.phoneNumber.findMany({
-      where: {
-        organizationId: session.user.organizationId,
-        assignedUserId: session.user.id,
-        status: "ACTIVE",
-      },
-      select: {
-        id: true,
-        number: true,
-        telnyxId: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    // INVARIANT C — the DB relation is the only authority on caller-ID
+    // eligibility. A softphone credential must never be able to choose another
+    // colleague's DID, and a stale browser that still lists a revoked number
+    // simply gets nothing back. Team inventory stays behind the secured
+    // dashboard action; this endpoint is deliberately the current caller only.
+    const numbers = await getOwnedPhoneNumbers(session.user.id, session.user.organizationId);
 
     const callerIds = numbers.flatMap((number) => {
       const canonical = canonicalizePhoneNumber(number.number);
@@ -35,7 +25,12 @@ export async function GET(req: Request) {
       return canonical ? [{ ...number, number: canonical }] : [];
     });
 
-    return NextResponse.json({ data: callerIds });
+    return NextResponse.json(
+      { data: callerIds },
+      // The softphone polls this list: a cached answer would resurrect a
+      // revoked number (or hide a freshly assigned one).
+      { headers: { "Cache-Control": "no-store, max-age=0" } },
+    );
   } catch (error) {
     console.error("Error fetching user numbers:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

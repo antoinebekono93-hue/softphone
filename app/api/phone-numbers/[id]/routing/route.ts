@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -92,6 +93,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
       select: { id: true, incomingRoutingMode: true, incomingRoutingEnabled: true, forwardToE164: true, ringAppSeconds: true, voicemailEnabled: true, voicemailDelaySeconds: true, voicemailGreeting: true },
     });
+    // Routing/voicemail state is displayed by the numbers pages: without this
+    // the UI keeps the previous configuration until a manual reload.
+    revalidatePath("/dashboard/numbers");
+    revalidatePath("/god-mode/numbers");
     return NextResponse.json({
       phoneNumberId: updated.id,
       mode: updated.incomingRoutingMode,

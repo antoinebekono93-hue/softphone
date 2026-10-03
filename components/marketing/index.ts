@@ -1,5 +1,8 @@
 export { default as MarketingLayout } from "./MarketingLayout";
 export { default as MarketingHeader } from "./MarketingHeader";
+export { default as MarketingFooter } from "./MarketingFooter";
+export { default as LegalDocument, LegalIdentity, LegalList, LegalNote } from "./LegalDocument";
+export type { LegalSectionData } from "./LegalDocument";
 export { default as PageHero } from "./PageHero";
 export { default as SectionHeading } from "./SectionHeading";
 export { default as FAQAccordion } from "./FAQAccordion";

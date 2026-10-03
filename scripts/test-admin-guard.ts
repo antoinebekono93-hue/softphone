@@ -46,14 +46,34 @@ const authOnlyRegex = /session\.user\s*\)/;
 // ── 1. Mécanisme d'autorisation (source de vérité) ─────────────────────────
 {
   const authSrc = readFileSync(join(ROOT, "auth.ts"), "utf8");
+  const sessionSrc = readFileSync(join(ROOT, "lib", "account-session.ts"), "utf8");
+
+  // INVARIANT D : l'identité reste dans le JWT, l'état mutable du compte est
+  // relu en base à CHAQUE résolution de session. On vérifie l'invariant, pas la
+  // syntaxe : le claim est maintenant produit par un sélecteur partagé.
   check(
     "auth.ts : isSuperAdmin chargé depuis la BASE dans jwt() (pas du client)",
-    /const dbUser = \(await prisma\.user\.findUnique/.test(authSrc) &&
-      /token\.isSuperAdmin = dbUser\.isSuperAdmin/.test(authSrc)
+    /const dbUser = await prisma\.user\.findUnique\(\{/.test(authSrc) &&
+      /select: accountSessionSelect/.test(authSrc) &&
+      /accountSessionClaims\(dbUser\)/.test(authSrc)
   );
   check(
     "auth.ts : audit = isSuperAdmin booléen, jamais le rôle client",
-    /token\.isSuperAdmin = dbUser\.isSuperAdmin \|\| false/.test(authSrc)
+    /isSuperAdmin: account\.isSuperAdmin/.test(sessionSrc) &&
+      // aucune promotion implicite : un rôle texte libre ne peut pas accorder le superadmin
+      !/isSuperAdmin:\s*account\.role|role\s*===\s*"(SUPER_)?ADMIN"/.test(sessionSrc)
+  );
+  check(
+    "auth.ts : les claims mutables sont remplacés, pas fusionnés (pas de stale plan/org)",
+    /return \{ \.\.\.token, id: userId, \.\.\.accountSessionClaims\(dbUser\) \}/.test(authSrc)
+  );
+  check(
+    "auth.ts : un utilisateur introuvable invalide la session (pas de claims conservés)",
+    /if \(!dbUser\) return null/.test(authSrc)
+  );
+  check(
+    "auth.ts : MOCK_AUTH (backdoor super-admin) bloqué en production",
+    /process\.env\.MOCK_AUTH === "true" && process\.env\.NODE_ENV !== "production"/.test(authSrc)
   );
 
   const secSrc = readFileSync(join(ROOT, "lib", "security.ts"), "utf8");

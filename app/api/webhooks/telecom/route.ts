@@ -1,5 +1,5 @@
 import { after, NextResponse } from 'next/server';
-import { getConfiguredTelnyxClient, getConfiguredTelnyxPublicKey } from '@/lib/telnyx';
+import { getConfiguredTelnyxClient, getConfiguredTelnyxConnectionId, getConfiguredTelnyxPublicKey } from '@/lib/telnyx';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import { executeAutomation } from '@/lib/automations';
@@ -10,16 +10,91 @@ import { canonicalizePhoneNumber, phoneNumberLookupCandidates } from '@/lib/phon
 import { activateFulfilledTelnyxOrder } from '@/lib/telnyx-number-purchase';
 import { executePstnForward } from '@/lib/pstn-forwarding';
 import { executePstnVoicemail, startPstnVoicemailGreeting, startPstnVoicemailRecording } from '@/lib/pstn-voicemail';
+import {
+  classifyTelnyxCallInitiated,
+  isTelnyxTransferChildLeg,
+  buildTelnyxTransferClientState,
+  buildTelnyxTransferCommandId,
+  TELNYX_TRANSFER_KIND,
+} from '@/lib/telnyx-call-routing';
+import { clampForwardDuration } from '@/lib/pstn-forwarding-policy';
 
 export const maxDuration = 90;
 
-function decodeClientState(value: unknown): { outboundAttemptId?: string; rateProfile?: string } {
+function decodeClientState(value: unknown): Record<string, unknown> {
   if (typeof value !== 'string' || value.length === 0 || value.length > 4096) return {};
   try {
     const decoded = JSON.parse(Buffer.from(value, 'base64').toString('utf8'));
     return decoded && typeof decoded === 'object' && !Array.isArray(decoded) ? decoded : {};
   } catch {
     return {};
+  }
+}
+
+async function transferSourceLegVerified(params: { sourceCallControlId: string; sourceCallLogId: string }) {
+  const source = await prisma.callLog.findUnique({
+    where: { id: params.sourceCallLogId },
+    select: { id: true, telnyxCallControlId: true, direction: true },
+  });
+  return !!source &&
+    source.telnyxCallControlId === params.sourceCallControlId &&
+    source.direction === 'INBOUND';
+}
+
+/**
+ * Jambe enfant d'un transfert AI → LiveKit (`call.initiated`, direction
+ * outgoing). Verrouillée par la vérification de la source en base :
+ *  - CallLog direction TRANSFER, callPurpose AI_TRANSFER, parentCallLogId=A,
+ *    isBilled=false → AUCUNE réservation ni settlement applicatif (le coût
+ *    Telnyx de la jambe B fait partie de l'infrastructure AI ; jamais de
+ *    double débit côté organisation).
+ *  - `parentCallLogId` @unique + `telnyxCallControlId` @unique → P2002 =
+ *    idempotent (replay / nouvelle tentative de transfer ignorée).
+ */
+async function handleTransferChildLegInitiated(params: {
+  event: any;
+  callControlId: string;
+  clientState: Record<string, unknown>;
+}) {
+  const { event, callControlId, clientState } = params;
+  const sourceCallControlId = typeof clientState.sourceCallControlId === 'string'
+    ? clientState.sourceCallControlId
+    : '';
+  const sourceCallLogId = typeof clientState.sourceCallLogId === 'string'
+    ? clientState.sourceCallLogId
+    : '';
+
+  const source = await prisma.callLog.findUnique({
+    where: { id: sourceCallLogId },
+    select: { id: true, telnyxCallControlId: true, organizationId: true, phoneNumberId: true, fromNumber: true, toNumber: true },
+  });
+  if (!source || source.telnyxCallControlId !== sourceCallControlId) {
+    console.error(`[TELNYX_TRANSFER_SOURCE_UNVERIFIED] ${callControlId} — jambe enfant ignorée (fail-closed)`);
+    return;
+  }
+
+  const to = typeof event.payload?.to === 'string' ? event.payload.to : source.toNumber;
+  try {
+    await prisma.callLog.create({
+      data: {
+        telnyxCallControlId: callControlId,
+        direction: 'TRANSFER',
+        callPurpose: 'AI_TRANSFER',
+        fromNumber: typeof event.payload?.from === 'string'
+          ? canonicalizePhoneNumber(event.payload.from) ?? event.payload.from
+          : source.fromNumber,
+        toNumber: canonicalizePhoneNumber(to) ?? to,
+        organizationId: source.organizationId,
+        phoneNumberId: source.phoneNumberId,
+        parentCallLogId: source.id,
+        status: 'INITIATED',
+        isBilled: false,
+      },
+    });
+    console.log(`[TELNYX_TRANSFER_CHILD_CREATED] ${callControlId} parent=${source.id} org=${source.organizationId}`);
+  } catch (error: any) {
+    if (error?.code === 'P2002') return;
+    throw error;
   }
 }
 
@@ -207,8 +282,10 @@ async function processEvent(event: any) {
 
       // Log both inbound and outbound calls. Outbound calls previously had no
       // CallLog/reservation, so their completed duration could not be billed.
-      if (direction === 'incoming') {
+if (direction === 'incoming') {
         const phoneNumber = await findManagedPhoneNumber(to);
+        const kind = phoneNumber ? 'INBOUND_CUSTOMER' : 'UNKNOWN';
+        console.log(`[TELNYX_CALL_ROUTING_CLASSIFIED] kind=${kind} direction=incoming call_control_id=${callControlId}`);
 
         if (phoneNumber) {
           const createdCallLog = await prisma.callLog.upsert({
@@ -347,12 +424,65 @@ async function processEvent(event: any) {
           console.error(`[CALL_INCOMING_REJECTED] ${callControlId} — numéro inactif ou non géré: ${to}`);
           await terminateProviderCall(callControlId, 'UNMANAGED_DESTINATION');
         }
-      } else if (direction === 'outgoing') {
+} else if (direction === 'outgoing') {
         // Only a known application caller ID may create a billable record.
         const phoneNumber = await findManagedPhoneNumber(from);
+        const clientState = decodeClientState(event.payload?.client_state);
+        const expectedConnectionId = await getConfiguredTelnyxConnectionId();
+        const rawConnectionId = typeof event.payload?.connection_id === 'string'
+          ? event.payload.connection_id
+          : null;
+
+        // Tentative de jambe enfant (transfert AI → LiveKit) : un client_state
+        // de type transfert n'est crédible QUE sur notre connexion et si la
+        // jambe source existe réellement en base. Sinon → UNKNOWN (fail-closed).
+        let transferSourceLegExists = false;
+        const sourceCallControlId = typeof clientState.sourceCallControlId === 'string'
+          ? clientState.sourceCallControlId
+          : null;
+        const sourceCallLogId = typeof clientState.sourceCallLogId === 'string'
+          ? clientState.sourceCallLogId
+          : null;
+        const looksLikeTransfer =
+          clientState && clientState.kind === TELNYX_TRANSFER_KIND &&
+          sourceCallControlId !== null &&
+          sourceCallLogId !== null;
+        if (looksLikeTransfer &&
+            typeof expectedConnectionId === 'string' &&
+            expectedConnectionId === rawConnectionId) {
+          transferSourceLegExists = await transferSourceLegVerified({
+            sourceCallControlId,
+            sourceCallLogId,
+          });
+        }
+
+        const routedKind = classifyTelnyxCallInitiated({
+          direction,
+          connectionId: rawConnectionId,
+          expectedConnectionId,
+          clientState,
+          managedCallerFrom: Boolean(phoneNumber),
+          transferSourceLegExists,
+        });
+
+        console.log(
+          `[TELNYX_CALL_ROUTING_CLASSIFIED] kind=${routedKind} direction=outgoing ` +
+          `connection_id=${rawConnectionId ?? ''} call_control_id=${callControlId}`,
+        );
+
+        if (routedKind === 'TRANSFER_CHILD_LEG') {
+          await handleTransferChildLegInitiated({ event, callControlId, clientState });
+          return;
+        }
+
+        if (routedKind === 'UNKNOWN') {
+          // Fail-closed : leg sortant non classé → aucune action (ni
+          // terminaison, ni réconciliation de réservation). Log surveillé.
+          console.error(`[TELNYX_UNCLASSIFIED_OUTBOUND] ${callControlId} — aucune action`);
+          return;
+        }
 
         if (phoneNumber) {
-          const clientState = decodeClientState(event.payload?.client_state);
           const attemptId = typeof clientState.outboundAttemptId === 'string' &&
             /^[0-9a-f-]{36}$/i.test(clientState.outboundAttemptId)
             ? clientState.outboundAttemptId
@@ -440,8 +570,19 @@ async function processEvent(event: any) {
 
       // Webhook delivery order is not guaranteed. The initiated handler owns
       // creation and billing; an early/unknown answered event must not crash.
-      if (!callLog) {
+if (!callLog) {
         throw new Error(`CALL_LOG_NOT_READY:${callControlId}:answered`);
+      }
+
+      // Jambe enfant d'un transfert AI → LiveKit : elle NE relance JAMAIS la
+      // machine d'état (pas de transfert vers LiveKit, pas de répondeur, pas
+      // de Pusher, pas de forward). Elle est simplement marquée IN_PROGRESS.
+      if (isTelnyxTransferChildLeg(callLog)) {
+        await prisma.callLog.update({
+          where: { id: callLog.id },
+          data: { status: 'IN_PROGRESS', answeredAt: providerEventDate(event) },
+        });
+        return;
       }
 
       const parentIsForwarding = callLog.callPurpose === 'PSTN_INBOUND' &&
@@ -496,12 +637,46 @@ async function processEvent(event: any) {
           // The LiveKit Agent (Python) will fetch the full prompt from the database using the X-Call-Log-Id.
         ];
 
-        console.log(`[Telnyx Webhook] Transferring call ${callControlId} to LiveKit SIP: ${livekitSipUri}`);
+console.log(`[Telnyx Webhook] Transferring call ${callControlId} to LiveKit SIP: ${livekitSipUri}`);
+
+        const orgPlan = await prisma.organization.findUnique({
+          where: { id: callLog.organizationId },
+          include: { pricingPlan: true },
+        });
+        // clampForwardDuration borne entre 60 et 14400 s → toujours dans la
+        // fenêtre Telnyx (min 30) et aligné sur la limite du plan.
+        const durationLimit = clampForwardDuration(
+          orgPlan?.pricingPlan?.maxCallDurationSeconds ?? 3600,
+        );
+        const targetClientState = buildTelnyxTransferClientState({
+          sourceCallControlId: callControlId,
+          sourceCallLogId: callLog.id,
+          organizationId: callLog.organizationId,
+          purpose: 'LIVEKIT_AI',
+          target: true,
+        });
+        const sourceClientState = buildTelnyxTransferClientState({
+          sourceCallControlId: callControlId,
+          sourceCallLogId: callLog.id,
+          organizationId: callLog.organizationId,
+          purpose: 'LIVEKIT_AI',
+          target: false,
+        });
 
         try {
           await telnyx.calls.actions.transfer(callControlId, {
             to: livekitSipUri,
-            custom_headers: customHeaders
+            custom_headers: customHeaders,
+            // command_id déterministe : le même transfert rejoué (retry
+            // Telnyx, double webhook) réutilise la MÊME commande → dédup.
+            command_id: buildTelnyxTransferCommandId({
+              sourceCallControlId: callControlId,
+              target: livekitSipUri,
+              purpose: 'LIVEKIT_AI',
+            }),
+            client_state: sourceClientState,
+            target_leg_client_state: targetClientState,
+            time_limit_secs: durationLimit,
           });
         } catch (error) {
           console.error(`[Telnyx Webhook] LiveKit transfer failed for ${callControlId}`, error);
@@ -620,7 +795,15 @@ async function processEvent(event: any) {
                 ? { voicemailStatus: 'PROCESSING' }
                 : {})
         }
-      });
+});
+
+      // Jambe enfant d'un transfert AI → LiveKit : finalisée (stats) mais
+      // JAMAIS facturée. Ni settlement, ni release de réservation, ni
+      // automatisation, ni notification Pusher — le coût Telnyx de cette jambe
+      // est de l'infrastructure AI (isBilled=false, parentCallLogId → jambe A).
+      if (isTelnyxTransferChildLeg(callLog)) {
+        return;
+      }
 
       if (callLog.direction === 'FORWARD' && callLog.parentCallLogId) {
         await prisma.callLog.updateMany({
@@ -1001,8 +1184,20 @@ export async function POST(req: Request) {
       console.error('[Telnyx Webhook] Signature verification failed:', err.message);
       return new NextResponse('Invalid signature', { status: 401 });
     }
-    if (!event || typeof event.id !== 'string' || !event.id ||
+if (!event || typeof event.id !== 'string' || !event.id ||
         typeof event.event_type !== 'string' || !event.event_type) {
+      // P0-3 : enveloppe non v2. On ne tente AUCUNE compat v1 — on log un
+      // diagnostic structuré (type seulement, jamais de payload ni secret).
+      const v1EventType = event?.event_type ?? event?.data?.event_type ?? null;
+      if (typeof v1EventType === 'string') {
+        console.error(
+          `[TELNYX_UNSUPPORTED_WEBHOOK_VERSION] event_type=${v1EventType} — enveloppe v2 exigée`,
+        );
+        return NextResponse.json(
+          { error: 'TELNYX_WEBHOOK_V2_REQUIRED' },
+          { status: 400 },
+        );
+      }
       return new NextResponse('Invalid Telnyx event', { status: 400 });
     }
 

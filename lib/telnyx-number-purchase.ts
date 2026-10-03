@@ -4,6 +4,7 @@ import { creditWalletAtomically, debitWalletAtomically } from "@/lib/billing";
 import { canonicalizePhoneNumber, phoneNumberCountry } from "@/lib/phone-number";
 import { resellerNumberPrice } from "@/lib/telnyx-number-pricing";
 import { getConfiguredTelnyxClient } from "@/lib/telnyx";
+import { resolveActivationOwnership } from "@/lib/number-assignment";
 
 type PurchaseOptions = {
   organizationId: string;
@@ -118,21 +119,48 @@ export async function activateFulfilledTelnyxOrder(telnyxOrderId: string): Promi
       throw new Error("TELNYX_NUMBER_ROUTING_FAILED");
     });
 
+    // INVARIANT E — a provider activation event is a STATUS event. It must not
+    // rewrite `organizationId` / `assignedUserId` on a row that already exists:
+    // this webhook can arrive long after a God Mode assignment performed at T1,
+    // and rewriting ownership here would silently undo it (or move the DID to
+    // another tenant, cascading away its call logs). Ownership is supplied by
+    // the order only on first insertion.
+    const existingOwnership = await prisma.phoneNumber.findUnique({
+      where: { telnyxId: owned.id },
+      select: { organizationId: true, assignedUserId: true },
+    });
+    const ownership = resolveActivationOwnership(existingOwnership, {
+      organizationId: order.organizationId,
+      requestedUserId: order.requestedUserId,
+    });
+    if (
+      existingOwnership &&
+      (existingOwnership.organizationId !== order.organizationId ||
+        existingOwnership.assignedUserId !== order.requestedUserId)
+    ) {
+      console.warn("[Telnyx Number Activation] Ownership conflict on late activation; persisted owner kept", {
+        telnyxOrderId,
+        phoneNumber,
+        orderOrganizationId: order.organizationId,
+        orderRequestedUserId: order.requestedUserId,
+        persistedOrganizationId: existingOwnership.organizationId,
+        persistedAssignedUserId: existingOwnership.assignedUserId,
+      });
+    }
+
     await prisma.phoneNumber.upsert({
       where: { telnyxId: owned.id },
       update: {
-        number: phoneNumber,
+        // Partial update only: activation writes the lifecycle status, nothing else.
         status: "ACTIVE",
-        organizationId: order.organizationId,
-        ...(order.requestedUserId ? { assignedUserId: order.requestedUserId } : {}),
       },
       create: {
         number: phoneNumber,
         telnyxId: owned.id,
         country: owned.country_iso_alpha2 || phoneNumberCountry(phoneNumber),
         status: "ACTIVE",
-        organizationId: order.organizationId,
-        assignedUserId: order.requestedUserId,
+        organizationId: ownership.organizationId!,
+        assignedUserId: ownership.assignedUserId,
       },
     });
     activated++;
@@ -290,10 +318,12 @@ export async function purchaseTelnyxNumber(options: PurchaseOptions): Promise<Nu
     await tx.phoneNumber.upsert({
       where: { telnyxId: ownedNumber.id },
       update: {
+        // The duplicate check above already guaranteed this canonical number is
+        // not managed yet. Ownership is never rewritten here: an existing row
+        // keeps its own organization and assignee (INVARIANT E), so a purchase
+        // racing a manual God Mode assignment cannot hijack it.
         number: phoneNumber,
         status: "ACTIVE",
-        organizationId: organization.id,
-        ...(options.assignedUserId ? { assignedUserId: options.assignedUserId } : {}),
       },
       create: {
         number: phoneNumber,
@@ -301,6 +331,7 @@ export async function purchaseTelnyxNumber(options: PurchaseOptions): Promise<Nu
         country: ownedNumber.country_iso_alpha2 || country,
         status: "ACTIVE",
         organizationId: organization.id,
+        // A number bought personally is owned by its buyer, not merely by the tenant.
         assignedUserId: options.assignedUserId ?? null,
       },
     });

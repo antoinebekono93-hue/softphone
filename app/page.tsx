@@ -1,5 +1,8 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import MarketingHeader from "@/components/marketing/MarketingHeader";
+import MarketingFooter from "@/components/marketing/MarketingFooter";
+import { siteConfig } from "@/lib/site-config";
 import {
   HeroSection,
   TrustBar,
@@ -14,10 +17,24 @@ import {
   FinalCTA,
 } from "@/components/landing";
 
+export const metadata: Metadata = {
+  title: "Téléphonie professionnelle et agents vocaux IA",
+  description:
+    "Numéros professionnels, softphone web et mobile, appels internes, routage, SMS et WhatsApp, agents vocaux IA et analytiques : une plateforme de communication B2B.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: "/",
+    title: `${siteConfig.brand} — Téléphonie professionnelle et agents vocaux IA`,
+    description:
+      "Numéros professionnels, softphone cloud, routage d'appels, messagerie multicanal et agents vocaux assistés par intelligence artificielle.",
+  },
+};
+
 export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-cyan-500/30 font-sans overflow-x-hidden">
-      {/* CSS personnalisé pour les animations */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee {
           0% { transform: translateX(0%); }
@@ -74,7 +91,7 @@ export default function LandingPage() {
       {/* 12. Integrations Banner */}
       <section id="integrations" className="py-24 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
         <div className="max-w-4xl mx-auto px-4 text-center">
-           <h2 className="text-3xl md:text-4xl font-extrabold mb-12 text-[var(--text-primary)]">S'intègre avec votre <span className="text-gradient">écosystème actuel.</span></h2>
+           <h2 className="text-3xl md:text-4xl font-extrabold mb-12 text-[var(--text-primary)]">S&apos;intègre avec votre <span className="text-gradient">écosystème actuel.</span></h2>
            <div className="flex flex-wrap justify-center items-center gap-10 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
              <div className="text-2xl font-bold text-[var(--text-primary)]">Telnyx</div>
              <div className="text-2xl font-bold text-[var(--text-primary)]">HubSpot</div>
@@ -82,6 +99,12 @@ export default function LandingPage() {
              <div className="text-2xl font-bold text-[var(--text-primary)]">Zendesk</div>
              <div className="text-2xl font-bold text-[var(--text-primary)]">Spike</div>
            </div>
+           <Link
+             href="/integrations"
+             className="inline-block mt-10 text-sm font-bold text-[var(--text-primary)] underline underline-offset-4"
+           >
+             Voir toutes les intégrations et l&apos;API
+           </Link>
         </div>
       </section>
 
@@ -89,41 +112,7 @@ export default function LandingPage() {
       <FinalCTA />
 
       {/* 14. Footer */}
-      <footer className="border-t border-[var(--border-subtle)] pt-16 pb-8 px-6 max-w-7xl mx-auto w-full bg-[var(--bg-base)]">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
-          <div>
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-5 h-5 rounded bg-gradient-to-tr from-cyan-500 to-violet-500"></div>
-              <span className="font-bold text-[var(--text-primary)]">Antigravity</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-secondary)]">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
-              Tous les systèmes opérationnels
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 text-sm font-medium text-[var(--text-secondary)]">
-            <h4 className="font-bold text-[var(--text-primary)] mb-2">Produit</h4>
-            <Link href="#features" className="hover:text-[var(--text-primary)] transition-colors">Fonctionnalités</Link>
-            <Link href="#integrations" className="hover:text-[var(--text-primary)] transition-colors">Intégrations</Link>
-            <Link href="/pricing" className="hover:text-[var(--text-primary)] transition-colors">Tarifs</Link>
-          </div>
-          <div className="flex flex-col gap-3 text-sm font-medium text-[var(--text-secondary)]">
-            <h4 className="font-bold text-[var(--text-primary)] mb-2">Ressources</h4>
-            <Link href="#" className="hover:text-[var(--text-primary)] transition-colors">Documentation API</Link>
-            <Link href="#" className="hover:text-[var(--text-primary)] transition-colors">Centre d'Aide</Link>
-            <Link href="#" className="hover:text-[var(--text-primary)] transition-colors">Blog</Link>
-          </div>
-          <div className="flex flex-col gap-3 text-sm font-medium text-[var(--text-secondary)]">
-            <h4 className="font-bold text-[var(--text-primary)] mb-2">Entreprise</h4>
-            <Link href="#" className="hover:text-[var(--text-primary)] transition-colors">À Propos</Link>
-            <Link href="#" className="hover:text-[var(--text-primary)] transition-colors">Confidentialité</Link>
-            <Link href="#" className="hover:text-[var(--text-primary)] transition-colors">CGV</Link>
-          </div>
-        </div>
-        <div className="text-center text-xs font-bold text-[var(--text-secondary)] pt-8 border-t border-[var(--border-subtle)]">
-          © {new Date().getFullYear()} Antigravity Inc. Tous droits réservés.
-        </div>
-      </footer>
+      <MarketingFooter />
     </div>
   );
 }

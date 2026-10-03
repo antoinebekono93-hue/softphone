@@ -15,6 +15,7 @@
         "test:admin-guard": "tsx scripts/test-admin-guard.ts",
         "test:cron-guard": "tsx scripts/test-cron-guard.ts",
         "test:webhook-idempotence": "tsx scripts/test-webhook-idempotence.ts",
+        "test:telnyx-call-routing": "tsx scripts/test-telnyx-call-routing.ts",
         "postinstall": "prisma generate",
         "test:pstn-incoming": "tsx scripts/test-pstn-incoming.ts",
         "test:pstn-voicemail": "tsx scripts/test-pstn-voicemail.ts",

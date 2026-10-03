@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSuperAdminApi } from "@/lib/security";
+import { prisma } from "@/lib/prisma";
 import { purchaseTelnyxNumber } from "@/lib/telnyx-number-purchase";
 
 export async function POST(req: Request) {
@@ -11,10 +12,29 @@ export async function POST(req: Request) {
     if (typeof body?.organizationId !== "string" || !body.organizationId) {
       return NextResponse.json({ error: "organizationId is required" }, { status: 400 });
     }
+
+    // Tenant isolation: an administrator may buy for any organization, but the
+    // number must never be assigned to a user of another tenant.
+    const requestedUserId = typeof body.assignedUserId === "string" && body.assignedUserId
+      ? body.assignedUserId
+      : null;
+    if (requestedUserId) {
+      const member = await prisma.user.findFirst({
+        where: { id: requestedUserId, organizationId: body.organizationId },
+        select: { id: true },
+      });
+      if (!member) {
+        return NextResponse.json(
+          { error: "assignedUserId must belong to organizationId" },
+          { status: 400 },
+        );
+      }
+    }
+
     const result = await purchaseTelnyxNumber({
       organizationId: body.organizationId,
       phoneNumber: body.phoneNumber,
-      assignedUserId: typeof body.assignedUserId === "string" ? body.assignedUserId : null,
+      assignedUserId: requestedUserId,
       requireApprovedKyc: true,
     });
     return NextResponse.json(
