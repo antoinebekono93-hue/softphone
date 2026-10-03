@@ -58,6 +58,7 @@
         "stripe": "^22.3.0",
         "tailwindcss": "^4.3.1",
         "telnyx": "^7.2.0",
+        "web-push": "^3.6.7",
         "ws": "^8.21.0"
     },
     "devDependencies": {
@@ -68,6 +69,7 @@
         "@types/papaparse": "^5.5.2",
         "@types/react": "^19",
         "@types/react-dom": "^19",
+        "@types/web-push": "^3.6.4",
         "eslint": "^9",
         "eslint-config-next": "16.2.9",
         "jsdom": "^29.1.1",

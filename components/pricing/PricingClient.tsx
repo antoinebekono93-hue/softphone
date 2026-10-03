@@ -18,6 +18,13 @@ export type PricingPlanCard = {
   numbersPolicy: string;
   features: string[];
   recommended: boolean;
+  fairUse: {
+    maxConcurrentCalls: number;
+    maxCallsPerHour: number;
+    maxCallsPerDay: number;
+    maxCallDurationMinutes: number;
+  } | null;
+  audience: string;
 };
 
 const numberFormatter = new Intl.NumberFormat("fr-FR");
@@ -109,6 +116,7 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
               <h3 className="text-base font-extrabold text-[var(--text-primary)] mb-1">
                 {plan.name}
               </h3>
+              <p className="text-sm text-[var(--text-secondary)] font-medium mb-1">{plan.audience}</p>
               <p className="text-sm text-[var(--text-secondary)] font-medium mb-5 min-h-[40px]">
                 {plan.numbersPolicy}
               </p>
@@ -155,6 +163,21 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
                   </li>
                 ))}
               </ul>
+
+              {plan.fairUse && (
+                <div className="mt-5 rounded-[var(--radius-md)] border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-400 mb-1">
+                    Limites d&apos;usage loyal
+                  </p>
+                  <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+                    {numberFormatter.format(plan.fairUse.maxCallsPerHour)} appels par heure,{" "}
+                    {numberFormatter.format(plan.fairUse.maxCallsPerDay)} appels par jour,{" "}
+                    {plan.fairUse.maxConcurrentCalls} appel simultané et{" "}
+                    {numberFormatter.format(plan.fairUse.maxCallDurationMinutes)} minutes maximum par
+                    appel. Au-delà, l&apos;appel est refusé plutôt que facturé.
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}
@@ -175,9 +198,10 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
             vigueur au moment de la consommation.
           </li>
           <li>
-            Les appels internes entre utilisateurs de la plateforme sont inclus dans l&apos;abonnement
-            lorsqu&apos;aucune limite d&apos;usage loyal ne s&apos;y applique. Les appels vers le réseau
-            téléphonique public restent soumis au forfait de minutes ou au solde prépayé.
+            Les appels internes entre utilisateurs de la plateforme (app-to-app) ne sont pas facturés
+            à l&apos;appel, mais restent soumis aux limites d&apos;usage loyal indiquées sur chaque
+            offre. Les appels vers le réseau téléphonique public ne sont jamais couverts par ce poste
+            : ils sont soumis au forfait de minutes ou au solde prépayé.
           </li>
         </ul>
       </div>

@@ -1,35 +1,27 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { MarketingLayout, PageHero, SectionHeading, InteractiveTabs } from "@/components/marketing";
 import { TrustBar, FinalCTA } from "@/components/landing";
 
 export const metadata = {
   title: "Solutions par secteur | Antigravity",
   description:
-    "Répondeur IA, téléphonie et IA vocale adaptés à votre métier : santé, juridique, immobilier, hôtellerie, commerce, finance, logistique. Découvrez les cas d'usage de votre secteur.",
+    "Répondeur IA, téléphonie et agents vocaux adaptés à votre métier : santé, juridique, immobilier, hôtellerie, commerce, finance, logistique, automobile.",
 };
 
-function SectorBlock({ intro, points, stats }: { intro: string; points: string[]; stats: { value: string; label: string }[] }) {
+function SectorBlock({ intro, points }: { intro: string; points: string[] }) {
   return (
-    <div className="rounded-[24px] glass-panel-premium p-8 grid md:grid-cols-2 gap-8">
-      <div>
-        <p className="text-[var(--text-secondary)] font-medium leading-relaxed mb-6">{intro}</p>
-        <ul className="space-y-3">
-          {points.map((p) => (
-            <li key={p} className="flex items-start gap-3 text-sm font-bold text-[var(--text-primary)]">
-              <span className="w-6 h-6 rounded-full n8n-gradient-bg flex items-center justify-center text-white text-xs mt-0.5">✓</span>
-              {p}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="rounded-2xl bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] p-6 flex flex-col justify-center gap-8">
-        {stats.map((s) => (
-          <div key={s.label} className="text-center">
-            <div className="text-5xl font-extrabold n8n-gradient-text">{s.value}</div>
-            <div className="text-sm font-bold text-[var(--text-secondary)] mt-2 leading-snug">{s.label}</div>
-          </div>
+    <div className="rounded-[24px] glass-panel-premium p-8">
+      <p className="text-[var(--text-secondary)] font-medium leading-relaxed mb-6">{intro}</p>
+      <ul className="grid sm:grid-cols-2 gap-3">
+        {points.map((p) => (
+          <li key={p} className="flex items-start gap-3 text-sm font-bold text-[var(--text-primary)]">
+            <span className="w-6 h-6 rounded-full n8n-gradient-bg flex items-center justify-center text-white text-xs mt-0.5 shrink-0">
+              ✓
+            </span>
+            {p}
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }
@@ -40,16 +32,12 @@ const sectors = [
     label: "Santé",
     content: (
       <SectorBlock
-        intro="Stands saturés, rendez-vous perdus, patients qui attendent au lieu d'être appelés. Le répondeur IA prend en charge les demandes de rendez-vous, les rappels et les renouvellements, en toute conformité."
+        intro="Standards saturés, rendez-vous perdus, patients qui attendent au lieu d'être appelés. Le répondeur IA prend en charge les demandes de rendez-vous et les rappels, selon les règles que vous définissez."
         points={[
-          "Prise de rendez-vous autonome 24/7",
+          "Prise de rendez-vous autonome",
           "Rappels de consultation automatiques",
-          "Anonymisation RGPD des échanges",
-          "Remontée des urgences vers le secrétariat",
-        ]}
-        stats={[
-          { value: "−60%", label: "de charge du standard" },
-          { value: "9,4/10", label: "de satisfaction patients" },
+          "Transfert des urgences vers le secrétariat",
+          "Historique des appels consultable",
         ]}
       />
     ),
@@ -59,16 +47,12 @@ const sectors = [
     label: "Juridique",
     content: (
       <SectorBlock
-        intro="Chaque appel non traité est une consultation ou un cabinet perdu. L'IA qualifie les demandes, protège la confidentialité des échanges et prépare un compte rendu complet pour l'avocat."
+        intro="Chaque appel non traité est une consultation ou un cabinet perdu. L'agent IA qualifie les demandes et prépare un compte rendu pour l'avocat."
         points={[
           "Qualification des consultations par besoin",
-          "Prise de rendez-vous secrétariat automatisée",
-          "Transcriptions confidentielles chiffrées",
+          "Prise de rendez-vous assistée",
+          "Transcription des échanges",
           "Suivi des dossiers sans courriels perdus",
-        ]}
-        stats={[
-          { value: "+68%", label: "de consultations réservées" },
-          { value: "3 h", label: "économisées par avocat / semaine" },
         ]}
       />
     ),
@@ -78,16 +62,12 @@ const sectors = [
     label: "Immobilier",
     content: (
       <SectorBlock
-        intro="Les prospects visitent le samedi et appellent le dimanche soir. L'IA capte chaque appel, qualifie le budget et la localisation, planifie les visites et rappelle les non-joignables."
+        intro="Les prospects visitent le samedi et appellent le dimanche soir. L'agent IA capte chaque appel, qualifie la demande et planifie les visites."
         points={[
           "Qualification des leads hors horaires",
-          "Planification des visites synchronisée",
+          "Planification des visites",
           "Relances automatiques des prospects",
-          "Synchro CRM / outils agence",
-        ]}
-        stats={[
-          { value: "+2,6x", label: "de visites programmées" },
-          { value: "58%", label: "de leads qualifiés la nuit" },
+          "Export des échanges vers votre outil agence",
         ]}
       />
     ),
@@ -97,16 +77,12 @@ const sectors = [
     label: "Hôtellerie",
     content: (
       <SectorBlock
-        intro="La réservation directe est le canal le plus rentable — et le plus souvent perdu. L'IA prend les réservations 24/7, gère les demandes spéciales et synchronise votre PMS."
+        intro="La réservation directe est le canal le plus rentable — et le plus souvent perdu. L'agent IA prend les réservations et répond aux questions fréquentes de l'établissement."
         points={[
-          "Réservations directes 24/7",
+          "Réservations directes",
           "Gestion des demandes spéciales",
           "Réponses aux FAQ de l'établissement",
-          "Sync PMS (Mews, cloud, etc.)",
-        ]}
-        stats={[
-          { value: "+19%", label: "de réservations directes" },
-          { value: "€12k", label: "de commissions économisées /mois" },
+          "Transfert vers la réception à tout moment",
         ]}
       />
     ),
@@ -116,16 +92,12 @@ const sectors = [
     label: "Commerce & E-commerce",
     content: (
       <SectorBlock
-        intro="Le téléphone reste le canal où se décident les commandes — à condition que quelqu'un réponde. L'IA traite commandes, retours et questions produits sans file d'attente."
+        intro="Le téléphone reste le canal où se décident les commandes — à condition que quelqu'un réponde. L'agent IA traite commandes, retours et questions produits sans file d'attente."
         points={[
           "Prise de commande téléphonique assistée",
-          "Gestion des retours et SAV",
-          "Cross-sell et panier moyen",
+          "Gestion des retours et du SAV",
           "Relance des paniers abandonnés par appel",
-        ]}
-        stats={[
-          { value: "+31%", label: "de ventes assistées" },
-          { value: "−52%", label: "de réclamations retours" },
+          "Appels et SMS dans la même boîte de réception",
         ]}
       />
     ),
@@ -135,16 +107,12 @@ const sectors = [
     label: "Finance",
     content: (
       <SectorBlock
-        intro="Des volumes d'appels importants, des heures critiques pour la conformité, et des conseillers qui répètent sans cesse les mêmes réponses. L'IA décharge le standard et route chaque appel au bon expert."
+        intro="Des volumes d'appels importants et des conseillers qui répètent sans cesse les mêmes réponses. L'agent IA décharge le standard et route chaque appel au bon interlocuteur."
         points={[
           "Routage vers le bon conseiller",
-          "Réponse IA aux questions récurrentes",
-          "Traçabilité et enregistrements conformes",
-          "Réduction des coûts télécom par ligne",
-        ]}
-        stats={[
-          { value: "65%", label: "d'appels routés en automatique" },
-          { value: "−38%", label: "de coût télécom par agence" },
+          "Réponses IA aux questions récurrentes",
+          "Traçabilité des échanges sur votre compte",
+          "Règles de conservation que vous définissez",
         ]}
       />
     ),
@@ -154,16 +122,12 @@ const sectors = [
     label: "Logistique",
     content: (
       <SectorBlock
-        intro="Confirmer des livraisons, signaler des retards, prendre des notes : des dizaines d'appels quotidiens qu'aucune boîte vocale ne peut traiter. L'IA capte, trie et transmet."
+        intro="Confirmer des livraisons, signaler des retards, prendre des notes : des dizaines d'appels quotidiens qu'aucune boîte vocale ne peut traiter. L'agent IA capte, trie et transmet."
         points={[
           "Confirmations de livraison automatiques",
           "Signalement des retards et incidents",
           "Prise de notes structurées",
-          "Rattachement automatique aux tournées",
-        ]}
-        stats={[
-          { value: "−93%", label: "d'appels non suivis" },
-          { value: "+22%", label: "de livraisons dans les délais" },
+          "Transmission vers vos outils de gestion",
         ]}
       />
     ),
@@ -173,16 +137,12 @@ const sectors = [
     label: "PME & Services",
     content: (
       <SectorBlock
-        intro="En petite équipe, un appel manqué est souvent une mission perdue. L'IA devient votre standardiste, votre assistante commerciale et votre support, sans recrutement ni matériel."
+        intro="En petite équipe, un appel manqué est souvent une mission perdue. L'agent IA devient votre standardiste et votre assistante commerciale, sans matériel supplémentaire."
         points={[
           "Remplacement du répondeur vocal",
           "Qualification des devis et demandes",
           "Prise de rendez-vous commercial",
-          "Disponible dès 15 minutes",
-        ]}
-        stats={[
-          { value: "0", label: "appel manqué aux horaires de fermeture" },
-          { value: "15 min", label: "pour être opérationnel" },
+          "Softphone dans le navigateur, sans installation",
         ]}
       />
     ),
@@ -192,16 +152,12 @@ const sectors = [
     label: "Automobile",
     content: (
       <SectorBlock
-        intro="Concessions, ateliers et négoce : la relation se joue au premier appel. L'IA qualifie les leads véhicules, prend les rendez-vous atelier et suit la flotte de retour clients."
+        intro="Concessions, ateliers et négoce : la relation se joue au premier appel. L'agent IA qualifie les demandes de véhicules et prend les rendez-vous atelier."
         points={[
           "Qualification des demandes de véhicules",
-          "Prise de rendez-vous atelier autonome",
+          "Prise de rendez-vous atelier",
           "Suivi des retours clients après-vente",
-          "Sync CRM réseau national",
-        ]}
-        stats={[
-          { value: "+2x", label: "de demandes d'essais" },
-          { value: "78%", label: "de rendez-vous atelier en autonomie" },
+          "Export des échanges vers votre CRM",
         ]}
       />
     ),
@@ -209,10 +165,22 @@ const sectors = [
 ];
 
 const whoItHelps = [
-  { title: "PME & artisans", description: "Standardiste IA 24/7, devis et prises de rendez-vous sans recruter." },
-  { title: "Cabinets & professions libérales", description: "Confidentialité, qualification et agenda gérés par l'IA." },
-  { title: "Distributeurs & franchisés", description: "Standard réseau, appels suivis, données consolidées." },
-  { title: "Réseaux nationaux", description: "Déploiement multi-sites en 6 semaines, gouvernance centralisée." },
+  {
+    title: "PME & artisans",
+    description: "Agent vocal, devis et prises de rendez-vous sans recruter de standardiste.",
+  },
+  {
+    title: "Cabinets & professions libérales",
+    description: "Qualification des demandes et agenda tenus par l'agent vocal.",
+  },
+  {
+    title: "Distributeurs & franchisés",
+    description: "Standard mutualisé pour le réseau, appels suivis et données consolidées.",
+  },
+  {
+    title: "Réseaux multi-sites",
+    description: "Déploiement par site avec gouvernance centralisée des règles de routage.",
+  },
 ];
 
 export default function SectorsPage() {
@@ -228,10 +196,16 @@ export default function SectorsPage() {
         }
         subtitle="Chaque secteur a ses appels critiques et ses contraintes. Antigravity s'adapte à votre jargon, vos horaires et vos processus."
       >
-        <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
+        <Link
+          href="/contact"
+          className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform"
+        >
           Tester sur mon secteur
         </Link>
-        <Link href="/pricing" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
+        <Link
+          href="/pricing"
+          className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors"
+        >
           Voir les tarifs
         </Link>
       </PageHero>
@@ -249,7 +223,7 @@ export default function SectorsPage() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <SectionHeading
           title="Qui ça aide ?"
-          subtitle="Des artisans aux réseaux nationaux : la même IA vocale, à l'échelle qui vous convient."
+          subtitle="Des artisans aux réseaux multi-sites : le même agent vocal, à l'échelle qui vous convient."
         />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {whoItHelps.map((w) => (
@@ -268,17 +242,28 @@ export default function SectorsPage() {
             Votre secteur n&apos;est pas là ? <span className="n8n-gradient-text">Parlons-en</span>
           </h2>
           <p className="text-[var(--text-secondary)] font-medium leading-relaxed max-w-2xl mx-auto">
-            Nous construisons des scénarios sur mesure avec chaque client. Dites-nous quels appels vous perdez, nous configurons la réponse qui va avec.
+            Dites-nous quels appels vous perdez et dans quel cadre ils doivent être traités. Nous
+            configurerons le scénario correspondant avec vous.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
+            <Link
+              href="/contact"
+              className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform"
+            >
               Demander une démo sectorielle
             </Link>
-            <Link href="/etudes-de-cas" className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors">
-              Voir les scénarios d'usage
+            <Link
+              href="/etudes-de-cas"
+              className="bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-sm hover:bg-[var(--bg-surface-hover)] transition-colors"
+            >
+              Voir les scénarios d&apos;usage
             </Link>
           </div>
         </div>
+      </section>
+
+      <section className="max-w-7xl mx-auto px-6 pb-24">
+        <FinalCTA />
       </section>
     </MarketingLayout>
   );

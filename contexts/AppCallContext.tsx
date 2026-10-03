@@ -33,7 +33,14 @@ import {
   decideRemoteAudio,
   MediaErrorKind,
 } from "@/lib/webrtc-media";
-import { PUBLIC_STUN_FALLBACK } from "@/lib/ice-config";
+import {
+  PUBLIC_STUN_FALLBACK,
+  applyIceTransportPolicy,
+  resolveIceTransportPolicy,
+} from "@/lib/ice-config";
+import { useWakeLock } from "@/hooks/useWakeLock";
+import { useVibration } from "@/hooks/useVibration";
+import { useMediaSession } from "@/hooks/useMediaSession";
 
 /**
  * AppCallContext — Appels APP_TO_APP (WebRTC natif P2P, hors Telnyx/PSTN).
@@ -110,6 +117,21 @@ function rtcConfiguration(): RTCConfiguration {
     iceServers: PUBLIC_STUN_FALLBACK,
   };
 }
+
+/**
+ * Politique ICE de l'appel APP_TO_APP.
+ *
+ * Par défaut = "all" (la clé `iceTransportPolicy` n'est même pas posée : on
+ * laisse le navigateur choisir P2P/TURN). Le mode "relay" n'est atteignable
+ * qu'avec un build NON-production opt-in explicite
+ * (NEXT_PUBLIC_APP_CALL_FORCE_RELAY, inliné au build donc non pilotable depuis
+ * l'URL). Voir resolveIceTransportPolicy — le garde-fou "production" y est
+ * appliqué, ce fichier ne fait que lire le résultat.
+ */
+const ICE_TRANSPORT_POLICY = resolveIceTransportPolicy({
+  forceRelayRequested: process.env.NEXT_PUBLIC_APP_CALL_FORCE_RELAY,
+  nodeEnv: process.env.NODE_ENV,
+});
 
 /**
  * Attend l'autorisation effective du canal privé avant d'émettre le handshake
@@ -634,10 +656,23 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       }
 
       if (activeCallIdRef.current !== callId) return;
+      // Politique ICE : "all" par défaut (clé absente). "relay" uniquement en
+      // build de test opt-in — iceServers (donc les credentials TURN) reste
+      // strictement celui fourni par le serveur, jamais modifié ici.
       const pc = new RTCPeerConnection(
-        iceConfigRef.current ?? rtcConfiguration()
+        applyIceTransportPolicy(
+          iceConfigRef.current ?? rtcConfiguration(),
+          ICE_TRANSPORT_POLICY
+        )
       );
       pcRef.current = pc;
+      // Trace de confirmation (AUCUN secret) : permet à l'opérateur de prouver
+      // que le mode relay de test est réellement actif, ou au contraire que la
+      // production tourne bien en "all".
+      logIce(callId, role, "icePolicy", {
+        policy: ICE_TRANSPORT_POLICY,
+        relayForced: ICE_TRANSPORT_POLICY === "relay",
+      });
       // M4 : ajout des pistes locales — chaque track audio UNE seule fois,
       // aucune après fermeture / état failed, et anti-doublon via getSenders().
       const existingSenderKinds = new Set(
@@ -1296,6 +1331,36 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
       refreshDirectory,
     ]
   );
+
+  // ─── PWA Hooks (Native Mobile Experience) ───
+  
+  // 1. Empêcher l'écran de s'éteindre si un appel est actif
+  useWakeLock(appCallStatus === "ACTIVE" || appCallStatus === "RINGING" || appCallStatus === "CONNECTING");
+
+  // 2. Faire vibrer l'appareil lors d'un appel entrant
+  useVibration(appCallStatus === "RINGING" && incomingAppCall !== null);
+
+  // 3. Exposer les contrôles médias de l'OS (écran de verrouillage)
+  useMediaSession({
+    title: incomingAppCall?.callerName || outboundPeer?.name || "Appel Interne",
+    artist: "Antigravity (App-to-App)",
+    isActive: appCallStatus === "ACTIVE" || appCallStatus === "RINGING" || appCallStatus === "CONNECTING",
+    onHangup: () => {
+      if (appCallStatus === "RINGING" && incomingAppCall) {
+        declineAppCall();
+      } else {
+        hangupAppCall();
+      }
+    },
+    onMute: () => {
+      // Toggle muet rudimentaire
+      if (localStreamRef.current) {
+        const audioTracks = localStreamRef.current.getAudioTracks();
+        const isMuted = audioTracks.some((t) => !t.enabled);
+        muteAppMic(!isMuted);
+      }
+    },
+  });
 
   return (
     <AppCallContext.Provider value={value}>

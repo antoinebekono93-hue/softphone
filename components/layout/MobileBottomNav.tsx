@@ -13,6 +13,8 @@ import { useTelnyx } from "@/contexts/TelnyxContext";
 import { useAppCall } from "@/contexts/AppCallContext";
 import { dashboardModuleHref, resolveDashboardModule } from "@/lib/dashboard-modules";
 
+import { useAppBadge } from "@/hooks/useAppBadge";
+
 const NAV_ITEMS = [
   { id: "home", label: "Accueil", icon: Home, href: "/dashboard" },
   { id: "softphone", label: "Appels", icon: Phone, href: "/dashboard/softphone" },
@@ -37,6 +39,11 @@ export function MobileBottomNav() {
   
   const hasActiveCall = callState === "ringing" || callState === "active" || callState === "connecting";
   const hasInternalCall = appCallStatus === "RINGING" || appCallStatus === "ACTIVE" || appCallStatus === "CONNECTING" || appCallStatus === "OFFERING";
+
+  // Met à jour le badge de l'app OS. Ici, on met "1" s'il y a un appel actif/entrant
+  // Dans le futur, on l'additionnera avec un contexte UnreadMessagesContext.
+  useAppBadge(hasActiveCall || hasInternalCall ? 1 : 0);
+
 
   return (
     <nav

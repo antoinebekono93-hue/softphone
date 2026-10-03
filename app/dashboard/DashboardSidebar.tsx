@@ -39,6 +39,7 @@ import {
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { dashboardModuleHref, resolveDashboardModule } from '@/lib/dashboard-modules';
+import { PushNotificationToggle } from "@/components/pwa/PushNotificationToggle";
 
 export function DashboardSidebar({
   organizationName,
@@ -220,6 +221,8 @@ export function DashboardSidebar({
 
         {/* Bottom section */}
         <div className="p-4 border-t border-[var(--border-subtle)] flex flex-col gap-2">
+          <PushNotificationToggle isCollapsed={isCollapsed} />
+          
           <button 
             onClick={toggleTheme}
             className={`flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)] transition-colors ${isCollapsed ? 'justify-center' : ''}`}

@@ -31,6 +31,13 @@ const NUMBER_POLICY: Record<string, string> = {
   "Appels Illimités": "1 numéro professionnel inclus",
 };
 
+const AUDIENCE: Record<string, string> = {
+  "Appels Illimités": "Pour les équipes qui appellent surtout en interne, entre leurs propres utilisateurs.",
+  Basic: "Pour un poste, des volumes modestes et un numéro à activer séparément.",
+  Standard: "Pour les usages professionnels qui alternent appels externes et SMS.",
+  Premium: "Pour les volumes élevés et les organisations multi-utilisateurs.",
+};
+
 const ADD_ONS = [
   {
     title: "Répondeur IA 24/7",

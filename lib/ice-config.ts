@@ -248,3 +248,83 @@ export function normalizeIceServers(raw: unknown): RTCIceServer[] {
   }
   return out;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * iceTransportPolicy — OUTIL DE TEST TURN RELAY (test-only, opt-in strict)
+ *
+ * BUT : pouvoir prouver que le relais Cloudflare TURN fonctionne réellement
+ * (candidate relay sélectionnée) en IMposant au navigateur de n'utiliser que
+ * le relais. Un `iceTransportPolicy` absent = défaut navigateur "all"
+ * (P2P + TURN), qui est le comportement PRODUCTION normal.
+ *
+ * INVARIANTS (ne jamais modifier) :
+ *  - "all" reste le défaut ABSOLU : la clé `iceTransportPolicy` ne doit JAMAIS
+ *    être présente dans une configuration de production (protégé par
+ *    scripts/test-ice-config.ts) ;
+ *  - le mode "relay" exige une activation EXPLICITE, donc impossible à activer
+ *    par un utilisateur via une query string / un paramètre d'URL ;
+ *  - le mode "relay" est refusé si NODE_ENV === "production" : aucune
+ *    activation automatique en production, même si le flag est défini ;
+ *  - ce module ne lit QUE les valeurs qu'on lui passe (couche PURE) : aucun
+ *    accès à process.env, aucun secret, aucun credential TURN ici.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Politique ICE : "all" = défaut navigateur (P2P + TURN), "relay" = TURN seul. */
+export type IceTransportPolicy = "all" | "relay";
+
+/**
+ * Nom du flag d'activation. Volontairement `NEXT_PUBLIC_*` : Next.js INLINE
+ * ces variables au BUILD. L'opt-in est donc figé dans le bundle et ne peut PAS
+ * être basculé à l'exécution par un tiers via l'URL ou une entrée utilisateur —
+ * c'est ce qui rend l'option non pilotable depuis le client.
+ */
+export const FORCE_RELAY_ENV_VAR = "NEXT_PUBLIC_APP_CALL_FORCE_RELAY";
+
+/** Valeurs acceptées pour activer le flag (parsing strict, pas de truthiness). */
+const TRUTHY_FLAG_VALUES = ["1", "true", "on", "yes"];
+
+/** Interpréte la valeur brute du flag d'activation. */
+export function isForceRelayRequested(raw: string | null | undefined): boolean {
+  if (typeof raw !== "string") return false;
+  return TRUTHY_FLAG_VALUES.includes(raw.trim().toLowerCase());
+}
+
+/**
+ * Résout la politique ICE applicable.
+ *
+ * Renvoie "relay" UNIQUEMENT si les DEUX conditions sont réunies :
+ *   1. le flag est explicitement activé (build-time, cf. FORCE_RELAY_ENV_VAR) ;
+ *   2. l'environnement n'est PAS "production".
+ *
+ * Sinon renvoie "all" — y compris si le flag est défini en production, ce qui
+ * garantit qu'aucun build de production ne puisse forcer le relais par accident
+ * (variable manquante, environnement mal configuré, CI, etc).
+ */
+export function resolveIceTransportPolicy({
+  forceRelayRequested,
+  nodeEnv,
+}: {
+  forceRelayRequested: string | null | undefined;
+  nodeEnv: string | null | undefined;
+}): IceTransportPolicy {
+  if (nodeEnv === "production") return "all";
+  return isForceRelayRequested(forceRelayRequested) ? "relay" : "all";
+}
+
+/**
+ * Applique la politique résolue à une configuration RTCPeerConnection.
+ *
+ * - policy "all" (défaut / production) → configuration INCHANGÉE, et la clé
+ *   `iceTransportPolicy` reste ABSENTE (défaut navigateur, pas d'override) ;
+ * - policy "relay" (test opt-in uniquement) → `iceTransportPolicy: "relay"`.
+ *
+ * Ne modifie jamais `iceServers` : les credentials TURN continuent de provenir
+ * exclusivement du serveur (/api/app-calls/ice-config).
+ */
+export function applyIceTransportPolicy<T extends RTCConfiguration>(
+  config: T,
+  policy: IceTransportPolicy
+): T {
+  if (policy !== "relay") return config;
+  return { ...config, iceTransportPolicy: "relay" };
+}

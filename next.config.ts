@@ -61,6 +61,7 @@ export default withPWA({
   reloadOnOnline: true,
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
+  customWorkerDir: "worker", // Injecte le contenu de worker/index.ts dans le sw généré
   workboxOptions: {
     cleanupOutdatedCaches: true,
     skipWaiting: true,

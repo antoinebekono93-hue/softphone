@@ -20,6 +20,9 @@ import {
   type PendingCall,
   type SdkCallLike,
 } from "@/lib/pstn-correlation";
+import { useWakeLock } from "@/hooks/useWakeLock";
+import { useVibration } from "@/hooks/useVibration";
+import { useMediaSession } from "@/hooks/useMediaSession";
 
 type CallState = "idle" | "ringing" | "connecting" | "active" | "held" | "error";
 
@@ -115,6 +118,37 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     callStateRef.current = callState;
     pstnCallControlIdRef.current = pstnCallControlId;
+  });
+
+  // ─── PWA Hooks (Native Mobile Experience) ───
+  
+  // 1. Empêcher l'écran de s'éteindre si un appel est actif
+  useWakeLock(callState === "active" || callState === "ringing" || callState === "connecting");
+
+  // 2. Faire vibrer l'appareil lors d'un appel entrant PSTN
+  useVibration(callState === "ringing" && callDirection === "inbound");
+
+  // 3. Exposer les contrôles médias de l'OS (écran de verrouillage)
+  useMediaSession({
+    title: incomingCallerId || "Appel",
+    artist: "Antigravity (Telnyx)",
+    isActive: callState === "active" || callState === "ringing" || callState === "connecting",
+    onHangup: () => {
+      // Dépend du callback défini plus bas
+      if (callState === "ringing" && callDirection === "inbound") {
+        rejectCall();
+      } else {
+        hangupCall();
+      }
+    },
+    onMute: () => {
+      // Toggle muet rudimentaire : on coupe les tracks
+      if (localStreamRef.current) {
+        localStreamRef.current.getAudioTracks().forEach((track) => {
+          track.enabled = !track.enabled;
+        });
+      }
+    },
   });
 
   // ─── Helpers refs-only (aucune closure état, utilisables dans les handlers liés) ───
