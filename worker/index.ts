@@ -12,8 +12,7 @@ sw.addEventListener("push", (event: PushEvent) => {
   try {
     const data = event.data.json();
     
-    // Default options for incoming call or message
-    const options: NotificationOptions = {
+    const options: any = {
       body: data.body,
       icon: data.icon || "/icon-192x192.png",
       badge: data.badge || "/icon-192x192.png", // Small icon for Android status bar

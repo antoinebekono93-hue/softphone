@@ -142,11 +142,10 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
       }
     },
     onMute: () => {
-      // Toggle muet rudimentaire : on coupe les tracks
-      if (localStreamRef.current) {
-        localStreamRef.current.getAudioTracks().forEach((track) => {
-          track.enabled = !track.enabled;
-        });
+      // Toggle muet rudimentaire
+      const el = document.getElementById("telnyx-remote-audio") as HTMLAudioElement | null;
+      if (el) {
+        el.muted = !el.muted;
       }
     },
   });
