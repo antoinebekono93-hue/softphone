@@ -3,9 +3,9 @@
 import { Item, Reveal, Stagger } from "./motion";
 
 const capabilities = [
-  { value: "< 0,5s", label: "Temps de réponse de l'IA vocale" },
-  { value: "100%", label: "Chiffrement des flux de communication" },
-  { value: "24/7", label: "Disponibilité des agents vocaux IA" },
+  { value: "24/7", label: "Agents vocaux disponibles en continu" },
+  { value: "Appels internes", label: "illimités entre utilisateurs (app-to-app)" },
+  { value: "Multi-canal", label: "voix, SMS et WhatsApp dans une boîte unique" },
   { value: "PWA", label: "Softphone web, mobile et desktop" },
 ];
 

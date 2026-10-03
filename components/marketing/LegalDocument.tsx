@@ -31,38 +31,33 @@ export function LegalNote({ children }: { children: React.ReactNode }) {
 }
 
 export function LegalIdentity() {
-  if (!siteConfig.legalEntity && !siteConfig.companyAddress && !siteConfig.companyRegistry) {
+  const rows = [
+    siteConfig.legalEntity && { label: "Éditeur", value: siteConfig.legalEntity },
+    siteConfig.tradeName &&
+      siteConfig.tradeName !== siteConfig.legalEntity && { label: "Nom commercial", value: siteConfig.tradeName },
+    siteConfig.companyRegistry && { label: "Immatriculation", value: siteConfig.companyRegistry },
+    siteConfig.vatId && { label: "Numéro de TVA", value: siteConfig.vatId },
+    siteConfig.companyAddress && {
+      label: "Adresse",
+      value: [siteConfig.companyAddress, siteConfig.country].filter(Boolean).join("\n"),
+    },
+    siteConfig.supportPhone && { label: "Téléphone", value: siteConfig.supportPhone },
+  ].filter((row): row is { label: string; value: string } => Boolean(row));
+
+  if (rows.length === 0) {
     return null;
   }
 
   return (
     <dl className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 space-y-2">
-      {siteConfig.legalEntity && (
-        <div className="flex flex-col sm:flex-row sm:gap-3">
+      {rows.map((row) => (
+        <div key={row.label} className="flex flex-col sm:flex-row sm:gap-3">
           <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] sm:w-44 shrink-0">
-            Éditeur
+            {row.label}
           </dt>
-          <dd className="text-sm text-[var(--text-primary)]">{siteConfig.legalEntity}</dd>
+          <dd className="text-sm text-[var(--text-primary)] whitespace-pre-line">{row.value}</dd>
         </div>
-      )}
-      {siteConfig.companyRegistry && (
-        <div className="flex flex-col sm:flex-row sm:gap-3">
-          <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] sm:w-44 shrink-0">
-            Identifiants
-          </dt>
-          <dd className="text-sm text-[var(--text-primary)]">{siteConfig.companyRegistry}</dd>
-        </div>
-      )}
-      {siteConfig.companyAddress && (
-        <div className="flex flex-col sm:flex-row sm:gap-3">
-          <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] sm:w-44 shrink-0">
-            Adresse
-          </dt>
-          <dd className="text-sm text-[var(--text-primary)] whitespace-pre-line">
-            {siteConfig.companyAddress}
-          </dd>
-        </div>
-      )}
+      ))}
     </dl>
   );
 }

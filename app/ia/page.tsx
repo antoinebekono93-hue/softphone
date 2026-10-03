@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { MarketingLayout, PageHero, SectionHeading, FAQAccordion, ROIBand } from "@/components/marketing";
 import { TrustBar, ComplianceBadges, FinalCTA } from "@/components/landing";
 
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 const flywheelSteps = [
-  { title: "Appel entrant", description: "Votre numéro sonne, l'IA décroche en 0,5s et identifie le client.", icon: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" },
+  { title: "Appel entrant", description: "Votre numéro sonne, l'IA décroche et identifie le client.", icon: "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" },
   { title: "Compréhension", description: "Transcription temps réel, sentiment et intention extraits à chaque phrase.", icon: "M11 3.055A9 9 0 1 0 20.945 13H11V3.055zM20.488 9H15V3.512A9.025 9.025 0 0 1 20.488 9z" },
   { title: "Décision", description: "L'IA applique vos règles : répond, qualifie, transfère ou planifie.", icon: "M10 20a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm4-8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-3.54 7.46a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm8.54 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM20 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" },
   { title: "Action", description: "CRM mis à jour, rendez-vous calendrier, relance SMS envoyée.", icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0 1 12 2.944a11.955 11.955 0 0 1-8.618 3.04A12.02 12.02 0 0 0 3 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" },
@@ -19,7 +19,7 @@ const aiProducts = [
   { title: "Agents IA", description: "Créez des agents vocaux avec personnalité, ton et scénarios métier.", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm14 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75", href: "/dashboard/ai-agents" },
   { title: "Laboratoire vocal", description: "Écoutez, comparez et ajustez les voix de vos agents temps réel.", icon: "M9 18V5l12-2v13M9 9l12-2", href: "/dashboard/voice-lab" },
   { title: "Mémoire RAG", description: "Rattachez vos documents et créez une base de connaissances répondante.", icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z", href: "/dashboard/rag-memory" },
-  { title: "Text-to-Speech", description: "Synthèse vocale multilingue ultraréaliste, voices clonables.", icon: "M18.364 5.636a9 9 0 0 1 0 12.728M21.485 2.515a14.5 14.5 0 0 1 0 18.97M12 2.481l-3.5 3.5H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h4.5l3.5 3.5V2.48z", href: "/dashboard/tts" },
+  { title: "Text-to-Speech", description: "Synthèse vocale pour la restitution des réponses de l'agent.", icon: "M18.364 5.636a9 9 0 0 1 0 12.728M21.485 2.515a14.5 14.5 0 0 1 0 18.97M12 2.481l-3.5 3.5H4a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h4.5l3.5 3.5V2.48z", href: "/dashboard/tts" },
   { title: "Routage & IVR", description: "Menus vocaux et routage intelligent par intention et compétence.", icon: "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z", href: "/dashboard/ivr" },
   { title: "Analytiques", description: "Sentiment, sujets, taux de conversion : la téléphonie mesurable.", icon: "M3 3v18h18M18 17V9M13 17V5M8 17v-3", href: "/dashboard/analytics" },
 ];
@@ -55,7 +55,7 @@ const faqItems = [
   {
     question: "La plateforme est-elle internationale ?",
     answer:
-      "Oui. Numéros français, africains, européens et internationaux (plan Premium). La synthèse vocale gère 30+ langues et l'IA bascule automatiquement sur la langue de votre client.",
+      "Oui. Numéros français, africains, européens et internationaux (plan Premium). La langue de l'agent se règle agent par agent.",
   },
 ];
 
@@ -88,7 +88,7 @@ export default function AISummaryPage() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <SectionHeading
           title="Une boucle qui s'auto-améliore"
-          subtitle="Chaque appel alimente le suivant : l'IA décroche en 0,5 seconde, traite, mesure et s'améliore à chaque échange, avec vos données."
+          subtitle="Chaque appel alimente le suivant : l'IA décroche, traite, mesure et s'améliore à chaque échange, avec vos données."
         />
         <div className="grid md:grid-cols-4 gap-6 relative">
           <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-px bg-gradient-to-r from-cyan-500/0 via-cyan-500/50 to-cyan-500/0"></div>
@@ -150,7 +150,7 @@ export default function AISummaryPage() {
       <section className="max-w-7xl mx-auto px-6 py-16">
         <ROIBand
           stats={[
-            { value: "0,5s", label: "pour décrocher un appel entrant" },
+            { value: "Appels internes", label: "illimités entre utilisateurs (app-to-app)" },
             { value: "24/7", label: "disponibilité des agents vocaux" },
             { value: "Appels internes", label: "illimités entre utilisateurs" },
             { value: "API & webhooks", label: "pour les workflows internes" },

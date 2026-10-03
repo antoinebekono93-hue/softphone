@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarketingLayout, PageHero, SectionHeading } from "@/components/marketing";
+import { MarketingLayout, PageHero, SectionHeading, LegalIdentity } from "@/components/marketing";
 import { siteConfig } from "@/lib/site-config";
 
 const metaTitle = "À propos";
@@ -93,7 +93,8 @@ export default function AboutPage() {
           title="Ce que nous faisons"
           subtitle="Nous construisons une couche de communication qui relie les personnes, les numéros et les systèmes d'information d'une entreprise."
         />
-        <div className="space-y-4 text-[15px] leading-relaxed text-[var(--text-secondary)]">
+        <LegalIdentity />
+        <div className="space-y-4 text-[15px] leading-relaxed text-[var(--text-secondary)] mt-6">
           <p>
             Une entreprise qui gère ses appels sur plusieurs outils dispersés perd du temps en
             transferts, en information répétée et en outils qui ne se parlent pas. Antigravity a été

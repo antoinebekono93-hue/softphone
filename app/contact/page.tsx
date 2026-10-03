@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarketingLayout, PageHero, SectionHeading } from "@/components/marketing";
+import { MarketingLayout, PageHero, SectionHeading, LegalIdentity } from "@/components/marketing";
 import { legalLinks, siteConfig, supportChannels } from "@/lib/site-config";
 
 const metaTitle = "Contact";
@@ -54,6 +54,14 @@ export default function ContactPage() {
                 >
                   {channel.email}
                 </a>
+                {channel.phone && (
+                  <a
+                    href={`tel:${channel.phone.replace(/[^\d+]/g, "")}`}
+                    className="text-sm font-semibold text-[var(--brand)] hover:underline"
+                  >
+                    {channel.phone}
+                  </a>
+                )}
                 <p className="text-xs text-[var(--text-muted)]">{channel.responseTime}</p>
               </article>
             ))}
@@ -74,6 +82,14 @@ export default function ContactPage() {
             </p>
           </div>
         )}
+      </section>
+
+      <section className="px-5 sm:px-6 max-w-5xl mx-auto w-full pb-16">
+        <SectionHeading
+          title="Éditeur du site"
+          subtitle="Les informations d'identification de l'éditeur du site, telles qu'elles sont configurées."
+        />
+        <LegalIdentity />
       </section>
 
       <section className="px-5 sm:px-6 max-w-5xl mx-auto w-full pb-16">
