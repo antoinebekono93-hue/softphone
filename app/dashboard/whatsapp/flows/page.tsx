@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import FlowBuilderClient from "./FlowBuilderClient";
 
 export const metadata = {
-  title: "Flow Builder | Antigravity",
+  title: "Flow Builder | Buster Call",
 };
 
 export default async function WhatsAppFlowsPage() {

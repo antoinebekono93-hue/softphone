@@ -24,23 +24,54 @@ const sizeClass: Record<ModalSize, string> = {
   xl: "max-w-4xl",
 };
 
+const modalStack: HTMLElement[] = [];
+let originalOverflow = "";
 function useModalBehavior(open: boolean, onClose: () => void) {
+  const ref = React.useRef<HTMLDivElement>(null);
   const onCloseRef = React.useRef(onClose);
-  onCloseRef.current = onClose;
-
+  React.useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
   React.useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseRef.current();
+    const root = ref.current;
+    if (!open || !root) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    if (modalStack.length === 0) {
+      originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
+    modalStack.push(root);
+    const focusable = () => Array.from(root.querySelectorAll<HTMLElement>(
+      'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    )).filter(el => !el.closest('[inert]') && el.getClientRects().length > 0);
+    const topmost = () => modalStack[modalStack.length - 1] === root;
+    const focusFirst = () => (focusable()[0] || root).focus();
+    if (!root.contains(document.activeElement)) focusFirst();
+    const onKey = (event: KeyboardEvent) => {
+      if (!topmost()) return;
+      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); onCloseRef.current(); }
+      if (event.key === "Tab") {
+        const elements = focusable();
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        if (!first) { event.preventDefault(); root.focus(); }
+        else if (event.shiftKey && (document.activeElement === first || document.activeElement === root)) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && (document.activeElement === last || document.activeElement === root)) { event.preventDefault(); first.focus(); }
+      }
+    };
+    const onFocus = (event: FocusEvent) => {
+      if (topmost() && !root.contains(event.target as Node)) focusFirst();
     };
     document.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.addEventListener("focusin", onFocus);
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
+      document.removeEventListener("focusin", onFocus);
+      const wasTop = topmost();
+      modalStack.splice(modalStack.indexOf(root), 1);
+      if (!modalStack.length) document.body.style.overflow = originalOverflow;
+      if (wasTop && previousFocus?.isConnected) previousFocus.focus();
     };
   }, [open]);
+  return ref;
 }
 
 function ModalHeader({
@@ -60,7 +91,7 @@ function ModalHeader({
         type="button"
         onClick={onClose}
         aria-label="Fermer"
-        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]"
+        className="min-h-11 min-w-11 grid place-items-center rounded-lg p-1.5 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]"
       >
         <X className="h-5 w-5" />
       </button>
@@ -78,15 +109,19 @@ export function Modal({
   size = "md",
   className,
 }: ModalProps) {
-  useModalBehavior(open, onClose);
+  const dialogRef = useModalBehavior(open, onClose);
+  const titleId = React.useId();
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[70] flex items-end md:items-center justify-center p-0 md:p-4"
+      ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
-      aria-label={typeof title === "string" ? title : undefined}
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={title ? undefined : "Panneau"}
     >
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -94,12 +129,12 @@ export function Modal({
         aria-hidden="true"
       />
       <div
-        className={`relative flex max-h-[90vh] w-full flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-2xl ${sizeClass[size]} ${className || ""}`}
+        className={`relative flex max-h-[90dvh] w-full flex-col rounded-t-2xl md:rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-2xl ${sizeClass[size]} ${className || ""}`}
       >
-        <ModalHeader title={title} description={description} onClose={onClose} />
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+        <ModalHeader title={<span id={titleId}>{title}</span>} description={description} onClose={onClose} />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] p-5">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--border-subtle)] p-5">
             {footer}
           </div>
         )}
@@ -130,20 +165,24 @@ export function Drawer({
   side = "right",
   className,
 }: DrawerProps) {
-  useModalBehavior(open, onClose);
+  const dialogRef = useModalBehavior(open, onClose);
+  const titleId = React.useId();
   if (!open || typeof document === "undefined") return null;
 
   const isBottom = side === "bottom";
   const sideClass = isBottom
-    ? "bottom-0 inset-x-0 max-h-[85vh] flex-col rounded-t-2xl border-b-0"
+    ? "bottom-0 inset-x-0 max-h-[85dvh] flex-col rounded-t-2xl border-b-0"
     : `top-0 ${side === "right" ? "right-0" : "left-0"} h-full max-w-md flex-col border-l`;
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50"
+      className="fixed inset-0 z-[70]"
+      ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
-      aria-label={typeof title === "string" ? title : undefined}
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={title ? undefined : "Panneau"}
     >
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -151,12 +190,12 @@ export function Drawer({
         aria-hidden="true"
       />
       <div
-        className={`absolute flex ${sideClass} border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-2xl ${className || ""}`}
+        className={`absolute flex w-full ${sideClass} border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-2xl ${className || ""}`}
       >
-        {title && <ModalHeader title={title} description={description} onClose={onClose} />}
-        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+        {title && <ModalHeader title={<span id={titleId}>{title}</span>} description={description} onClose={onClose} />}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">{children}</div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-[var(--border-subtle)] p-5">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--border-subtle)] p-5">
             {footer}
           </div>
         )}

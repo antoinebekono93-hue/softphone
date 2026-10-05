@@ -163,7 +163,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       {/* Display */}
-      <div className="w-full flex items-center justify-between mb-6 sm:mb-8 h-14 sm:h-16 px-3 sm:px-4 relative">
+      <div className="w-full flex items-center justify-between mb-3 sm:mb-8 h-12 sm:h-16 px-2 sm:px-4 relative">
         
         {/* Custom Country Selector */}
         {!number.startsWith("+") && (
@@ -209,7 +209,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
           }}
           placeholder=""
           disabled={disabled}
-          className="w-full bg-transparent border-none shadow-none text-3xl sm:text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none focus:ring-0 min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
+          className="w-full bg-transparent border-none shadow-none text-2xl sm:text-4xl font-medium text-center flex-1 tracking-wider text-[var(--text-primary)] focus:outline-none focus:ring-0 min-w-0 placeholder-[var(--text-secondary)] placeholder-opacity-30"
           style={{ paddingLeft: !number.startsWith("+") ? "4.25rem" : "0", transition: "padding 0.2s" }}
         />
         {number && (
@@ -228,7 +228,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8 w-full px-3 sm:px-6">
+      <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8 w-full px-2 sm:px-6">
         {KEYS.map((key) => (
           <button
             key={key.digit}
@@ -238,13 +238,13 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
             onClick={() => handleKeyClick(key.digit)}
             onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
             disabled={disabled}
-            className="bg-[var(--bg-glass)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] relative flex flex-col items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-sm active:scale-95"
+            className="bg-[var(--bg-glass)] hover:bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)] relative flex flex-col items-center justify-center w-14 h-14 sm:w-20 sm:h-20 rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed mx-auto shadow-sm active:scale-95"
             style={{ WebkitUserSelect: 'none', touchAction: 'manipulation' }}
           >
-            <span className="text-2xl sm:text-3xl font-medium">
+            <span className="text-xl sm:text-3xl font-medium">
               {key.digit}
             </span>
-            <span className="text-[10px] font-medium tracking-[0.1em] mt-0.5 min-h-[15px] opacity-70">
+            <span className="text-[9px] sm:text-[10px] font-medium tracking-[0.1em] mt-0.5 min-h-[13px] opacity-70">
               {key.letters}
             </span>
           </button>
@@ -255,10 +255,10 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
       <button
         onClick={handleCall}
         disabled={disabled || !number}
-        className="bg-[var(--success)] hover:opacity-90 shadow-[0_0_20px_color-mix(in_oklch,var(--success)_25%,transparent)] text-white w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all disabled:bg-[var(--bg-surface-hover)] disabled:text-[var(--text-muted)] disabled:opacity-60"
+        className="bg-[var(--success)] hover:opacity-90 shadow-[0_0_20px_color-mix(in_oklch,var(--success)_25%,transparent)] text-white w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all disabled:bg-[var(--bg-surface-hover)] disabled:text-[var(--text-muted)] disabled:opacity-60"
         aria-label="Appeler"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
         </svg>
       </button>

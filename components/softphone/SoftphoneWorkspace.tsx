@@ -80,9 +80,9 @@ export function SoftphoneWorkspace() {
   };
 
   return (
-    <div className="flex flex-col-reverse lg:flex-row w-full h-auto lg:h-full min-h-0 gap-4 lg:gap-0 rounded-2xl overflow-hidden glass-panel border border-[var(--border-subtle)]">
+    <div className="flex flex-col-reverse lg:flex-row w-full h-full min-h-0 gap-0 rounded-2xl overflow-hidden glass-panel border border-[var(--border-subtle)]">
       {/* Left Panel: Sidebar */}
-      <div className="w-full lg:w-[400px] flex flex-col lg:max-h-none border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/50 max-h-[70vh] overflow-hidden">
+      <div className="w-full lg:w-[400px] flex flex-col lg:max-h-none border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/50 lg:max-h-full max-h-[45vh] overflow-hidden">
         {/* Header & Search */}
         <div className="p-4 border-b border-[var(--border-subtle)]">
           <div className="relative">
@@ -270,7 +270,7 @@ export function SoftphoneWorkspace() {
       </div>
 
       {/* Right Panel: Dialpad/Softphone */}
-      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 relative bg-gradient-to-br from-[var(--bg-surface-hover)] to-[var(--bg-app)]">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 relative bg-gradient-to-br from-[var(--bg-surface-hover)] to-[var(--bg-app)] min-h-[520px] lg:min-h-0">
         {/* Decorative background glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[var(--brand)]/5 blur-[100px] rounded-full pointer-events-none"></div>
         <Softphone />

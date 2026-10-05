@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 export const metadata = {
-  title: "Team Management | Antigravity",
+  title: "Team Management | Buster Call",
 };
 
 export default async function TeamPage() {

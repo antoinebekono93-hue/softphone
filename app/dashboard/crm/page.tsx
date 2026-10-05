@@ -1,7 +1,7 @@
 import CrmApp from "@/components/crm/CrmApp";
 
 export const metadata = {
-  title: "CRM Pipeline | Antigravity",
+  title: "CRM Pipeline | Buster Call",
 };
 
 export default function CrmPage() {

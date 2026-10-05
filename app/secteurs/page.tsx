@@ -3,7 +3,7 @@ import { MarketingLayout, PageHero, SectionHeading, InteractiveTabs } from "@/co
 import { TrustBar, FinalCTA } from "@/components/landing";
 
 export const metadata = {
-  title: "Solutions par secteur | Antigravity",
+  title: "Solutions par secteur | Buster Call",
   description:
     "Répondeur IA, téléphonie et agents vocaux adaptés à votre métier : santé, juridique, immobilier, hôtellerie, commerce, finance, logistique, automobile.",
 };
@@ -194,7 +194,7 @@ export default function SectorsPage() {
             Une téléphonie IA qui <span className="n8n-gradient-text">parle votre métier</span>
           </>
         }
-        subtitle="Chaque secteur a ses appels critiques et ses contraintes. Antigravity s'adapte à votre jargon, vos horaires et vos processus."
+        subtitle="Chaque secteur a ses appels critiques et ses contraintes. Buster Call s'adapte à votre jargon, vos horaires et vos processus."
       >
         <Link
           href="/contact"

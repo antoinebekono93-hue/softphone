@@ -15,7 +15,7 @@ export default async function SmsDashboardPage() {
       // Création automatique d'une org de test pour éviter le redirect en mode démo
       defaultOrg = await prisma.organization.create({
         data: {
-          name: "Antigravity Demo",
+          name: "Buster Call Demo",
           slug: "antigravity-demo",
           walletBalance: 50.00
         }

@@ -68,18 +68,105 @@
 
 ## 3. APP_TO_APP Cloudflare TURN forcé (`iceTransportPolicy: relay`)
 
-* **Prérequis :** Modifier temporairement (uniquement pour ce test dans le code ou l'objet de config RTC) la configuration pour forcer `iceTransportPolicy: "relay"`.
-* **Étapes :**
-  1. Lancer un appel APP_TO_APP entre deux appareils.
-  2. Vérifier que la connexion s'établit exclusivement par les serveurs TURN Cloudflare (`candidateType=relay`).
-  3. Rétablir le paramètre par défaut après le test.
-* **Logs / IDs à observer :**
-  - Logs ICE : `candidateType=relay` obligatoire.
-* **Résultat attendu :** Prouve que les credentials Cloudflare TURN sont valides, que le relais fonctionne et que l'authentification passe.
-* **Conditions PASS :** Appel établi en mode 100% relayé, audio fonctionnel.
-* **Conditions FAIL :** Échec de connexion (signe de credentials TURN invalides ou d'un token Cloudflare expiré/révoqué).
-* **Informations à ne JAMAIS logger :** Identifiants TURN.
-* **Coût éventuel :** Consommation minime de bande passante Cloudflare TURN (tests).
+> **OUTILLAGE AJOUTÉ.** Un interrupteur **test-only** existe désormais
+> (`resolveIceTransportPolicy` / `applyIceTransportPolicy` dans `lib/ice-config.ts`).
+> Il rend ce scénario **exécutable**, mais ne prouve **rien** sur la connectivité
+> tant qu'un navigateur réel n'a pas sélectionné un candidat `relay`.
+
+### 3.0 Prérequis bloquants
+
+1. **Credentials TURN Cloudflare configurés côté serveur** (absents de `.env` et
+   `.env.local` au moment de l'audit → le test échouerait en falling back sur STUN) :
+   - `CLOUDFLARE_TURN_KEY_ID`
+   - `CLOUDFLARE_TURN_API_TOKEN`
+   Ne jamais les afficher. Vérifier la présence par **nom de variable uniquement**.
+2. `GET /api/app-calls/ice-config` doit renvoyer une entrée `turn:` **avec**
+   `username` et `credential` (sinon `normalizeIceServers` la rejette et le client
+   retombe sur STUN).
+3. **Deux** utilisateurs APP_TO_APP sur deux appareils.
+
+### 3.1 Activer le mode relay (test uniquement)
+
+Le flag est `NEXT_PUBLIC_APP_CALL_FORCE_RELAY`, donc **inliné au build Next.js** :
+il ne peut pas être basculé via une query string ni une entrée utilisateur, et il
+est **ignoré si `NODE_ENV === "production"`**.
+
+```bash
+# .env.local — ajout LOCAL, à retirer ensuite
+NEXT_PUBLIC_APP_CALL_FORCE_RELAY=true
+```
+
+Puis **redémarrer le serveur de dev** (`npm run dev`) : la variable est lue au build,
+pas à chaud. Ne jamais committer cette ligne.
+
+Valeurs acceptées : `true`, `1`, `on`, `yes`. Tout le reste → `all`.
+
+### 3.2 Confirmer que le mode est RÉELLEMENT actif
+
+Dans la console du navigateur, au moment de l'établissement de l'appel :
+
+```
+[ICE] icePolicy {"policy":"relay","relayForced":true}
+[ICE] iceCandidate {"candidateType":"relay","protocol":"udp"}
+```
+
+- Si le log affiche `policy: "all"` / `relayForced: false` → **le mode n'est pas
+  actif** (flag non lu au build, ou environnement `production`). STOP.
+- Ne jamais logger le `credential` TURN.
+
+### 3.3 Vérifier la candidate-pair sélectionnée (Chrome)
+
+1. Ouvrir `chrome://webrtc-internals` **avant** de lancer l'appel.
+2. Cocher **"Show ICE candidate pairs"** et **"Show local/remote IP addresses"**.
+3. Lancer l'appel.
+4. Dans la vue `iceCandidateStats`, retenir la **candidate pair sélectionnée**
+   (`nominated: true` / `state: succeeded`) et lire :
+   - `localCandidateType` / `remoteCandidateType` → **doivent valoir `relay`**.
+5. Vérifier dans `candidate-pair` que le bytesSent/RTT sont non nuls → le relais
+   transporte réellement le média.
+
+**Ne pas recopier les IP/ports relay dans un ticket** : masquer par exemple
+`172.64.x.x:3478` → `<relay Cloudflare>`. Les IPs relay Cloudflare sont publiques
+mais sans valeur de diagnostic ici.
+
+### 3.4 Vérifier l'audio bidirectionnel
+
+- Micro A → haut-parleur B : audible.
+- Micro B → haut-parleur A : audible.
+- `connectionState` / `iceConnectionState` → `connected` / `completed`.
+- Second `getUserMedia` non déclenché (un seul `localStream`).
+
+### 3.5 Résultats
+
+- **PASS** : `relayForced: true` **ET** candidate pair sélectionnée `relay` **ET**
+  audio bidirectionnel réel **ET** hangup/cleanup propre.
+- **FAIL** : le mode ne s'active pas ; ou la connexion échoue
+  (`iceConnectionState: failed`) ; ou seul du STUN/hôte est sélectionné ; ou
+  l'audio est unidirectionnel.
+
+### 3.6 Désactiver le mode test (obligatoire)
+
+```bash
+# supprimer/commenter la ligne, puis redémarrer
+# NEXT_PUBLIC_APP_CALL_FORCE_RELAY=true
+```
+
+Vérifier après redémarrage : le log redevient `policy: "all"` /
+`relayForced: false`, et **la clé `iceTransportPolicy` est absente** de la
+configuration de la PeerConnection (défaut navigateur P2P + TURN).
+
+### 3.7 Sécurité
+
+- `CLOUDFLARE_TURN_KEY_ID` / `CLOUDFLARE_TURN_API_TOKEN` : **serveur uniquement**,
+  jamais de `NEXT_PUBLIC_*`, jamais dans un log, jamais dans le bundle client.
+- Les credentials TURN temporaires (`username`/`credential`) transitent vers le
+  navigateur par nécessité WebRTC, ne sont jamais persistés, et ne doivent pas
+  être journalisés.
+- Coût : **0 $** (bande passante relais Cloudflare uniquement, pas de minute PSTN).
+
+> **Ce test ne vaut PAS validation live TURN.** Il prouve que l'outillage est
+> correct ; `TURN_RELAY_CONNECTIVITY` reste `NOT_RUN` tant qu'un opérateur n'a pas
+> exécuté ces étapes et fourni les relevés.
 
 ---
 

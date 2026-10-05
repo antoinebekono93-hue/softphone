@@ -36,7 +36,7 @@ export async function dispatchOrganizationWebhook(organizationId: string, event:
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "User-Agent": "Antigravity-Webhook-Dispatcher/1.0",
+      "User-Agent": "Buster Call-Webhook-Dispatcher/1.0",
     };
 
     if (org.webhookSecret) {

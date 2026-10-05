@@ -72,23 +72,27 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
     }))
   ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-80px)]">
+  // Bounded by the dashboard shell (which already excludes the mobile header,
+// the bottom navigation and the safe areas) instead of a fixed 100vh offset,
+// which overflowed behind the mobile navigation. On mobile the sheet scrolls
+// naturally; from md the two columns share the available height.
+return (
+    <div className="flex flex-col min-h-full md:h-full">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6 shrink-0">
-        <Link href="/dashboard/contacts" className="p-2 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg hover:bg-[var(--bg-surface-hover)] transition-colors">
+      <div className="flex items-center gap-4 mb-4 md:mb-6 shrink-0">
+        <Link href="/dashboard/contacts" aria-label="Retour aux contacts" className="min-h-11 min-w-11 grid place-items-center bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg hover:bg-[var(--bg-surface-hover)] transition-colors">
           <ArrowLeft className="w-5 h-5 text-[var(--text-primary)]" />
         </Link>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">{contact.name || contact.phone}</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-3xl font-bold tracking-tight text-[var(--text-primary)] truncate">{contact.name || contact.phone}</h1>
           <p className="text-sm text-[var(--text-secondary)]">Fiche Contact</p>
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-1 md:min-h-0 md:overflow-hidden">
         {/* Left pane: Contact Info (30%) */}
-        <Card className="w-full md:w-1/3 xl:w-1/4 p-6 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
-          <div className="flex flex-col items-center text-center mb-8">
+        <Card className="w-full md:w-1/3 xl:w-1/4 p-4 md:p-6 flex flex-col shrink-0 overflow-y-auto custom-scrollbar md:min-h-0">
+          <div className="flex flex-col items-center text-center mb-6 md:mb-8">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-500/20 to-violet-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4">
               {contact.name ? <span className="text-3xl font-bold">{contact.name.charAt(0).toUpperCase()}</span> : <User className="w-10 h-10" />}
             </div>
@@ -141,7 +145,7 @@ export default async function ContactDetailPage({ params }: { params: Promise<{ 
         </Card>
 
         {/* Right pane: Unified History (70%) */}
-        <Card className="flex-1 overflow-hidden">
+        <Card className="flex-1 overflow-hidden h-[68dvh] md:h-auto">
            {/* We inject the InboxClient component directly here! But we need to isolate it from its global layout padding. */}
            <div className="h-full w-full relative -m-0 p-0 transform scale-100">
              {unifiedEvents.length > 0 ? (

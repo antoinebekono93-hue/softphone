@@ -2,7 +2,7 @@ import { getSequences } from "./actions";
 import { SequencesClient } from "./SequencesClient";
 
 export const metadata = {
-  title: "Séquences | Antigravity",
+  title: "Séquences | Buster Call",
 };
 
 export default async function SequencesPage() {

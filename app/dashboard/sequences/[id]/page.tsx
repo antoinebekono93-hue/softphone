@@ -3,7 +3,7 @@ import { SequenceEditorClient } from "./SequenceEditorClient";
 import { notFound } from "next/navigation";
 
 export const metadata = {
-  title: "Éditeur de Séquence | Antigravity",
+  title: "Éditeur de Séquence | Buster Call",
 };
 
 export default async function SequenceEditorPage({ params }: { params: Promise<{ id: string }> }) {

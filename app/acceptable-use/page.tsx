@@ -13,7 +13,7 @@ const metaTitle = "Politique d'usage acceptable";
 export const metadata: Metadata = {
   title: metaTitle,
   description:
-    "Usages interdits sur la plateforme Antigravity : spam et prospection frauduleuse, fraude, usurpation d'identité, appels automatisés illicites, trafic artificiel, fraude aux minutes et au solde, revente non autorisée, conformité WhatsApp et Meta, et règles d'enregistrement des appels.",
+    "Usages interdits sur la plateforme Buster Call : spam et prospection frauduleuse, fraude, usurpation d'identité, appels automatisés illicites, trafic artificiel, fraude aux minutes et au solde, revente non autorisée, conformité WhatsApp et Meta, et règles d'enregistrement des appels.",
   alternates: { canonical: "/acceptable-use" },
   openGraph: {
     type: "article",
@@ -41,7 +41,7 @@ const sections: LegalSectionData[] = [
       <>
         La présente politique définit les usages qui sont interdits sur la plateforme{" "}
         <strong className="text-[var(--text-primary)]">{siteConfig.product}</strong>. Elle
-        s&apos;applique à l&apos;ensemble des fonctions du service : softphone, appels, numéros
+        s&apos;applique à l&apos;ensemble des fonctions du service : Buster Call, appels, numéros
         professionnels, routage, SMS, messagerie WhatsApp, agents vocaux assistés par intelligence
         artificielle, enregistrement, transcription et analytiques.
       </>,
@@ -393,7 +393,7 @@ export default function AcceptableUsePage() {
       <LegalDocument
         eyebrow="Usage de la plateforme"
         title={metaTitle}
-        intro="Cette politique liste les usages interdits sur la plateforme Antigravity, les obligations de conformité qui vous incombent, les règles applicables à la prospection et aux canaux de messagerie, et les conséquences d'un manquement."
+        intro="Cette politique liste les usages interdits sur la plateforme Buster Call, les obligations de conformité qui vous incombent, les règles applicables à la prospection et aux canaux de messagerie, et les conséquences d'un manquement."
         lastUpdated={siteConfig.legalEffectiveDate}
         sections={sections}
       >

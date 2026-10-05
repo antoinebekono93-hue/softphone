@@ -4,7 +4,7 @@ import { Reveal } from "./motion";
 
 const pillars = [
   "Téléphonie Cloud B2B",
-  "Softphone Web & Mobile (PWA)",
+  "Buster Call Web & Mobile (PWA)",
   "Routage d'Appels Intelligent",
   "Agents Vocaux IA 24/7",
   "Chiffrement TLS / SRTP",

@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     const data = await response.json();
 
     if (!response.ok) {
-      return NextResponse.json({ error: 'Telnyx API Error', details: data }, { status: response.status });
+      return NextResponse.json({ error: 'Erreur du service', details: data }, { status: response.status });
     }
 
     // Determine type (might have fallen back to SMS)

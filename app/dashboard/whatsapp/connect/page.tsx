@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import ConnectClient from "./ConnectClient";
 
 export const metadata = {
-  title: "WhatsApp Connect | Antigravity",
+  title: "WhatsApp Connect | Buster Call",
 };
 
 export default async function WhatsAppConnectPage() {

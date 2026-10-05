@@ -33,7 +33,7 @@ export default function MarketingHeader() {
         <div className="flex items-center gap-2 flex-1">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md n8n-gradient-bg shadow-[0_0_15px_rgba(34,211,238,0.4)]"></div>
-            <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">Antigravity</span>
+            <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">Buster Call</span>
           </Link>
         </div>
 

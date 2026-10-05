@@ -1,110 +1,81 @@
 "use client";
-
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import {
-  Home,
-  Phone,
-  Inbox,
-  Bot,
-  MessageSquare,
-} from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Phone, Inbox, Bot, Users, Grid2X2, ArrowUpRight } from "lucide-react";
 import { useTelnyx } from "@/contexts/TelnyxContext";
 import { useAppCall } from "@/contexts/AppCallContext";
-import { dashboardModuleHref, resolveDashboardModule } from "@/lib/dashboard-modules";
+import { useEffect } from "react";
 
-import { useAppBadge } from "@/hooks/useAppBadge";
-
-const NAV_ITEMS = [
-  { id: "home", label: "Accueil", icon: Home, href: "/dashboard" },
-  { id: "softphone", label: "Appels", icon: Phone, href: "/dashboard/softphone" },
-  { id: "inbox", label: "Messages", icon: Inbox, href: "/dashboard/inbox" },
-  { id: "ai", label: "IA", icon: Bot, href: "/dashboard/ai-team" },
-  { id: "sms", label: "SMS", icon: MessageSquare, href: "/dashboard/sms" },
-] as const;
-
-/**
- * Barre de navigation fixe en bas de l'écran — visible uniquement sur mobile.
- * Reproduit le pattern "Tab Bar" natif iOS / Android.
- * Inclut des badges pour les appels entrants actifs.
- */
+const ITEMS = [
+  { label: "Discussions", icon: Inbox, href: "/dashboard/inbox" },
+  { label: "Appels", icon: Phone, href: "/dashboard/softphone" },
+  { label: "Contacts", icon: Users, href: "/dashboard/contacts" },
+  { label: "Assistant", icon: Bot, href: "/dashboard/ai-team" },
+  { label: "Plus", icon: Grid2X2, href: "/dashboard/more" },
+];
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const activeModule = resolveDashboardModule(pathname, searchParams.get("module"));
-  
-  // Badges d'activité
-  const { callState, callDirection } = useTelnyx();
+  const { callState } = useTelnyx();
   const { appCallStatus } = useAppCall();
-  
-  const hasActiveCall = callState === "ringing" || callState === "active" || callState === "connecting";
-  const hasInternalCall = appCallStatus === "RINGING" || appCallStatus === "ACTIVE" || appCallStatus === "CONNECTING" || appCallStatus === "OFFERING";
-
-  // Met à jour le badge de l'app OS. Ici, on met "1" s'il y a un appel actif/entrant
-  // Dans le futur, on l'additionnera avec un contexte UnreadMessagesContext.
-  useAppBadge(hasActiveCall || hasInternalCall ? 1 : 0);
-
-
-  return (
-    <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-[var(--bg-base)]/90 backdrop-blur-xl border-t border-[var(--border-subtle)]"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-    >
-      <div className="flex items-center justify-around px-2 pt-2 pb-1">
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive =
-            item.id === "softphone"
-              ? pathname === "/dashboard/softphone"
-              : item.id === "home"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
-
-          const showBadge =
-            item.id === "softphone" && (hasActiveCall || hasInternalCall);
-
-          return (
-            <Link
-              key={item.id}
-              href={
-                item.id === "home" || item.id === "softphone" || item.id === "inbox"
-                  ? item.href
-                  : dashboardModuleHref(item.href, activeModule)
-              }
-              className="relative flex flex-col items-center justify-center gap-1 min-w-[3rem] min-h-[3.5rem] px-2 transition-transform active:scale-90"
-              aria-label={item.label}
-            >
-              {/* Badge activité appel */}
-              {showBadge && (
-                <span className="absolute top-1.5 right-2 w-2.5 h-2.5 rounded-full bg-[var(--success)] border-2 border-[var(--bg-base)] animate-pulse" />
-              )}
-
-              {/* Pill de fond sur l'item actif */}
-              {isActive && (
-                <span className="absolute inset-x-1 top-1 bottom-1 rounded-2xl bg-[var(--bg-surface)] -z-10" />
-              )}
-
-              <Icon
-                className={`w-5 h-5 transition-colors duration-150 ${
-                  isActive
-                    ? "text-[var(--brand)]"
-                    : "text-[var(--text-secondary)]"
-                }`}
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-              <span
-                className={`text-[10px] font-medium tracking-tight transition-colors duration-150 ${
-                  isActive
-                    ? "text-[var(--brand)]"
-                    : "text-[var(--text-secondary)]"
-                }`}
-              >
-                {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  );
+  const activeCall = ["ringing", "active", "connecting"].includes(callState) ||
+    ["RINGING", "ACTIVE", "CONNECTING", "OFFERING"].includes(appCallStatus);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const update = () => {
+      // Ignore pinch-zoom: accessibility zoom must not resize the app shell.
+      if (viewport.scale !== 1) return;
+      const editable = document.activeElement?.matches("input,textarea,[contenteditable=true]");
+      const keyboard = Boolean(editable && window.innerHeight - viewport.height > 120);
+      document.documentElement.dataset.keyboard = String(keyboard);
+      document.documentElement.style.setProperty("--app-viewport-height", viewport.height + "px");
+    };
+    viewport.addEventListener("resize", update);
+    document.addEventListener("focusin", update);
+    document.addEventListener("focusout", update);
+    update();
+    return () => {
+      viewport.removeEventListener("resize", update);
+      document.removeEventListener("focusin", update);
+      document.removeEventListener("focusout", update);
+      delete document.documentElement.dataset.keyboard;
+      document.documentElement.style.removeProperty("--app-viewport-height");
+    };
+  }, []);
+  useEffect(() => {
+    document.documentElement.dataset.activeCallBar = String(activeCall && pathname !== "/dashboard/softphone");
+    return () => { delete document.documentElement.dataset.activeCallBar; };
+  }, [activeCall, pathname]);
+  useEffect(() => {
+    const main = document.querySelector<HTMLElement>(".main-dashboard-content");
+    if (!main) return;
+    const key = "antigravity-scroll:" + pathname;
+    let position = 0;
+    try { position = Number(sessionStorage.getItem(key)) || 0; } catch {}
+    const frame = requestAnimationFrame(() => { main.scrollTop = position; });
+    const remember = () => { position = main.scrollTop; };
+    main.addEventListener("scroll", remember, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      main.removeEventListener("scroll", remember);
+      try { sessionStorage.setItem(key, String(position)); } catch {}
+    };
+  }, [pathname]);
+  return <nav aria-label="Navigation principale" className="mobile-bottom-nav md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--border-subtle)] bg-[var(--bg-base)]">
+    {activeCall && pathname !== "/dashboard/softphone" && <Link href="/dashboard/softphone" className="absolute bottom-full inset-x-3 mb-2 min-h-11 rounded-xl px-4 flex items-center justify-between bg-[var(--success)] text-[var(--bg-base)] shadow-lg">
+      <span className="flex items-center gap-2 text-sm font-semibold"><Phone className="h-4 w-4" /> Revenir à l’appel</span><ArrowUpRight className="h-4 w-4" />
+    </Link>}
+    <div className="grid grid-cols-5 h-16 px-1">
+      {ITEMS.map(item => {
+        const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+        const Icon = item.icon;
+        return <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined}
+          className={"relative min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl touch-manipulation transition-colors " + (isActive ? "text-[var(--brand)]" : "text-[var(--text-secondary)]")}>
+          <span className={"grid h-7 w-12 place-items-center rounded-full " + (isActive ? "bg-[var(--bg-surface-hover)]" : "")}><Icon aria-hidden="true" className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.8} /></span>
+          <span className="text-[11px] font-medium">{item.label}</span>
+          {item.label === "Appels" && activeCall && <span className="absolute right-4 top-2 h-2 w-2 rounded-full bg-[var(--success)]"><span className="sr-only">Appel en cours</span></span>}
+        </Link>;
+      })}
+    </div>
+  </nav>;
 }

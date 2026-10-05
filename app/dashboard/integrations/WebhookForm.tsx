@@ -23,7 +23,7 @@ export default function WebhookForm({ initialUrl, initialSecret }: { initialUrl:
     <Card className="p-6 mt-8">
       <h2 className="text-xl font-bold mb-2">Webhooks Sortants (Générique)</h2>
       <p className="text-[var(--text-secondary)] text-sm mb-6">
-        Connectez Antigravity à Zapier, Make, Pipedream ou votre propre serveur. Nous enverrons un payload JSON à cette URL pour chaque événement clé (ticket.escalated, message.received, call.completed).
+        Connectez Buster Call à Zapier, Make, Pipedream ou votre propre serveur. Nous enverrons un payload JSON à cette URL pour chaque événement clé (ticket.escalated, message.received, call.completed).
       </p>
 
       <form action={handleSubmit} className="space-y-4 max-w-2xl">

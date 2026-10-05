@@ -2,7 +2,7 @@ import { getCallLogs } from "./actions";
 import { CallLogsClient } from "./CallLogsClient";
 
 export const metadata = {
-  title: "Call Logs | Antigravity",
+  title: "Call Logs | Buster Call",
 };
 
 export default async function CallLogsPage() {

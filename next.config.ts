@@ -58,14 +58,30 @@ export default withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   register: true,
-  reloadOnOnline: true,
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
+  cacheStartUrl: false,
+  fallbacks: { document: "/~offline" },
+  reloadOnOnline: false,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
   customWorkerSrc: "worker", // Injecte le contenu de worker/index.ts dans le sw généré
   workboxOptions: {
     cleanupOutdatedCaches: true,
-    skipWaiting: true,
-    clientsClaim: true,
+    runtimeCaching: [
+      { urlPattern: /\/api\//, handler: "NetworkOnly" },
+      { urlPattern: ({ request }) => request.mode === "navigate", handler: "NetworkOnly" },
+      {
+        urlPattern: ({ url }) => url.pathname.startsWith("/_next/static/"),
+        handler: "CacheFirst",
+        options: { cacheName: "app-static-v1", expiration: { maxEntries: 160, maxAgeSeconds: 2592000 } },
+      },
+      {
+        urlPattern: ({ url, sameOrigin }) => sameOrigin && /^\/icon-\d+x\d+\.png$/.test(url.pathname),
+        handler: "StaleWhileRevalidate",
+        options: { cacheName: "app-assets-v1", expiration: { maxEntries: 80, maxAgeSeconds: 604800 } },
+      },
+    ],
+    skipWaiting: false,
+    clientsClaim: false,
   },
 })(withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,

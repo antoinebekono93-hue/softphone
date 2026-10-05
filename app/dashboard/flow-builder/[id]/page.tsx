@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { FlowEditorClient } from "./FlowEditorClient";
 
 export const metadata = {
-  title: 'Flow Editor | Antigravity',
+  title: 'Flow Editor | Buster Call',
 };
 
 export default async function FlowEditorPage({ params }: { params: Promise<{ id: string }> }) {

@@ -2,7 +2,7 @@ import { getContacts, getContactGroups } from "./actions";
 import { ContactsClient } from "./ContactsClient";
 
 export const metadata = {
-  title: "Contacts | Antigravity",
+  title: "Contacts | Buster Call",
 };
 
 export default async function ContactsPage() {

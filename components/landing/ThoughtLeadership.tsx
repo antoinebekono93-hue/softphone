@@ -24,7 +24,7 @@ const resources = [
   },
   {
     category: "Blog",
-    title: "5 raisons de passer au softphone IA",
+    title: "5 raisons de choisir Buster Call",
     description: "De la réduction des coûts à l'amélioration de l'expérience client, découvrez pourquoi les entreprises migrent.",
     cta: "Lire l'article",
     icon: (

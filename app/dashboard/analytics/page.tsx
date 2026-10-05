@@ -7,7 +7,7 @@ import AnalyticsCharts from './AnalyticsCharts';
 import { Card } from "@/components/ui/card";
 
 export const metadata = {
-  title: 'Centre de Commandement Analytique | Antigravity',
+  title: 'Centre de Commandement Analytique | Buster Call',
 };
 
 export default async function AnalyticsPage() {

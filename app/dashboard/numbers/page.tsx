@@ -4,7 +4,7 @@ import { getNumbers, getUsers } from "./actions";
 import { NumbersClient } from "./NumbersClient";
 
 export const metadata = {
-  title: "Phone Numbers | Antigravity",
+  title: "Phone Numbers | Buster Call",
 };
 
 export default async function NumbersPage() {

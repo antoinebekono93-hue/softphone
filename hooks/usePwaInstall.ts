@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Download } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -11,12 +10,14 @@ interface BeforeInstallPromptEvent extends Event {
 /**
  * Hook qui capture l'événement `beforeinstallprompt` (Chrome Android / Edge)
  * et expose une fonction `triggerPrompt` pour déclencher l'installation à la demande.
- * Safari / Firefox ne supportent pas cet event — la bannière n'apparaîtra pas.
+ * Sur iOS Safari (pas de beforeinstallprompt), expose `isIOS` pour afficher les
+ * instructions manuelles "Partager → Ajouter à l'écran d'accueil".
  */
 export function usePwaInstall() {
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [wasDismissed, setWasDismissed] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     // Vérifier si déjà installé (standalone)
@@ -28,6 +29,13 @@ export function usePwaInstall() {
       setIsInstalled(true);
       return;
     }
+
+    // Détecter iOS (iPhone, iPad, iPod) — Safari ne supporte pas beforeinstallprompt
+    const ua = window.navigator.userAgent;
+    const iosDevice =
+      /iPhone|iPad|iPod/.test(ua) &&
+      !(window as unknown as { MSStream?: unknown }).MSStream;
+    setIsIOS(iosDevice);
 
     // Ne pas re-proposer si déjà refusé dans cette session
     const dismissed = sessionStorage.getItem("pwa-install-dismissed");
@@ -43,14 +51,15 @@ export function usePwaInstall() {
 
     window.addEventListener("beforeinstallprompt", handler);
 
-    // Détecter si installé après le prompt
-    window.addEventListener("appinstalled", () => {
+    const onInstalled = () => {
       setIsInstalled(true);
       setInstallPrompt(null);
-    });
+    };
+    window.addEventListener("appinstalled", onInstalled);
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
 
@@ -70,7 +79,8 @@ export function usePwaInstall() {
     setInstallPrompt(null);
   }, []);
 
-  const canInstall = !!installPrompt && !isInstalled && !wasDismissed;
+  // canInstall = vrai si prompt Chrome/Android dispo OU si iOS (pour afficher les instructions manuelles)
+  const canInstall = (!!installPrompt || isIOS) && !isInstalled && !wasDismissed;
 
-  return { canInstall, triggerPrompt, dismiss, isInstalled };
+  return { canInstall, triggerPrompt, dismiss, isInstalled, isIOS };
 }

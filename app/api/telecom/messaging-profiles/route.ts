@@ -25,13 +25,13 @@ export async function POST(request: Request) {
       name: name.trim(), webhook_url: webhookUrl, webhook_api_version: '2',
       whitelisted_destinations: ['US'], enabled: false,
     }, { maxRetries: 0 });
-    if (!response.data?.id) throw new Error('Missing Telnyx profile ID');
+    if (!response.data?.id) throw new Error('Profil non confirme');
     const profile = await prisma.messagingProfile.create({
       data: { telnyxId: response.data.id, name: name.trim(), webhookUrl, organizationId: session.user.organizationId },
     });
     return NextResponse.json({ profile });
   } catch (error) {
     console.error('[Messaging profile create]', error);
-    return NextResponse.json({ error: 'Création non confirmée. Vérifiez les profils Telnyx avant de réessayer.' }, { status: 502 });
+    return NextResponse.json({ error: 'Création non confirmée. Vérifiez les profils avant de réessayer.' }, { status: 502 });
   }
 }

@@ -3,7 +3,7 @@ import { MarketingLayout, PageHero, SectionHeading, FAQAccordion, ROIBand, Inter
 import { TrustBar, ComplianceBadges, FinalCTA } from "@/components/landing";
 
 export const metadata = {
-  title: "Réceptionniste IA 24/7 | Antigravity",
+  title: "Réceptionniste IA 24/7 | Buster Call",
   description:
     "Ne manquez plus jamais un appel. Votre réceptionniste IA décroche à votre place, qualifie les prospects, prend les rendez-vous et protège votre marque — 24h/24, 7j/7.",
 };

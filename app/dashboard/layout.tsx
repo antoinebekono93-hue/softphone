@@ -1,3 +1,4 @@
+import { CommunicationProvider } from "@/components/providers/CommunicationProvider";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
@@ -39,7 +40,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-[var(--bg-base)] overflow-hidden text-[var(--text-primary)] font-sans">
+    <CommunicationProvider>
+    <div className="dashboard-shell flex flex-col h-[100dvh] bg-[var(--bg-base)] overflow-hidden text-[var(--text-primary)] font-sans">
       {/* TopNavbar — desktop uniquement */}
       <TopNavbar
         organizationName={session?.user?.organizationName}
@@ -59,7 +61,7 @@ export default async function DashboardLayout({
         {/* Main Content
             Desktop : pas de padding top (pt-16 sur le flex parent via md:pt-16)
             Mobile : padding top = hauteur header (3.5rem) + safe-area top
-                     padding bottom = hauteur bottomnav (3.5rem) + safe-area bottom */}
+                     padding bottom = hauteur bottomnav (4rem) + safe-area bottom */}
         <main
           className="flex-1 relative overflow-y-auto bg-transparent main-dashboard-content"
         >
@@ -70,5 +72,6 @@ export default async function DashboardLayout({
       {/* Navigation mobile en bas — uniquement visible sur mobile */}
       <MobileBottomNav />
     </div>
+    </CommunicationProvider>
   );
 }

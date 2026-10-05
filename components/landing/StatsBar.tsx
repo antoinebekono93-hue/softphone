@@ -6,7 +6,7 @@ const capabilities = [
   { value: "24/7", label: "Agents vocaux disponibles en continu" },
   { value: "Appels internes", label: "illimités entre utilisateurs (app-to-app)" },
   { value: "Multi-canal", label: "voix, SMS et WhatsApp dans une boîte unique" },
-  { value: "PWA", label: "Softphone web, mobile et desktop" },
+  { value: "PWA", label: "Buster Call web, mobile et desktop" },
 ];
 
 export default function StatsBar() {

@@ -16,7 +16,7 @@ export default function GodModeVoicePage() {
            <PhoneCall className="text-cyan-500" />
            Gestion Vocale (Appels & IA)
         </h1>
-        <p className="text-[var(--text-secondary)]">Contrôlez l'infrastructure vocale, le routage Telnyx et les agents IA.</p>
+        <p className="text-[var(--text-secondary)]">Contrôlez l'infrastructure vocale, le routage et les agents IA.</p>
       </div>
 
       {/* KPIs Prioritaires */}
@@ -62,7 +62,7 @@ export default function GodModeVoicePage() {
                Configuration d'Application (Voice API)
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-6">
-               Paramètres de connexion avec l'API Telnyx Call Control.
+               Paramètres de connexion Call Control.
             </p>
 
             {/* Webhook Setup */}
@@ -74,7 +74,7 @@ export default function GodModeVoicePage() {
                   onChange={(e) => setWebhookUrl(e.target.value)}
                   className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-lg px-4 py-3 text-[var(--text-primary)] font-mono text-sm focus:border-cyan-500 outline-none transition-colors"
                />
-               <p className="text-xs text-[var(--text-secondary)] mt-2">URL appelée par Telnyx pour gérer les événements en temps réel (Answer, Hangup, DTMF).</p>
+               <p className="text-xs text-[var(--text-secondary)] mt-2">URL de webhook pour gérer les événements d’appel en temps réel (Answer, Hangup, DTMF).</p>
             </div>
 
             {/* Latence & Codecs */}

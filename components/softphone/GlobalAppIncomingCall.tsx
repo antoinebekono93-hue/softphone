@@ -23,7 +23,7 @@ export function GlobalAppIncomingCall() {
     "Collègue";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
       <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl glass-panel bg-[var(--bg-glass)] p-6 sm:p-10 flex flex-col items-center relative animate-in zoom-in-95 duration-300 shadow-2xl">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-[var(--success)]/10 blur-[60px] rounded-full pointer-events-none" />
 

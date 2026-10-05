@@ -72,9 +72,9 @@ const tabs = [
     border: "border-emerald-500/50",
     gradient: "from-emerald-500/10",
     title: "S'intègre avec votre écosystème actuel",
-    description: "Connectez Antigravity aux briques techniques utilisées par la plateforme et à vos propres systèmes.",
+    description: "Connectez Buster Call aux briques techniques utilisées par la plateforme et à vos propres systèmes.",
     features: [
-      "Téléphonie et WhatsApp via Telnyx",
+      "Téléphonie et WhatsApp",
       "Messagerie Meta et IA vocale",
       "Webhooks sortants authentifiés",
       "Import de documents pour les agents IA"

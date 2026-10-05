@@ -1343,7 +1343,7 @@ export function AppCallProvider({ children }: { children: ReactNode }) {
   // 3. Exposer les contrôles médias de l'OS (écran de verrouillage)
   useMediaSession({
     title: incomingAppCall?.callerName || outboundPeer?.name || "Appel Interne",
-    artist: "Antigravity (App-to-App)",
+    artist: "Buster Call (App-to-App)",
     isActive: appCallStatus === "ACTIVE" || appCallStatus === "RINGING" || appCallStatus === "CONNECTING",
     onHangup: () => {
       if (appCallStatus === "RINGING" && incomingAppCall) {

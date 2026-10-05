@@ -147,7 +147,7 @@ export function DashboardSidebar({
             {organizationName?.charAt(0)?.toUpperCase() || "A"}
           </div>
           <span className="font-semibold text-sm text-[var(--text-primary)] tracking-tight">
-            {organizationName || "Antigravity"}
+            {organizationName || "Buster Call"}
           </span>
         </div>
         <button
@@ -170,7 +170,7 @@ export function DashboardSidebar({
       {/* Sidebar */}
       <div 
         className={`fixed md:relative top-0 left-0 z-50 flex flex-col bg-[var(--bg-base)] border-r border-[var(--border-subtle)] transition-all duration-300 ease-out
-          h-screen md:h-[calc(100vh-4rem)]
+          h-dvh md:h-[calc(100vh-4rem)] pt-[env(safe-area-inset-top)] md:pt-0 pb-[env(safe-area-inset-bottom)] md:pb-0
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} 
           ${isCollapsed ? 'w-[72px]' : 'w-[260px]'}
         `}
@@ -178,13 +178,14 @@ export function DashboardSidebar({
         {/* Mobile Close Button inside Sidebar */}
         <button 
           onClick={closeMobile} 
-          className="md:hidden absolute top-4 right-4 text-[var(--text-secondary)] p-1 hover:bg-[var(--bg-surface-hover)] rounded-lg transition-colors"
+          aria-label="Fermer le menu"
+          className="md:hidden absolute top-[calc(env(safe-area-inset-top)+1rem)] right-4 min-h-11 min-w-11 grid place-items-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-hover)] rounded-lg transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8 mt-12 md:mt-0">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain py-6 px-3 space-y-8 mt-14 md:mt-0">
           {navGroups.map((group, idx) => (
             <div key={idx}>
               {!isCollapsed && (
@@ -201,7 +202,7 @@ export function DashboardSidebar({
                       <Link
                         href={dashboardModuleHref(item.href, activeModule)}
                         onClick={() => setIsMobileOpen(false)}
-                        className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
+                        className={`group flex items-center gap-3 px-3 py-3 md:py-2.5 rounded-xl text-sm transition-all duration-200 ${
                           isActive 
                             ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] font-semibold shadow-sm border border-[var(--border-subtle)]' 
                             : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] hover:text-[var(--text-primary)]'

@@ -4,7 +4,7 @@ import type { Integration } from "@/components/marketing";
 import { FinalCTA } from "@/components/landing";
 
 export const metadata = {
-  title: "Intégrations | Antigravity",
+  title: "Intégrations | Buster Call",
   description:
     "Les intégrations réellement disponibles dans la plateforme : téléphonie PSTN, WhatsApp Business, Messenger et Instagram via Meta, IA vocale et webhooks sortants.",
 };
@@ -98,7 +98,7 @@ export default function IntegrationsPage() {
             Une téléphonie IA, <span className="n8n-gradient-text">connectée à vos outils</span>
           </>
         }
-        subtitle="Voici les intégrations réellement présentes dans la plateforme aujourd'hui. Toute mention d'un éditeur signifie que ses API sont utilisées par Antigravity, et non que cette entreprise est notre cliente."
+        subtitle="Voici les intégrations réellement présentes dans la plateforme aujourd'hui. Toute mention d'un éditeur signifie que ses API sont utilisées par Buster Call, et non que cette entreprise est notre cliente."
       >
         <Link
           href="/register"
@@ -126,7 +126,7 @@ export default function IntegrationsPage() {
             <div>
               <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 mb-4">API & Webhooks</div>
               <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
-                Reliez Antigravity à votre système
+                Reliez Buster Call à votre système
               </h2>
               <p className="text-[var(--text-secondary)] font-medium leading-relaxed mb-8">
                 Pour tout outil non listé ci-dessus, les webhooks sortants permettent de transmettre les événements de

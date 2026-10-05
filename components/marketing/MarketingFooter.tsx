@@ -58,7 +58,7 @@ export default function MarketingFooter() {
             <span className="font-bold text-[var(--text-primary)]">{siteConfig.brand}</span>
           </div>
           <p className="text-xs font-medium text-[var(--text-secondary)] leading-relaxed max-w-xs">
-            Téléphonie professionnelle, softphone cloud et agents vocaux IA pour les entreprises.
+            Buster Call — Téléphonie professionnelle et agents vocaux IA pour les entreprises.
           </p>
         </div>
 

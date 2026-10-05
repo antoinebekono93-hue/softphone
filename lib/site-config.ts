@@ -2,13 +2,18 @@
   return (process.env[name] || "").trim();
 }
 
+/**
+ * Canonical public origin of the site.
+ * `NEXT_PUBLIC_SITE_URL` is authoritative; the deployed Vercel origin is the
+ * fallback so canonicals, sitemap and OpenGraph never point at localhost.
+ */
 export const siteConfig = {
   url:
     readEnv("NEXT_PUBLIC_SITE_URL") ||
     readEnv("NEXT_PUBLIC_APP_URL") ||
-    "http://localhost:3000",
-  brand: "Antigravity",
-  product: "Antigravity",
+    "https://softphone-xi.vercel.app",
+  brand: "Buster Call",
+  product: "Buster Call",
   /**
    * Single source of truth for the publisher identity.
    * Every value is empty until the business provides it: nothing is invented.
@@ -51,7 +56,7 @@ const allChannels: SupportChannel[] = [
     id: "product",
     title: "Support produit",
     scope:
-      "Softphone, appels, numéros, routage, agents IA, anomalie de fonctionnement, incident technique.",
+      "Buster Call, appels, numéros, routage, agents IA, anomalie de fonctionnement, incident technique.",
     email: readEnv("NEXT_PUBLIC_SUPPORT_EMAIL"),
     responseTime: "Délai de réponse indicatif communiqué sur cette page.",
     phone: readEnv("NEXT_PUBLIC_SUPPORT_PHONE"),

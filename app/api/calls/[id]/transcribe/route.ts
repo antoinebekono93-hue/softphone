@@ -31,7 +31,7 @@ export async function POST(
     }
 
     if (!process.env.TELNYX_API_KEY) {
-      return NextResponse.json({ error: "Telnyx API key not configured" }, { status: 500 });
+      return NextResponse.json({ error: "Service de transcription non configure" }, { status: 500 });
     }
 
     // Telnyx STT API expects multipart/form-data

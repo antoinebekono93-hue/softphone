@@ -3,7 +3,7 @@ import { MarketingLayout, PageHero, SectionHeading, FAQAccordion, ROIBand } from
 import { TrustBar, ComplianceBadges, FinalCTA } from "@/components/landing";
 
 export const metadata = {
-  title: "IA Vocale Antigravity | Téléphonie intelligente",
+  title: "IA Vocale Buster Call | Téléphonie intelligente",
   description:
     "Une plateforme IA qui écoute, comprend et agit sur chaque appel : agents vocaux, transcription, routage intelligent et analytiques.",
 };
@@ -33,9 +33,9 @@ const channels = [
 
 const faqItems = [
   {
-    question: "Antigravity remplace-t-il mon téléphone actuel ?",
+    question: "Buster Call remplace-t-il mon téléphone actuel ?",
     answer:
-      "Oui. Vous conservez votre numéro (portabilité gratuite) et vous basculez vers la softphone Antigravity et ses numéros. Aucun matériel à installer : tout fonctionne dans le navigateur ou l'application.",
+      "Oui. Vous conservez votre numéro (portabilité gratuite) et vous basculez vers la softphone Buster Call et ses numéros. Aucun matériel à installer : tout fonctionne dans le navigateur ou l'application.",
   },
   {
     question: "Quels autres canaux les agents IA gèrent-ils ?",
@@ -70,7 +70,7 @@ export default function AISummaryPage() {
             La téléphonie qui <span className="n8n-gradient-text">écoute, comprend et agit</span>
           </>
         }
-        subtitle="Antigravity transforme chaque appel en donnée actionnable : transcription, sentiment, qualification, CRM, rendez-vous. Tout est automatisé, tout est mesuré."
+        subtitle="Buster Call transforme chaque appel en donnée actionnable : transcription, sentiment, qualification, CRM, rendez-vous. Tout est automatisé, tout est mesuré."
       >
         <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Essayer l'IA vocale

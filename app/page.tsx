@@ -20,7 +20,7 @@ import {
 export const metadata: Metadata = {
   title: "Téléphonie professionnelle et agents vocaux IA",
   description:
-    "Numéros professionnels, softphone web et mobile, appels internes, routage, SMS et WhatsApp, agents vocaux IA et analytiques : une plateforme de communication B2B.",
+    "Numéros professionnels, Buster Call web et mobile, appels internes, routage, SMS et WhatsApp, agents vocaux IA et analytiques : une plateforme de communication B2B.",
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     url: "/",
     title: `${siteConfig.brand} — Téléphonie professionnelle et agents vocaux IA`,
     description:
-      "Numéros professionnels, softphone cloud, routage d'appels, messagerie multicanal et agents vocaux assistés par intelligence artificielle.",
+      "Numéros professionnels, Buster Call, routage d'appels, messagerie multicanal et agents vocaux assistés par intelligence artificielle.",
   },
 };
 
@@ -93,7 +93,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 text-center">
            <h2 className="text-3xl md:text-4xl font-extrabold mb-12 text-[var(--text-primary)]">S&apos;intègre avec votre <span className="text-gradient">écosystème actuel.</span></h2>
 <div className="flex flex-wrap justify-center items-center gap-10 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-            <div className="text-2xl font-bold text-[var(--text-primary)]">Telnyx</div>
+            
             <div className="text-2xl font-bold text-[var(--text-primary)]">WhatsApp Business</div>
             <div className="text-2xl font-bold text-[var(--text-primary)]">Meta</div>
             <div className="text-2xl font-bold text-[var(--text-primary)]">OpenAI</div>

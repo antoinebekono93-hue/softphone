@@ -37,14 +37,14 @@ export async function getSystemSettings() {
 export async function saveTelnyxApiKey(apiKey: string) {
   await requireSuperAdmin();
   const normalized = apiKey.trim();
-  if (!normalized) return { error: "La clé API Telnyx est obligatoire." };
+  if (!normalized) return { error: "La clé API est obligatoire." };
   // Validate before replacing the operational key. An invalid secret must
   // never take the production control plane offline.
   const validation = await fetch("https://api.telnyx.com/v2/balance", {
     headers: { Authorization: `Bearer ${normalized}`, Accept: "application/json" },
     cache: "no-store",
   });
-  if (!validation.ok) return { error: `Telnyx a refusé cette clé (HTTP ${validation.status}).` };
+  if (!validation.ok) return { error: `Clé refusée par le fournisseur (HTTP ${validation.status}).` };
   await prisma.systemSettings.upsert({
     where: { id: "default" },
     update: { telnyxApiKey: normalized },
@@ -59,7 +59,7 @@ export async function saveTelnyxPublicKey(publicKey: string) {
   await requireSuperAdmin();
   const normalized = publicKey.trim();
   if (!/^[A-Za-z0-9+/_=-]{32,512}$/.test(normalized)) {
-    return { error: "La clé publique Ed25519 Telnyx est invalide." };
+    return { error: "La clé publique Ed25519 est invalide." };
   }
   await prisma.systemSettings.upsert({
     where: { id: "default" },
@@ -77,7 +77,7 @@ async function configuredApiKey() {
     select: { telnyxApiKey: true },
   });
   const apiKey = settings?.telnyxApiKey?.trim() || process.env.TELNYX_API_KEY?.trim();
-  if (!apiKey) throw new Error("Clé API Telnyx non configurée dans God Mode.");
+  if (!apiKey) throw new Error("Clé API non configurée dans God Mode.");
   return apiKey;
 }
 
@@ -597,7 +597,7 @@ export async function setUserVoiceAccess(userId: string, enabled: boolean) {
       });
       if (!response.ok && response.status !== 404) throw new Error(`HTTP ${response.status}`);
     } catch (error: any) {
-      return { error: `Telnyx n'a pas pu révoquer le credential : ${error.message}` };
+      return { error: `Le fournisseur n'a pas pu révoquer le credential : ${error.message}` };
     }
   }
 

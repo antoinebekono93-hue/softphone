@@ -39,7 +39,7 @@ const NODE_COLORS = {
 export default function IvrBuilderClient({ initialNodes }: { initialNodes: IvrNode[] | null }) {
   // Default fallback tree if none exists
   const defaultTree: IvrNode[] = [
-    { id: "start", type: "GREETING", title: "Message de bienvenue", config: { text: "Bonjour et bienvenue chez Antigravity." }, nextId: "menu_1" },
+    { id: "start", type: "GREETING", title: "Message de bienvenue", config: { text: "Bonjour et bienvenue chez Buster Call." }, nextId: "menu_1" },
     { id: "menu_1", type: "MENU", title: "Menu Principal", config: { text: "Tapez 1 pour parler à notre IA. Tapez 2 pour l'équipe." }, nextId: null, options: [
       { digit: "1", nextId: "ai_1" },
       { digit: "2", nextId: "team_1" }

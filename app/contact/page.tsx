@@ -8,7 +8,7 @@ const metaTitle = "Contact";
 export const metadata: Metadata = {
   title: metaTitle,
   description:
-    "Contactez Antigravity : support produit, support commercial, support paiement et facturation, questions juridiques et protection des données personnelles.",
+    `Contactez ${siteConfig.brand} : support produit, support commercial, support paiement et facturation, questions juridiques et protection des données personnelles.`,
   alternates: { canonical: "/contact" },
   openGraph: {
     type: "website",

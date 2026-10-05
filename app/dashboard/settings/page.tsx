@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { WalletSection } from "./WalletSection";
 
 export const metadata = {
-  title: "Settings | Antigravity",
+  title: "Settings | Buster Call",
 };
 
 export default async function SettingsPage() {

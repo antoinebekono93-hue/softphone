@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import InboxClient from "./InboxClient";
 
 export const metadata = {
-  title: "Boîte de réception Omnicanale | Antigravity",
+  title: "Boîte de réception Omnicanale | Buster Call",
 };
 
 export default async function InboxPage() {
@@ -13,7 +13,7 @@ export default async function InboxPage() {
 
   return (
     <div className="h-full w-full flex overflow-hidden bg-[var(--bg-base)]">
-      <InboxClient organizationId={orgId} />
+      <InboxClient key={orgId + ":" + session.user.id} organizationId={orgId} userId={session.user.id} />
     </div>
   );
 }

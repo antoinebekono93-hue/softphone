@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import IvrBuilderClient from "./IvrBuilderClient";
 
 export const metadata = {
-  title: "Éditeur SVI | Antigravity",
+  title: "Éditeur SVI | Buster Call",
 };
 
 export default async function IvrPage() {

@@ -10,7 +10,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
       <header className="w-full p-6 flex justify-between items-center border-b border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/40 backdrop-blur-xl">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-cyan-500 to-violet-500 shadow-[0_0_15px_rgba(0,212,255,0.3)]"></div>
-          <div className="text-xl font-bold tracking-tight">Antigravity</div>
+          <div className="text-xl font-bold tracking-tight">Buster Call</div>
         </div>
         <div className="text-sm text-[var(--text-secondary)] font-medium">Setup Assistant</div>
       </header>

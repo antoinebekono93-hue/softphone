@@ -104,7 +104,7 @@ export function Softphone() {
   const isCallActive = callState === "active";
 
   return (
-    <div className="relative w-full max-w-md mx-auto h-[min(90vh,750px)] supports-[height:100dvh]:h-[min(92dvh,750px)] glass-panel bg-[var(--bg-glass)] overflow-hidden flex flex-col">
+    <div className="relative w-full max-w-md mx-auto h-full min-h-[480px] max-h-[750px] glass-panel bg-[var(--bg-glass)] overflow-hidden flex flex-col">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-4 pb-2 relative z-10">
         <div className="flex items-center gap-2 min-w-0">

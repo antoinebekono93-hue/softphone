@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "Boîte de réception | Antigravity",
+  title: "Boîte de réception | Buster Call",
 };
 
 export default async function InboxPage() {

@@ -49,7 +49,7 @@ export default function HeroSection() {
         transition={{ duration: 0.3 }}
         className="text-5xl md:text-[5.5rem] font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.05] text-[var(--text-primary)]"
       >
-        <WordReveal text="Le Softphone IA qui révolutionne votre" delay={0.1} />
+        <WordReveal text="Buster Call — Le système télécom qui révolutionne votre" delay={0.1} />
         <span className="n8n-gradient-text">
           <WordReveal text="relation client." delay={0.42} />
         </span>
@@ -62,7 +62,7 @@ export default function HeroSection() {
         transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
         className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
       >
-        Une plateforme pour centraliser vos appels, vos numéros professionnels et vos agents vocaux IA dans un seul softphone web.
+        Une plateforme pour centraliser vos appels, vos numéros professionnels et vos agents vocaux IA dans Buster Call.
       </motion.p>
 
       {/* CTAs */}
@@ -97,7 +97,7 @@ export default function HeroSection() {
         transition={{ duration: 0.7, delay: 1.0, ease: EASE }}
         className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-[var(--text-secondary)] mb-16"
       >
-        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Softphone web, mobile et desktop</span>
+        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Buster Call web, mobile et desktop</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Numéros professionnels par utilisateur</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Appels internes illimités entre utilisateurs (app-to-app)</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Sans carte bancaire pour créer un compte</span>
@@ -122,7 +122,7 @@ export default function HeroSection() {
               <div className="w-1/3 flex justify-center">
                 <div className="bg-[var(--bg-surface-hover)] rounded-md text-xs text-[var(--text-secondary)] py-1.5 px-4 font-medium flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                  app.antigravity.fr
+                  app.bustercall.fr
                 </div>
               </div>
               <div className="w-1/3 flex justify-end gap-3 text-[var(--text-secondary)]">

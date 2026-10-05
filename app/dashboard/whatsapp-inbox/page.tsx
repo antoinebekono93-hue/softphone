@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export const metadata = {
-  title: "WhatsApp Inbox | Antigravity",
+  title: "WhatsApp Inbox | Buster Call",
 };
 
 export default async function WhatsAppInboxPage() {

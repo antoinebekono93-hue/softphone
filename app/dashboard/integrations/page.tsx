@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import WebhookForm from "./WebhookForm";
 
 export const metadata = {
-  title: "Integrations | Antigravity",
+  title: "Integrations | Buster Call",
 };
 
 export default async function IntegrationsPage() {
@@ -22,7 +22,7 @@ export default async function IntegrationsPage() {
     { id: "slack", name: "Slack", description: "Send call logs, voicemail transcripts, and SMS to Slack channels.", icon: "slack", status: "Connected", color: "bg-[#4A154B]" },
     { id: "hubspot", name: "HubSpot", description: "Automatically log calls and SMS to your HubSpot CRM contacts.", icon: "hubspot", status: "Connect", color: "bg-[#FF7A59]" },
     { id: "salesforce", name: "Salesforce", description: "Deep integration with Salesforce for enterprise call logging.", icon: "salesforce", status: "Connect", color: "bg-[#00A1E0]" },
-    { id: "zapier", name: "Zapier", description: "Connect Antigravity to 5000+ apps with Zapier workflows.", icon: "zapier", status: "Connect", color: "bg-[#FF4A00]" },
+    { id: "zapier", name: "Zapier", description: "Connect Buster Call to 5000+ apps with Zapier workflows.", icon: "zapier", status: "Connect", color: "bg-[#FF4A00]" },
     { id: "gong", name: "Gong", description: "Send call recordings to Gong for revenue intelligence analysis.", icon: "gong", status: "Connect", color: "bg-[#5D3FD3]" },
     { id: "zendesk", name: "Zendesk", description: "Create tickets automatically for missed calls and voicemails.", icon: "zendesk", status: "Connect", color: "bg-[#03363D]" },
   ];
@@ -31,7 +31,7 @@ export default async function IntegrationsPage() {
     <div className="p-8 max-w-7xl mx-auto w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Integrations</h1>
-        <p className="text-[var(--text-secondary)]">Connect Antigravity with your favorite tools to automate your workflows.</p>
+        <p className="text-[var(--text-secondary)]">Connect Buster Call with your favorite tools to automate your workflows.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

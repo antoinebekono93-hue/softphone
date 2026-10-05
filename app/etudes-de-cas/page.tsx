@@ -3,7 +3,7 @@ import { MarketingLayout, PageHero, SectionHeading } from "@/components/marketin
 import { FinalCTA } from "@/components/landing";
 
 export const metadata = {
-  title: "Scénarios d'usage | Antigravity",
+  title: "Scénarios d'usage | Buster Call",
   description:
     "Exemples illustratifs d'organisations qui centralisent leurs appels, leurs numéros et leurs agents vocaux IA avec un softphone web.",
 };
@@ -70,7 +70,7 @@ export default function CaseStudiesPage() {
             Des situations concrètes <span className="n8n-gradient-text">que la plateforme adresse</span>
           </>
         }
-        subtitle="Voici des scénarios d'usage types, описants comment une organisation peut centraliser ses communications avec Antigravity."
+        subtitle="Voici des scénarios d'usage types, описants comment une organisation peut centraliser ses communications avec Buster Call."
       >
         <Link href="/register" className="n8n-gradient-bg text-white px-8 py-3 rounded-full font-bold text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 transition-transform">
           Créer un compte

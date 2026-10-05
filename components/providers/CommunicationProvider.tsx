@@ -1,0 +1,14 @@
+"use client";
+import { AppCallProvider } from "@/contexts/AppCallContext";
+import { TelnyxProvider } from "@/contexts/TelnyxContext";
+import { GlobalIncomingCall } from "@/components/softphone/GlobalIncomingCall";
+import { GlobalAppIncomingCall } from "@/components/softphone/GlobalAppIncomingCall";
+
+// Mounted once for the authenticated workspace; survives page/tab navigation.
+export function CommunicationProvider({ children }: { children: React.ReactNode }) {
+  return <AppCallProvider><TelnyxProvider>
+    {children}
+    <GlobalIncomingCall />
+    <GlobalAppIncomingCall />
+  </TelnyxProvider></AppCallProvider>;
+}

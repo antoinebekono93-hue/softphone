@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
     if (type === 'ESIM') {
       if (!process.env.TELNYX_API_KEY) {
-        return NextResponse.json({ error: "Configuration API Telnyx manquante" }, { status: 500 });
+        return NextResponse.json({ error: "Configuration du service manquante" }, { status: 500 });
       }
 
       // Call Telnyx API to purchase eSIM
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
       if (!res.ok) {
         const err = await res.text();
         console.error("Telnyx eSIM Purchase Error:", err);
-        return NextResponse.json({ error: "Erreur lors de la commande de l'eSIM chez Telnyx." }, { status: 500 });
+        return NextResponse.json({ error: "Erreur lors de la commande de l'eSIM." }, { status: 500 });
       }
 
       const json = await res.json();

@@ -20,7 +20,7 @@ export default function GlobalError({
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Erreur - Antigravity</title>
+        <title>Erreur - Buster Call</title>
       </head>
       <body className="flex flex-col items-center justify-center min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] p-8">
         <div className="text-center max-w-md">

@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       }
       return NextResponse.json(
         { error: status >= 400 && status < 500
-          ? 'Telnyx a refusé le message. Le montant a été remboursé.'
+          ? 'Le service a refusé le message. Le montant a été remboursé.'
           : 'Envoi non confirmé. Le débit reste réservé pour éviter une double soumission.' },
         { status: 502 }
       );

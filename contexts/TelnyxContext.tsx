@@ -131,7 +131,7 @@ export const TelnyxProvider = ({ children }: { children: React.ReactNode }) => {
   // 3. Exposer les contrôles médias de l'OS (écran de verrouillage)
   useMediaSession({
     title: incomingCallerId || "Appel",
-    artist: "Antigravity (Telnyx)",
+    artist: "Buster Call (Telnyx)",
     isActive: callState === "active" || callState === "ringing" || callState === "connecting",
     onHangup: () => {
       // Dépend du callback défini plus bas

@@ -13,7 +13,7 @@ const metaTitle = "Politique de confidentialité";
 export const metadata: Metadata = {
   title: metaTitle,
   description:
-    "Comment Antigravity collecte, utilise, conserve et protège vos données personnelles : données de compte et de contact, historique d'appels, SMS et WhatsApp, enregistrements, transcriptions, données IA, données d'usage et de facturation.",
+    `Comment ${siteConfig.brand} collecte, utilise, conserve et protège vos données personnelles : données de compte et de contact, historique d'appels, SMS et WhatsApp, enregistrements, transcriptions, données IA, données d'usage et de facturation.`,
   alternates: { canonical: "/privacy" },
   openGraph: {
     type: "article",
@@ -424,7 +424,7 @@ export default function PrivacyPage() {
       <LegalDocument
         eyebrow="Données personnelles"
         title={metaTitle}
-        intro="Cette politique décrit les données personnelles traitées via la plateforme Antigravity, les raisons de ce traitement, les bases légales, les durées de conservation, la sécurité mise en œuvre et les modalités d'exercice de vos droits."
+        intro={`Cette politique décrit les données personnelles traitées via la plateforme ${siteConfig.brand}, les raisons de ce traitement, les bases légales, les durées de conservation, la sécurité mise en œuvre et les modalités d'exercice de vos droits.`}
         lastUpdated={siteConfig.legalEffectiveDate}
         sections={sections}
       >

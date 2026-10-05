@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import CampaignsClient from "./CampaignsClient";
 
 export const metadata = {
-  title: "Campagnes Sociales | Antigravity",
+  title: "Campagnes Sociales | Buster Call",
 };
 
 export default async function SocialCampaignsPage() {

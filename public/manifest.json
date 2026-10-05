@@ -1,18 +1,24 @@
 {
-  "name": "Antigravity",
-  "short_name": "Antigravity",
-  "description": "Système de communication omnicanale pour entreprises B2B — softphone cloud, agents vocaux IA, messagerie.",
+  "name": "Buster Call",
+  "short_name": "Buster Call",
+  "description": "Buster Call — Système de communication omnicanale pour entreprises B2B. Agents vocaux IA, messagerie multicanal.",
   "id": "/dashboard",
-  "start_url": "/dashboard",
+  "start_url": "/dashboard/inbox",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
-  "orientation": "portrait",
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "lang": "fr",
   "dir": "ltr",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",
-  "categories": ["business", "productivity", "communication"],
+  "categories": [
+    "business",
+    "productivity",
+    "communication"
+  ],
   "icons": [
     {
       "src": "/icon-192x192.png",
@@ -45,29 +51,30 @@
       "purpose": "any"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Antigravity — Dashboard"
-    }
-  ],
   "shortcuts": [
     {
-      "name": "Softphone",
+      "name": "Buster Call",
       "short_name": "Appel",
-      "description": "Ouvrir le softphone",
+      "description": "Ouvrir Buster Call",
       "url": "/dashboard/softphone",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Messagerie",
       "short_name": "Messages",
       "description": "Ouvrir la messagerie",
       "url": "/dashboard/inbox",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ],
   "related_applications": [],

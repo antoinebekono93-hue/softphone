@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { FlowListClient } from "./FlowListClient";
 
 export const metadata = {
-  title: 'Éditeur de Scénarios | Antigravity',
+  title: 'Éditeur de Scénarios | Buster Call',
 };
 
 export default async function FlowBuilderPage() {

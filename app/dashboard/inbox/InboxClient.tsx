@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Send, User, Bot, AlertTriangle, ShieldCheck, Sparkles, MessageCircle, Camera, Monitor, PhoneCall, Plus, Search, Loader2, Phone, PhoneMissed, Voicemail, Clock, Play } from "lucide-react";
+import type PusherClient from "pusher-js";
+import type { Channel } from "pusher-js";
+import { ArrowLeft, WifiOff, MessageSquare, Send, User, Bot, AlertTriangle, ShieldCheck, Sparkles, MessageCircle, Camera, Monitor, PhoneCall, Plus, Search, Loader2, Phone, PhoneMissed, Voicemail, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Modal } from "@/components/ui/modal";
+import { useMobileDetail } from "@/hooks/useMobileDetail";
+import { useOnline } from "@/hooks/useOnline";
+import { draftKey, readSnapshot, writeSnapshot } from "@/lib/offline-store";
 
 export type InboxEvent = {
   id: string;
@@ -33,6 +38,7 @@ type ContactPreview = {
 
 type OmnichannelMessage = {
   id: string;
+  status?: string;
   body: string;
   direction: string;
   type: string;
@@ -49,7 +55,9 @@ type AllContact = {
 };
 
 function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }) {
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(initialEvents.length > 0 ? initialEvents[0].id : null);
+  const eventDetail = useMobileDetail("event");
+  const selectedEventId = eventDetail.selected;
+  const setSelectedEventId = eventDetail.open;
 
   const selectedEvent = initialEvents.find(e => e.id === selectedEventId);
 
@@ -78,13 +86,13 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
   return (
     <div className="flex w-full h-full bg-[var(--bg-base)]">
       {/* Left Pane: List */}
-      <div className="w-full md:w-96 border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex flex-col h-full shrink-0">
+      <div className={`w-full md:w-96 border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex-col h-full shrink-0 ${selectedEventId ? "hidden md:flex" : "flex"}`}>
         <div className="p-4 border-b border-[var(--border-subtle)]">
           <h2 className="text-xl font-bold text-[var(--text-primary)]">Boîte de réception</h2>
           <p className="text-sm text-[var(--text-secondary)]">{initialEvents.length} événements</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto custom-scrollbar">
           {initialEvents.length === 0 ? (
             <div className="p-8 text-center text-[var(--text-secondary)]">
               Aucun message.
@@ -119,17 +127,18 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
       </div>
 
       {/* Right Pane: Detail */}
-      <div className="hidden md:flex flex-1 bg-[var(--bg-base)] flex-col h-full">
+      <div className={`min-w-0 flex-1 bg-[var(--bg-base)] flex-col h-full ${selectedEventId ? "flex" : "hidden md:flex"}`}>
         {selectedEvent ? (
           <div className="h-full flex flex-col">
             {/* Detail Header */}
-            <div className="p-6 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--bg-surface-solid)]">
+            <div className="p-3 md:p-6 border-b border-[var(--border-subtle)] flex flex-wrap gap-2 items-center justify-between bg-[var(--bg-surface-solid)]">
+              <button onClick={eventDetail.close} aria-label="Retour aux messages" className="md:hidden min-h-11 min-w-11 grid place-items-center rounded-xl hover:bg-[var(--bg-surface-hover)]"><ArrowLeft className="h-5 w-5" /></button>
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20">
                    <User className="w-6 h-6 text-cyan-400" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold font-mono tracking-tight text-[var(--text-primary)]">
+                  <h3 className="text-base md:text-2xl break-all font-bold font-mono tracking-tight text-[var(--text-primary)]">
                     {selectedEvent.direction === 'INBOUND' ? selectedEvent.from : selectedEvent.to}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
@@ -151,7 +160,7 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
             </div>
 
             {/* Detail Content */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar">
+            <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto p-6 md:p-10 custom-scrollbar">
               <div className="max-w-3xl mx-auto">
                 {/* SMS View */}
                 {(selectedEvent.type === 'SMS' || selectedEvent.type === 'WHATSAPP') && (
@@ -200,16 +209,10 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
                     </div>
 
                     {selectedEvent.status === 'VOICEMAIL' && (
-                      <Card className="p-4 flex items-center gap-4">
-                        <button className="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 hover:scale-105 transition-transform">
-                          <Play className="w-5 h-5 ml-1" />
-                        </button>
-                        <div className="flex-1">
-                          <div className="h-2 bg-[var(--bg-surface-hover)] rounded-full w-full overflow-hidden">
-                            <div className="h-full bg-cyan-500 w-1/3 rounded-full"></div>
-                          </div>
-                        </div>
-                        <span className="text-sm font-mono text-[var(--text-secondary)]">0:12 / 0:25</span>
+                      <Card className="p-4">
+                        {selectedEvent.recordingUrl
+                          ? <audio controls preload="none" src={selectedEvent.recordingUrl} className="w-full" aria-label="Message vocal" />
+                          : <p className="text-sm text-[var(--text-secondary)]">Enregistrement indisponible.</p>}
                       </Card>
                     )}
 
@@ -221,14 +224,14 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
                         <div className="space-y-4">
                           {selectedEvent.transcriptionText.split('\n').map((line, i) => {
                             if (!line.trim()) return null;
-                            const isAgent = line.startsWith('Agent:') || line.startsWith('Antigravity:');
+                            const isAgent = line.startsWith('Agent:') || line.startsWith('Buster Call:');
                             return (
                               <div key={i} className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[80%] p-4 rounded-2xl ${isAgent ? 'bg-cyan-500/10 border border-cyan-500/20 text-[var(--text-primary)]' : 'bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] text-[var(--text-primary)]'}`}>
                                   <span className="text-xs font-bold uppercase mb-1 block opacity-50">
                                     {isAgent ? 'Agent IA' : 'Client'}
                                   </span>
-                                  <p className="leading-relaxed">{line.replace(/^(Agent|Client|Antigravity):\s*/, '')}</p>
+                                  <p className="leading-relaxed">{line.replace(/^(Agent|Client|Buster Call):\s*/, '')}</p>
                                 </div>
                               </div>
                             );
@@ -247,6 +250,7 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
               <MessageSquare className="w-10 h-10 opacity-50" />
             </div>
             <p className="text-lg">Sélectionnez un message pour l'afficher.</p>
+            <button onClick={eventDetail.close} className="md:hidden min-h-11 mt-4 text-[var(--brand)]">Retour aux messages</button>
           </div>
         )}
       </div>
@@ -254,16 +258,45 @@ function UnifiedInboxTimeline({ initialEvents }: { initialEvents: InboxEvent[] }
   );
 }
 
-export default function InboxClient({ organizationId, initialEvents }: { organizationId?: string, initialEvents?: InboxEvent[] }) {
+export default function InboxClient({ organizationId, userId, initialEvents }: { organizationId?: string, userId?: string, initialEvents?: InboxEvent[] }) {
   const [contacts, setContacts] = useState<ContactPreview[]>([]);
-  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const detail = useMobileDetail("contact");
+  const selectedContactId = detail.selected;
+  const setSelectedContactId = detail.open;
+  const online = useOnline();
+  const scope = organizationId && userId ? organizationId + ":" + userId : "";
+  const [error, setError] = useState("");
+  const [cachedAt, setCachedAt] = useState<number | null>(null);
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const revoked = useRef(false);
+  const selectedRef = useRef(selectedContactId);
+  useEffect(() => { selectedRef.current = selectedContactId; }, [selectedContactId]);
+  const draftStorageKey = scope && selectedContactId ? draftKey(scope, selectedContactId, "shared") : "";
+  const draftRef = useRef("");
+  const updateDraft = (text: string) => {
+    draftRef.current = text;
+    setInputText(text);
+    if (!draftStorageKey) return;
+    try {
+      if (text) localStorage.setItem(draftStorageKey, text);
+      else localStorage.removeItem(draftStorageKey);
+    } catch { setError("Stockage local indisponible : gardez cette page ouverte pour conserver votre brouillon."); }
+  };
+  useEffect(() => {
+    let text = "";
+    try { text = draftStorageKey ? localStorage.getItem(draftStorageKey) || "" : ""; } catch {}
+    draftRef.current = text;
+    setInputText(text);
+    setError("");
+  }, [draftStorageKey]);
   const [messages, setMessages] = useState<OmnichannelMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [selectedChannel, setSelectedChannel] = useState("WHATSAPP");
+  const [channelChoice, setChannelChoice] = useState<{ contactId: string | null; channel: string }>({ contactId: null, channel: "WHATSAPP" });
   const [searchQuery, setSearchQuery] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const loadedContact = useRef<string | null>(null);
 
   // New conversation modal state
   const [showNewConvModal, setShowNewConvModal] = useState(false);
@@ -272,84 +305,141 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
 
   const selectedContact = contacts.find(c => c.id === selectedContactId);
+  const selectedChannel = channelChoice.contactId === selectedContactId ? channelChoice.channel : selectedContact?.lastMessage?.type === "SMS" ? "SMS" : "WHATSAPP";
+  const setSelectedChannel = (channel: string) => setChannelChoice({ contactId: selectedContactId, channel });
 
   const filteredContacts = contacts.filter(c => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return c.name.toLowerCase().includes(q) || c.phone.includes(q);
+    return (c.name || c.phone).toLowerCase().includes(q) || c.phone.includes(q);
   });
 
-  // Set default channel based on contact's last message type
   useEffect(() => {
-    if (selectedContact?.lastMessage) {
-      if (['WHATSAPP', 'SMS', 'INSTAGRAM', 'FACEBOOK'].includes(selectedContact.lastMessage.type)) {
-        setSelectedChannel(selectedContact.lastMessage.type);
-      }
+    function clear() {
+      revoked.current = true;
+      setContacts([]); setMessages([]); setInputText(""); draftRef.current = "";
+      setError("Session terminée. Reconnectez-vous pour consulter vos discussions.");
     }
-  }, [selectedContactId, selectedContact]);
-
-  // Fetch initial contacts
+    function storage(event: StorageEvent) {
+      if (event.key === "antigravity-storage-owner" && event.newValue !== scope) clear();
+    }
+    window.addEventListener("antigravity-private-cleared", clear);
+    window.addEventListener("storage", storage);
+    return () => {
+      window.removeEventListener("antigravity-private-cleared", clear);
+      window.removeEventListener("storage", storage);
+    };
+  }, [scope]);
+  // Resume without reloading the page or interrupting a draft/call.
   useEffect(() => {
-    fetch('/api/inbox/contacts')
-      .then(res => res.json())
-      .then(data => {
-        if (data.contacts) {
-          setContacts(data.contacts);
-          if (data.contacts.length > 0) setSelectedContactId(data.contacts[0].id);
-        }
-      });
+    const refresh = () => { if (document.visibilityState === "visible") setRefreshVersion(v => v + 1); };
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, []);
 
-  // Fetch messages when a contact is selected
   useEffect(() => {
-    if (!selectedContactId) return;
+    if (initialEvents) return;
+    const controller = new AbortController();
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/inbox/contacts", { signal: controller.signal, cache: "no-store" });
+        if (!res.ok) throw new Error(res.status === 401 ? "Session expirée. Reconnectez-vous." : "Impossible de charger les discussions.");
+        const data = await res.json();
+        if (!cancelled && !revoked.current && Array.isArray(data.contacts)) {
+          setContacts(data.contacts);
+          void writeSnapshot(scope, "contacts", data.contacts.slice(0, 100));
+        }
+      } catch (err) {
+        if (cancelled || revoked.current) return;
+        const cached = await readSnapshot<ContactPreview[]>(scope, "contacts");
+        if (cancelled || revoked.current) return;
+        if (cached && !navigator.onLine) { setContacts(cached.value); setCachedAt(cached.savedAt); }
+        else setError(err instanceof Error ? err.message : "Impossible de charger les discussions.");
+      }
+    }
+    void load();
+    return () => { cancelled = true; controller.abort(); };
+  }, [scope, initialEvents, refreshVersion]);
+
+  useEffect(() => {
+    if (!selectedContactId || initialEvents) return;
+    const controller = new AbortController();
+    let cancelled = false;
+    if (loadedContact.current !== selectedContactId) setMessages([]);
+    loadedContact.current = selectedContactId;
+    setCachedAt(null);
     setIsLoadingMessages(true);
-    fetch(`/api/inbox/messages?contactId=${selectedContactId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.messages) setMessages(data.messages);
-        setIsLoadingMessages(false);
-        setTimeout(scrollToBottom, 100);
-      });
-  }, [selectedContactId]);
+    async function load() {
+      try {
+        const res = await fetch("/api/inbox/messages?contactId=" + encodeURIComponent(selectedContactId!), { signal: controller.signal, cache: "no-store" });
+        if (!res.ok) throw new Error(res.status === 401 ? "Session expirée. Reconnectez-vous." : "Impossible de charger cette conversation.");
+        const data = await res.json();
+        if (!cancelled && !revoked.current && Array.isArray(data.messages)) {
+          setMessages(data.messages);
+          requestAnimationFrame(() => messagesEndRef.current?.scrollIntoView({ block: "nearest" }));
+          void writeSnapshot(scope, "messages:" + selectedContactId, data.messages.slice(-100));
+        }
+      } catch (err) {
+        if (cancelled || revoked.current) return;
+        const cached = await readSnapshot<OmnichannelMessage[]>(scope, "messages:" + selectedContactId);
+        if (cancelled || revoked.current) return;
+        if (cached && !navigator.onLine) { setMessages(cached.value); setCachedAt(cached.savedAt); }
+        else setError(err instanceof Error ? err.message : "Impossible de charger cette conversation.");
+      } finally { if (!cancelled) setIsLoadingMessages(false); }
+    }
+    void load();
+    return () => { cancelled = true; controller.abort(); };
+  }, [selectedContactId, scope, initialEvents, refreshVersion]);
 
   // Real-time Pusher setup
   useEffect(() => {
-    if (!organizationId) return;
+    if (!organizationId || initialEvents || !process.env.NEXT_PUBLIC_PUSHER_KEY) return;
 
-    let pusher: any;
-    let channel: any;
+    let disposed = false;
+    let pusher: PusherClient | undefined;
+    let channel: Channel | undefined;
 
     import('pusher-js').then((PusherModule) => {
-      const Pusher = PusherModule.default || PusherModule;
+      if (disposed) return;
+      const Pusher = PusherModule.default;
       pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
         cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
       });
 
       channel = pusher.subscribe(`org-${organizationId}`);
 
-      channel.bind('new-message', (data: any) => {
-        if (data.contactId === selectedContactId) {
-          setMessages(prev => [...prev, data]);
+      channel.bind('new-message', (data: OmnichannelMessage & { contactId: string }) => {
+        if (revoked.current) return;
+        if (data.contactId === selectedRef.current) {
+          setMessages(prev => prev.some(m => m.id === data.id) ? prev : [...prev, data]);
           setTimeout(scrollToBottom, 100);
         }
         fetch('/api/inbox/contacts')
           .then(res => res.json())
           .then(resData => {
-            if (resData.contacts) setContacts(resData.contacts);
-          });
+            if (!disposed && !revoked.current && resData.contacts) setContacts(resData.contacts);
+          }).catch(() => { /* Refreshed when connectivity returns. */ });
       });
 
-      channel.bind('contact-updated', (data: any) => {
+      channel.bind('contact-updated', (data: { contactId: string; botMode: boolean; escalationStatus: string }) => {
+        if (revoked.current) return;
         setContacts(prev => prev.map(c =>
           c.id === data.contactId
             ? { ...c, botMode: data.botMode, escalationStatus: data.escalationStatus }
             : c
         ));
       });
+    }).catch(() => {
+      if (!disposed) setError("La connexion en direct est indisponible. Actualisez pour retrouver les derniers messages.");
     });
 
     return () => {
+      disposed = true;
       if (channel) {
         channel.unbind_all();
         channel.unsubscribe();
@@ -358,60 +448,62 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
         pusher.disconnect();
       }
     };
-  }, [organizationId, selectedContactId]);
+  }, [organizationId, initialEvents]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
   };
 
   const handleSendMessage = async () => {
-    if (!inputText.trim() || !selectedContactId || isSending) return;
-
+    if (!inputText.trim() || !selectedContactId || isSending || !online || selectedContact?.botMode) return;
+    const contactId = selectedContactId;
     const textToSend = inputText;
-    setInputText("");
+    const storageKey = draftStorageKey;
+    const pendingId = "pending:" + crypto.randomUUID();
+    setMessages(previous => [...previous, {
+      id: pendingId, body: textToSend, type: selectedChannel,
+      direction: "OUTBOUND", sentAt: new Date().toISOString(), status: "SENDING"
+    }]);
     setIsSending(true);
-
-    // Optimistic UI update
-    const optimisticMsg: OmnichannelMessage = {
-      id: `temp_${Date.now()}`,
-      body: textToSend,
-      direction: 'OUTBOUND',
-      type: selectedChannel,
-      sentAt: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, optimisticMsg]);
-    setTimeout(scrollToBottom, 100);
-
+    setError("");
     try {
-      await fetch('/api/inbox/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId: selectedContactId, body: textToSend, channel: selectedChannel, type: selectedChannel })
+      const res = await fetch("/api/inbox/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contactId, body: textToSend, type: selectedChannel })
       });
-      // Refresh messages after send
-      const res = await fetch(`/api/inbox/messages?contactId=${selectedContactId}`);
-      const data = await res.json();
-      if (data.messages) setMessages(data.messages);
-    } catch (e) {
-      console.error("Failed to send message", e);
-    } finally {
-      setIsSending(false);
-      setTimeout(scrollToBottom, 100);
-    }
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Envoi non confirmé. Vérifiez la conversation avant de réessayer.");
+      }
+      // Do not erase new text typed while the request was in flight.
+      try { if (storageKey && localStorage.getItem(storageKey) === textToSend) localStorage.removeItem(storageKey); } catch {}
+      if (!revoked.current && selectedRef.current === contactId) {
+        setMessages(previous => previous.map(message => message.id === pendingId ? { ...message, status: "ACCEPTED" } : message));
+        if (draftRef.current === textToSend) { draftRef.current = ""; setInputText(""); }
+        setRefreshVersion(v => v + 1);
+      }
+    } catch (err) {
+      if (!revoked.current && selectedRef.current === contactId) {
+        setMessages(previous => previous.filter(message => message.id !== pendingId));
+        setError(err instanceof Error && !(err instanceof TypeError) ? err.message : "Envoi non confirmé. Votre brouillon est conservé ; vérifiez la conversation avant de réessayer.");
+      }
+    } finally { setIsSending(false); }
   };
 
   const handleTakeover = async (botMode: boolean, escalationStatus: string) => {
     if (!selectedContactId) return;
     try {
-      await fetch('/api/inbox/takeover', {
+      const response = await fetch('/api/inbox/takeover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contactId: selectedContactId, botMode, escalationStatus })
       });
+      if (!response.ok) throw new Error("Impossible de modifier la prise en charge.");
       setContacts(prev => prev.map(c =>
         c.id === selectedContactId ? { ...c, botMode, escalationStatus } : c
       ));
-    } catch(e) {}
+    } catch(e) { setError(e instanceof Error ? e.message : "Action impossible."); }
   };
 
   const openNewConversationModal = async () => {
@@ -419,10 +511,12 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
     setIsLoadingContacts(true);
     try {
       const res = await fetch('/api/contacts');
+      if (!res.ok) throw new Error("Impossible de charger les contacts.");
       const data = await res.json();
-      setAllContacts(data.contacts || data || []);
+      const list = data.contacts || data;
+      setAllContacts(Array.isArray(list) ? list : []);
     } catch (e) {
-      console.error("Failed to load contacts", e);
+      setError(e instanceof Error ? e.message : "Impossible de charger les contacts.");
     } finally {
       setIsLoadingContacts(false);
     }
@@ -484,10 +578,12 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
   }
 
   return (
-    <div className="flex w-full h-full bg-[var(--bg-base)]">
-
+    <div className="flex flex-col w-full h-full min-h-0 bg-[var(--bg-base)]">
+      {(!online || cachedAt) && <div role="status" className="flex shrink-0 items-center gap-2 px-4 py-2 text-xs bg-[var(--bg-surface)] text-[var(--warning)]"><WifiOff className="h-4 w-4 shrink-0" />{!online ? "Hors connexion · votre brouillon reste sur cet appareil." : "Données enregistrées"}{cachedAt ? " · " + new Date(cachedAt).toLocaleString("fr-FR") : ""}</div>}
+      {error && <div role="alert" className="flex shrink-0 items-center justify-between gap-2 px-4 py-2 text-sm bg-[var(--bg-surface)] text-[var(--danger)]"><span>{error}</span><button onClick={() => { setError(""); setRefreshVersion(v => v + 1); }} className="min-h-11 shrink-0 underline">Actualiser</button></div>}
+      <div className="flex flex-1 min-h-0 w-full">
       {/* LEFT PANE: Contacts List */}
-      <div className="w-full md:w-80 border-r border-[var(--border-subtle)] flex flex-col h-full bg-[var(--bg-surface)] shrink-0">
+      <div className={`w-full md:w-80 border-r border-[var(--border-subtle)] flex-col h-full bg-[var(--bg-surface)] shrink-0 ${selectedContactId ? "hidden md:flex" : "flex"}`}>
         {/* Header */}
         <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-[var(--text-primary)]">Discussions</h2>
@@ -505,16 +601,16 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             <Search className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
             <input
               type="text"
-              placeholder="Rechercher..."
+              aria-label="Rechercher une discussion" placeholder="Rechercher..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="bg-transparent outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] w-full"
+              className="bg-transparent outline-none text-base md:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] w-full"
             />
           </div>
         </div>
 
         {/* Contact list */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto custom-scrollbar">
           {filteredContacts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full p-6 text-center">
               <MessageSquare className="w-10 h-10 text-[var(--text-secondary)] opacity-30 mb-3" />
@@ -576,17 +672,18 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
       </div>
 
       {/* MIDDLE PANE: Chat */}
-      <div className="hidden md:flex flex-1 flex-col h-full bg-[var(--bg-base)] relative">
+      <div className={`min-w-0 flex-1 flex-col h-full bg-[var(--bg-base)] relative ${selectedContactId ? "flex" : "hidden md:flex"}`}>
         {selectedContact ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] flex items-center justify-between shadow-sm z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-[var(--border-subtle)] flex items-center justify-center">
+            <div className="p-3 md:p-4 shrink-0 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] flex flex-wrap gap-2 items-center justify-between z-10">
+              <div className="flex flex-1 min-w-0 items-center gap-2">
+                <button onClick={detail.close} aria-label="Retour aux discussions" className="md:hidden min-h-11 min-w-11 grid place-items-center rounded-xl text-[var(--brand)]"><ArrowLeft className="h-5 w-5" /></button>
+                <div className="hidden md:flex w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 border border-[var(--border-subtle)] flex items-center justify-center">
                   <User className="w-4 h-4 text-[var(--text-secondary)]" />
                 </div>
-                <div>
-                  <h3 className="font-bold text-sm text-[var(--text-primary)]">{selectedContact.name}</h3>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-sm truncate text-[var(--text-primary)]">{selectedContact.name}</h3>
                   <span className="text-xs text-[var(--text-secondary)]">{selectedContact.phone}</span>
                 </div>
               </div>
@@ -595,24 +692,24 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                 {selectedContact.botMode ? (
                   <button
                     onClick={() => handleTakeover(false, selectedContact.escalationStatus === 'REQUESTED' ? 'RESOLVED' : selectedContact.escalationStatus)}
-                    className="text-sm font-semibold bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    className="min-h-11 text-xs md:text-sm font-semibold bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                   >
-                    <User className="w-4 h-4" /> Reprendre la main
+                    <User className="w-4 h-4" /><span className="hidden md:inline">Reprendre la main</span><span className="md:hidden">Répondre</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => handleTakeover(true, 'NONE')}
-                    className="text-sm font-semibold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                    className="min-h-11 text-xs md:text-sm font-semibold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                   >
-                    <Bot className="w-4 h-4" /> Confier à l'IA
+                    <Bot className="w-4 h-4" /><span className="hidden md:inline">Confier à l’IA</span><span className="md:hidden">Activer IA</span>
                   </button>
                 )}
               </div>
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-              {isLoadingMessages ? (
+            <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              {isLoadingMessages && messages.length === 0 ? (
                 <div className="flex justify-center items-center h-full text-[var(--text-secondary)]">
                   <Loader2 className="w-5 h-5 animate-spin mr-2" /> Chargement...
                 </div>
@@ -653,13 +750,17 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
 
                   return (
                     <div key={msg.id} className={`flex flex-col ${isOutbound ? 'items-end' : 'items-start'}`}>
-                      <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${getChannelColor(msg.type, isOutbound)}`}>
-                        <p className="whitespace-pre-wrap leading-relaxed text-sm">{msg.body}</p>
+                      <div className={`max-w-[88%] md:max-w-[75%] rounded-2xl px-4 py-3 ${getChannelColor(msg.type, isOutbound)}`}>
+                        <p className="whitespace-pre-wrap break-words leading-relaxed text-base md:text-sm">{msg.body}</p>
                       </div>
                       <span className="text-[10px] text-[var(--text-secondary)] mt-1 px-1 flex items-center gap-1">
                         {isOutbound && getChannelIcon(msg.type)}
                         {new Date(msg.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         {!isOutbound && getChannelIcon(msg.type)}
+                        {isOutbound && msg.status && <span>{({
+                          SENDING: "Envoi…", ACCEPTED: "Pris en charge", QUEUED: "En attente",
+                          SENT: "Envoyé", DELIVERED: "Distribué", READ: "Lu", FAILED: "Échec"
+                        } as Record<string, string>)[msg.status.toUpperCase()] || msg.status}</span>}
                       </span>
                     </div>
                   );
@@ -669,7 +770,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             </div>
 
             {/* Chat Input — ALWAYS VISIBLE */}
-            <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <div className="p-3 md:p-4 shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)]">
               {selectedContact.botMode && (
                 <div className="flex items-center gap-2 mb-3 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -678,38 +779,36 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
               )}
 
               {/* Channel selector */}
-              <div className="flex items-center gap-1.5 mb-2">
-                <button onClick={() => setSelectedChannel('WHATSAPP')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'WHATSAPP' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
+              <div className="flex items-center gap-1.5 mb-2 overflow-x-auto">
+                <button onClick={() => setSelectedChannel('WHATSAPP')} aria-pressed={selectedChannel === 'WHATSAPP'} className={`min-h-11 text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'WHATSAPP' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
                   <MessageCircle className="w-3 h-3" /> WhatsApp
                 </button>
-                <button onClick={() => setSelectedChannel('SMS')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'SMS' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
+                <button onClick={() => setSelectedChannel('SMS')} aria-pressed={selectedChannel === 'SMS'} className={`min-h-11 text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'SMS' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
                   <MessageSquare className="w-3 h-3" /> SMS
                 </button>
-                <button onClick={() => setSelectedChannel('INSTAGRAM')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'INSTAGRAM' ? 'bg-pink-500/15 text-pink-400 border border-pink-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
-                  <Camera className="w-3 h-3" /> Instagram
-                </button>
-                <button onClick={() => setSelectedChannel('FACEBOOK')} className={`text-xs px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors font-medium ${selectedChannel === 'FACEBOOK' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/30' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-hover)] border border-transparent'}`}>
-                  <Monitor className="w-3 h-3" /> Facebook
-                </button>
+
+
               </div>
 
               <div className="flex items-end gap-2">
                 <textarea
                   value={inputText}
-                  onChange={e => setInputText(e.target.value)}
+                  onChange={e => updateDraft(e.target.value)}
                   disabled={selectedContact.botMode}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && window.matchMedia('(min-width: 768px)').matches) {
                       e.preventDefault();
                       handleSendMessage();
                     }
                   }}
+                  aria-label="Votre message"
                   placeholder={selectedContact.botMode ? "Reprenez la main pour écrire..." : "Écrivez un message (Entrée pour envoyer)..."}
-                  className="flex-1 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none min-h-[48px] max-h-[120px] focus:outline-none focus:border-[var(--accent-primary)] transition-colors text-sm placeholder:text-[var(--text-secondary)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-[var(--bg-base)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] resize-none min-h-[48px] max-h-[120px] focus:outline-none focus:border-[var(--accent-primary)] transition-colors text-base md:text-sm placeholder:text-[var(--text-secondary)] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleSendMessage}
-                  disabled={!inputText.trim() || selectedContact.botMode || isSending}
+                  aria-label="Envoyer le message"
+                  disabled={!online || !inputText.trim() || selectedContact.botMode || isSending}
                   className="w-11 h-11 n8n-gradient-bg rounded-xl flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105 shrink-0"
                 >
                   {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -722,6 +821,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
             <MessageSquare className="w-14 h-14 opacity-10" />
             <div className="text-center">
               <p className="font-semibold text-[var(--text-primary)] mb-1">Aucune conversation sélectionnée</p>
+              <button onClick={detail.close} className="md:hidden min-h-11 text-[var(--brand)]">Retour aux discussions</button>
               <p className="text-sm mb-4">Sélectionnez une conversation ou démarrez-en une nouvelle</p>
               <Button
                 onClick={openNewConversationModal}
@@ -764,6 +864,7 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
         )}
       </div>
 
+      </div>
       {/* NEW CONVERSATION MODAL */}
       <Modal open={showNewConvModal} onClose={() => { setShowNewConvModal(false); setContactSearch(""); }} title="Nouvelle conversation">
         <div className="p-4">
@@ -771,11 +872,11 @@ export default function InboxClient({ organizationId, initialEvents }: { organiz
                 <Search className="w-4 h-4 text-[var(--text-secondary)] shrink-0" />
                 <input
                   type="text"
-                  placeholder="Rechercher un contact..."
+                  aria-label="Rechercher un contact" placeholder="Rechercher un contact..."
                   value={contactSearch}
                   onChange={e => setContactSearch(e.target.value)}
                   autoFocus
-                  className="bg-transparent outline-none text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] w-full"
+                  className="bg-transparent outline-none text-base md:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] w-full"
                 />
               </div>
               <div className="max-h-72 overflow-y-auto space-y-1">

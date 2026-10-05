@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import TemplatesClient from "./TemplatesClient";
 
 export const metadata = {
-  title: "WhatsApp Templates | Antigravity",
+  title: "WhatsApp Templates | Buster Call",
 };
 
 export default async function TemplatesPage() {

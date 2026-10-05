@@ -13,7 +13,7 @@ const metaTitle = "Politique de remboursement";
 export const metadata: Metadata = {
   title: metaTitle,
   description:
-    "Conditions de remboursement des abonnements Antigravity : cas éligibles, délai pour demander, abonnements et renouvellements, consommations de minutes et de messages, recharges de solde, procédure de demande et délai de traitement.",
+    `Conditions de remboursement des abonnements ${siteConfig.brand} : cas éligibles, délai pour demander, abonnements et renouvellements, consommations de minutes et de messages, recharges de solde, procédure de demande et délai de traitement.`,
   alternates: { canonical: "/refund-policy" },
   openGraph: {
     type: "article",

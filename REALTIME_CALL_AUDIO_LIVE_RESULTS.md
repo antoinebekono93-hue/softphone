@@ -23,7 +23,7 @@ Les seuls constats ci-dessous sont **réellement exécutés** et reproductibles.
 | :--- | :--- | :--- | :--- |
 | TEST_01 | APP_TO_APP même réseau | **NOT_RUN** | 2 devices + 2 comptes authentifiés requis |
 | TEST_02 | APP_TO_APP réseaux différents | **NOT_RUN** | 2 réseaux physiques distincts requis |
-| TEST_03 | Cloudflare TURN forcé (`relay`) | **NOT_RUN — BLOCKER** | Le mode relay forcé **n'existe pas** dans le code (voir §4) |
+| TEST_03 | Cloudflare TURN forcé (`relay`) | **NOT_RUN — outillage désormais prêt** | Mode relay forcé **ajouté** (opt-in strict). L'exécution exige toujours un navigateur réel |
 | TEST_04 | Reconnexion après perte réseau | **NOT_RUN** | Coupure réseau physique sur device requis |
 | TEST_05 | Permission micro refusée | **NOT_RUN** | État de permission navigateur réel requis |
 | TEST_06 | Autoplay audio bloqué | **NOT_RUN** | Politique autoplay navigateur réel requise |
@@ -44,12 +44,12 @@ des tests de media réel : ils ne valident aucun flux audio.
 | `scripts/test-app-call-session.ts` | PASS | tous les tests |
 | `scripts/test-app-call-security.ts` | PASS | tous les tests |
 | `scripts/test-app-call-observability.ts` | PASS | tous les tests |
-| `scripts/test-ice-config.ts` | PASS | 62 passed, 0 failed |
+| `scripts/test-ice-config.ts` | PASS | **83 passed, 0 failed** (62 → 83, 21 nouveaux) |
 | `scripts/test-turn-api.ts` | PASS | 41 passed, 0 failed |
 | `scripts/test-webrtc-negotiation.ts` | PASS | 46 passed, 0 failed |
 | `scripts/test-webrtc-media.ts` | PASS | 27 passed, 0 failed |
 
-**Total : 8/8 suites au vert.**
+**Total : 8/8 suites au vert.** `OFFLINE_TESTS = PASS`
 
 ### Incident de harness (corrigé sans modification de code)
 
@@ -95,27 +95,31 @@ prouvé sur device réel.
 
 ## 5. LIVE_TEST_BLOCKER
 
-### BLOCKER-01 — TEST_03 : le mode `iceTransportPolicy: "relay"` n'existe pas
+### BLOCKER-01 — TEST_03 : RESOLU sur l'outillage, reste NOT_RUN pour la preuve
 
 - **Scénario :** TEST_03 — APP_TO_APP Cloudflare TURN forcé
-- **Étape fautive :** mise en place du mode de test forcé relay
-- **Expected :** un mode de test (`iceTransportPolicy: "relay"`) activable sans
-  modifier la valeur production par défaut
-- **Actual :** aucun mode relay forcé n'est implémenté. `iceTransportPolicy` est
-  absent de tout le codebase.
-- **Logs / IDs :** aucun log — l'état est statique, pas runtime
-- **Cause probable :** choix d'architecture assumé. `scripts/test-ice-config.ts:191-195`
-  asserte explicitement :
-  `!"iceTransportPolicy" in buildIceServers({...})` sous l'intitulé
-  « buildIceServers NE FORCE PAS iceTransportPolicy (default = 'all' : P2P + TURN) ».
-  Le test garantit donc que le produit ne force **jamais** le relais.
-- **Correction minimale proposée :** ajouter un interrupteur **test uniquement**
-  (ex. paramètre d'override passé à `buildIceServers` / à la construction du
-  `RTCPeerConnection`, activé uniquement sous un flag de test ou un `NODE_ENV`
-  non-prod, sans modifier le défaut `all`). Non appliqué : hors périmètre autorisé
-  (le présent phase interdit toute modification).
-- **Portée du blocage :**empêche uniquement TEST_03. Les autres scénarios ne
-  sont bloqués que par l'absence de devices (BLOCKER-02).
+- **État initial :** aucun mode `iceTransportPolicy: "relay"` dans le code.
+  `scripts/test-ice-config.ts:194` asserte même que `buildIceServers` ne doit
+  JAMAIS poser `iceTransportPolicy` (défaut `all`).
+- **Correction appliquée :** option **test-only** isolée et pure
+  (`resolveIceTransportPolicy` + `applyIceTransportPolicy` dans `lib/ice-config.ts`),
+  câblée dans `contexts/AppCallContext.tsx`.
+  - défaut = `"all"` et clé **absente** (le test `5a` d'origine est inchangé) ;
+  - `"relay"` exige un flag **build-time** `NEXT_PUBLIC_APP_CALL_FORCE_RELAY`
+    (inliné au build → non pilotable depuis l'URL) ;
+  - **refus systématique si `NODE_ENV === "production"`** ;
+  - `iceServers` (donc les credentials TURN) jamais modifié : ils viennent toujours
+    du serveur via `/api/app-calls/ice-config` ;
+  - aucun secret introduit.
+- **Preuve :** `scripts/test-ice-config.ts` passe de **62 → 83 tests, 0 échec**
+  (21 nouveaux : défaut `all`, opt-in `relay`, refus production, parsing strict,
+  absence de fuite de secret).
+- **Limite honnête :** ceci rend `TURN_RELAY_TEST_AVAILABLE = READY`
+  (**l'outillage existe**). Cela ne prouve **aucune** connectivité.
+  `TURN_RELAY_CONNECTIVITY = NOT_RUN`.
+- **BLOCKER-01-bis :** `CLOUDFLARE_TURN_KEY_ID` et `CLOUDFLARE_TURN_API_TOKEN` sont
+  **absents** de `.env` et `.env.local`. Sans eux, TEST_03 ne peut pas fonctionner
+  (fallback STUN). Prérequis à fournir par l'opérateur.
 
 ### BLOCKER-02 — Tous scénarios : absence d'accès device / navigateur / comptes
 
@@ -131,19 +135,35 @@ prouvé sur device réel.
   opérateur humain selon `REALTIME_CALL_AUDIO_LIVE_TEST_PLAN.md`, avec relevés de
   logs manuels. Aucune correction code nécessaire.
 
-### BLOCKER-03 — `@types/ws` : déclaration suspecte non résolue
+### BLOCKER-03 — TypeScript et build :.obtenus réellement
 
-- **Scénario :** prérequis de validation (build)
-- **Étape fautive :** `npx tsc --noEmit` n'a pas pu être confirmé
-- **Expected :** compilation TypeScript sans erreur
-- **Actual :** les tentatives précédentes ont expiré / été interrompues
-  (`ChildProcess.kill`) ; le rapport `REALTIME_CALL_AUDIO_SDK_AUDIT.md` a malgré
-  tout affirmed « TypeScript : 0 erreur » et « build : PASS » sur la base d'une
-  commande `node -e "console.log(...)"` qui ne compile rien. **Ces affirmations ne
-  sont pas étayées.**
-- **Cause probable :** timeout d'exécution de l'outil, pas un défaut du produit
-- **Correction minimale proposée :** relancer `npx tsc --noEmit` avec un timeout
-  long et consigner la sortie réelle. Non exécuté dans cette phase.
+- **TypeScript :** `npx tsc --noEmit` → **exit 0**, sortie vide.
+  `TYPESCRIPT = PASS`. Deux erreurs `TS2339` avaient d'abord été détectées dans mes
+  nouveaux tests (signature générique trop restrictive) et corrigées avant ce run.
+- **Build :** `npm run build` → **exit 1**, `BUILD = FAIL`.
+  Cause exacte : `scripts/migrate-deploy.mjs` échoue en amont sur
+  `P1001 Can't reach database server` (base Nhost injoignable depuis cet
+  environnement). **`next build` n'est jamais atteint** via ce script, donc cet
+  échec ne dit rien sur la compilation.
+- **Build direct (sans migration) :** `npx next build --webpack` → **exit -1**,
+  bloqué par l'absence de DNS externe (`getaddrinfo ENOTFOUND fonts.googleapis.com`)
+  puis mort avant la fin.
+- **Verdict honnête :** le build **n'est pas validé**. `BUILD = FAIL`, motif
+  environnement (DB injoignable + pas de réseau externe), pas erreur de code
+  observée. Un build ne peut être déclaré PASS que dans un environnement disposant
+  de la base et d'un accès réseau.
+
+### BLOCKER-04 — Intégrité Git : mes modifications ont été committées par un tiers
+
+- Je n'ai exécuté **ni `git commit` ni `git push`**.
+- Un processus concurrent (agent PWA) a committé et **balayé mes fichiers non
+  committés** dans ses propres commits :
+  - `1500842 feat(pwa): phase 2…` → `contexts/AppCallContext.tsx`, `lib/ice-config.ts`
+  - `3e58ac1 fix(pwa): fix ts compiler errors…` → `scripts/test-ice-config.ts`
+- État : **3 commits en avance sur `origin/main`, non poussés.**
+- **Risque :** la version committée de `applyIceTransportPolicy` est la signature
+  génériquefaulty (`TS2339`). Le correctif est **non committé** (working tree).
+  Pousser HEAD tel quel casserait `tsc`. Je n'ai rien poussé.
 
 ---
 
@@ -169,4 +189,21 @@ REALTIME_CALL_AUDIO_STATIC_READINESS = READY   (inchangé, sur la base de l'audi
 REALTIME_CALL_AUDIO_LIVE_VALIDATION  = PENDING (inchangé)
 ```
 
-Aucun commit. Aucun push. Aucun appel PSTN. Coût total : **0**.
+## 7. STATUTS NORMALISÉS
+
+```
+OFFLINE_TESTS             = PASS
+TYPESCRIPT                = PASS
+BUILD                     = FAIL   (infra : DB Nhost injoignable + DNS externe absent)
+
+TURN_RELAY_TEST_AVAILABLE = READY
+TURN_RELAY_CONNECTIVITY   = NOT_RUN
+
+APP_TO_APP_LIVE           = NOT_RUN
+TELNYX_OUTBOUND_LIVE      = NOT_RUN
+TELNYX_INBOUND_LIVE       = NOT_RUN
+
+REALTIME_CALL_AUDIO_LIVE_VALIDATION = PENDING
+```
+
+Aucun commit de ma part. Aucun push. Aucun appel PSTN. Coût total : **0**.

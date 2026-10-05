@@ -8,7 +8,7 @@ const metaTitle = "À propos";
 export const metadata: Metadata = {
   title: metaTitle,
   description:
-    "Antigravity réunit téléphonie professionnelle, softphone cloud, routage d'appels, messagerie et agents vocaux IA dans une plateforme de communication d'entreprise. Découvrez notre mission et notre vision.",
+    "Buster Call réunit téléphonie professionnelle, Buster Call, routage d'appels, messagerie et agents vocaux IA dans une plateforme de communication d'entreprise. Découvrez notre mission et notre vision.",
   alternates: { canonical: "/about" },
   openGraph: {
     type: "website",
@@ -16,14 +16,14 @@ export const metadata: Metadata = {
     url: "/about",
     title: `${metaTitle} | ${siteConfig.brand}`,
     description:
-      "Une plateforme de communication d'entreprise : numéros professionnels, softphone cloud, routage, messagerie et intelligence artificielle vocale.",
+      "Une plateforme de communication d'entreprise : numéros professionnels, Buster Call, routage, messagerie et intelligence artificielle vocale.",
   },
 };
 
 const audiences = [
   {
     title: "Agences et cabinets de conseil",
-    body: "Chaque collaborateur dispose d'un numéro professionnel, d'une softphone dans le navigateur, et les appels entrants sont routés vers la bonne personne sans intervention.",
+    body: "Chaque collaborateur dispose d'un numéro professionnel, d'une Buster Call dans le navigateur, et les appels entrants sont routés vers la bonne personne sans intervention.",
   },
   {
     title: "Commerce et services",
@@ -53,7 +53,7 @@ const capabilities = [
     body: "Attribution et gestion de numéros dans les pays où vous exercez, avec identification d'appelant et routage des appels entrants.",
   },
   {
-    title: "Softphone cloud",
+    title: "Buster Call Connect",
     body: "Un poste téléphonique dans le navigateur et sur mobile, sans installation, utilisable au bureau comme en déplacement.",
   },
   {
@@ -85,7 +85,7 @@ export default function AboutPage() {
             La communication d&apos;entreprise, <span className="n8n-gradient-text">réunie au même endroit</span>
           </>
         }
-        subtitle="Antigravity est une plateforme de communication B2B qui réunit téléphonie professionnelle, messagerie multicanal, routage d'appels et agents vocaux assistés par intelligence artificielle, dans un produit unique destiné aux équipes."
+        subtitle="Buster Call est une plateforme de communication B2B qui réunit téléphonie professionnelle, messagerie multicanal, routage d'appels et agents vocaux assistés par intelligence artificielle, dans un produit unique destiné aux équipes."
       />
 
       <section className="px-5 sm:px-6 max-w-4xl mx-auto w-full pb-16">
@@ -97,7 +97,7 @@ export default function AboutPage() {
         <div className="space-y-4 text-[15px] leading-relaxed text-[var(--text-secondary)] mt-6">
           <p>
             Une entreprise qui gère ses appels sur plusieurs outils dispersés perd du temps en
-            transferts, en information répétée et en outils qui ne se parlent pas. Antigravity a été
+            transferts, en information répétée et en outils qui ne se parlent pas. {siteConfig.brand} a été
             conçu pour supprimer cette dispersion : un seul numéro, un seul poste téléphonique, un
             seul historique de conversation, et des agents capables de traiter la partie répétitive
             du travail.
@@ -175,7 +175,7 @@ export default function AboutPage() {
         <div className="rounded-[var(--radius-xl)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 sm:p-8">
           <p className="text-[15px] leading-relaxed text-[var(--text-secondary)]">
             Un système d&apos;exploitation de l&apos;intelligence des télécommunications n&apos;est pas un
-            simple softphone : c&apos;est la couche qui relie chaque canal de communication d&apos;une
+            simple application d'appels : c&apos;est la couche qui relie chaque canal de communication d&apos;une
             entreprise à son information métier. L&apos;objectif est qu&apos;un appel entrant,
             un SMS ou un message WhatsApp soit compris, qualifié, rattaché à la bonne fiche et
             traité sans ressaisie, puis mesuré pour améliorer la prise en charge.

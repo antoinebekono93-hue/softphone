@@ -54,7 +54,7 @@ export default function LoginPage() {
       }}
     >
       <Link href="/" className="absolute top-8 left-8 text-2xl font-bold tracking-tight">
-        Antigravity
+        Buster Call
       </Link>
       
       <div className="w-full max-w-md glass-panel p-8 sm:p-10 relative">

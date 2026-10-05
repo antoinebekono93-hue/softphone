@@ -18,6 +18,11 @@ function getRedis(): Redis | null {
 const publicPaths = [
   "/",
   "/login",
+  // SEO artefacts must stay reachable by crawlers, otherwise the auth guard
+  // below redirects /sitemap.xml and /robots.txt to /login.
+  "/sitemap.xml",
+  "/robots.txt",
+  "/manifest.json",
   "/register",
   "/pricing",
   "/features",
@@ -117,7 +122,7 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith("/icons") ||
     pathname.startsWith("/sounds") ||
     pathname === "/sw.js" ||
-    pathname === "/manifest.webmanifest" ||
+    pathname === "/manifest.json" ||
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();

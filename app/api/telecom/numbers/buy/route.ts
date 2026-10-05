@@ -54,7 +54,7 @@ export async function POST(request: Request) {
         success: true,
         message: result.status === "ACTIVE"
           ? `Numéro ${result.phoneNumber} acheté et activé.`
-          : `Commande Telnyx acceptée pour ${result.phoneNumber}. Activation en cours.`,
+          : `Commande acceptée pour ${result.phoneNumber}. Activation en cours.`,
         orderId: result.orderId,
         status: result.status,
         chargedAmount: result.chargedAmount,

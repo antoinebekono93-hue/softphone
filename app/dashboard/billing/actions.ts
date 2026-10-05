@@ -70,7 +70,7 @@ export async function createFlutterwaveTopupLink(amount: number) {
       type: 'wallet_topup'
     },
     customizations: {
-      title: 'Antigravity Wallet Top-up'
+      title: 'Buster Call Wallet Top-up'
     }
   });
 

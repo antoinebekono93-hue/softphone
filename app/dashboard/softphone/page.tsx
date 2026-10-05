@@ -10,11 +10,13 @@ export default async function SoftphonePage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 md:p-8 max-w-7xl mx-auto w-full h-full min-h-0">
-      <PageHeader
-        title="Softphone"
-        description="Passez vos appels, consultez l'historique et discutez avec l'IA."
-      />
+    <div className="flex flex-col gap-2 md:gap-4 p-0 md:p-8 max-w-7xl mx-auto w-full h-full min-h-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Buster Call"
+          description="Passez vos appels, consultez l'historique et discutez avec l'IA."
+        />
+      </div>
 
       <div className="flex-1 min-h-0 flex">
         <SoftphoneWorkspace />

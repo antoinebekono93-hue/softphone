@@ -25,7 +25,7 @@ interface MediaSessionConfig {
  */
 export function useMediaSession({
   title,
-  artist = "Antigravity",
+  artist = "Buster Call",
   isActive,
   onMute,
   onHangup,

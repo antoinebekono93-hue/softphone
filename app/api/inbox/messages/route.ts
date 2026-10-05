@@ -42,22 +42,24 @@ export async function GET(req: Request) {
     }
 
     // Fetch sms messages (SMS and WhatsApp)
-    const smsMessages = await prisma.smsMessage.findMany({
+    const smsPromise = prisma.smsMessage.findMany({
       where: { contactId },
       orderBy: { sentAt: "asc" },
     });
 
     // Fetch social messages (Instagram, Messenger, etc.)
-    const socialMessages = await prisma.socialMessage.findMany({
+    const socialPromise = prisma.socialMessage.findMany({
       where: { contactId },
       orderBy: { createdAt: "asc" },
     });
 
     // Fetch call logs
-    const callLogs = await prisma.callLog.findMany({
+    const callsPromise = prisma.callLog.findMany({
       where: { contactId },
       orderBy: { startedAt: "asc" },
     });
+
+    const [smsMessages, socialMessages, callLogs] = await Promise.all([smsPromise, socialPromise, callsPromise]);
 
     // Unify all interactions into a single timeline
     const timeline: any[] = [];
@@ -90,6 +92,7 @@ export async function GET(req: Request) {
       timeline.push({
         id: call.id,
         type: "CALL",
+        recordingUrl: call.recordingUrl,
         direction: call.direction,
         body: call.transcriptionText || "Appel vocal " + (call.direction === "INBOUND" ? "reçu" : "émis"),
         mediaUrls: call.recordingUrl ? [call.recordingUrl] : [],

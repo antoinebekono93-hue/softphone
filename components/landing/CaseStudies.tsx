@@ -9,7 +9,7 @@ const useCases = [
     context: "Agences & retail",
     title: "Centraliser les appels d'une réseau d'agences",
     description: "Chaque Collaborateur reçoit un numéro professionnel dédié. Les appels entrants et sortants sont centralisés dans un seul softphone, avec un historique partagé par équipe.",
-    products: ["Softphone Web", "Numéros Professionals", "Appels Internes"],
+    products: ["Buster Call Web", "Numéros Professionals", "Appels Internes"],
     color: "from-sky-500/20 to-transparent"
   },
   {
@@ -23,7 +23,7 @@ const useCases = [
     context: "Équipes terrain",
     title: "Rester joignable depuis un seul numéro",
     description: "Les équipes mobiles utilisent le même numéro professionnel depuis un navigateur ou une application installable, sans configuration de routage supplémentaire.",
-    products: ["Softphone PWA", "Numéros Professionnels", "Transfert d'Appel"],
+    products: ["Buster Call", "Numéros Professionnels", "Transfert d'Appel"],
     color: "from-emerald-500/20 to-transparent"
   },
   {
@@ -36,8 +36,8 @@ const useCases = [
 ];
 
 const productColors: Record<string, string> = {
-  "Softphone Web": "text-cyan-500 border-cyan-500/30 bg-cyan-500/10",
-  "Softphone PWA": "text-cyan-500 border-cyan-500/30 bg-cyan-500/10",
+  "Buster Call Web": "text-cyan-500 border-cyan-500/30 bg-cyan-500/10",
+  "Buster Call": "text-cyan-500 border-cyan-500/30 bg-cyan-500/10",
   "Numéros Professionals": "text-blue-500 border-blue-500/30 bg-blue-500/10",
   "Numéros Professionnels": "text-blue-500 border-blue-500/30 bg-blue-500/10",
   "Appels Internes": "text-sky-500 border-sky-500/30 bg-sky-500/10",

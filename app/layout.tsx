@@ -1,9 +1,6 @@
+import { PrivateStorageBoundary } from "@/components/pwa/PrivateStorageBoundary";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { GlobalIncomingCall } from "@/components/softphone/GlobalIncomingCall";
-import { GlobalAppIncomingCall } from "@/components/softphone/GlobalAppIncomingCall";
-import { TelnyxProvider } from "@/contexts/TelnyxContext";
-import { AppCallProvider } from "@/contexts/AppCallContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 import type { Metadata, Viewport } from "next";
@@ -11,6 +8,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { validateEnv } from "@/lib/env-validation";
+import { siteConfig } from "@/lib/site-config";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,11 +26,11 @@ validateEnv();
 
 export const metadata: Metadata = {
   title: {
-    default: "Antigravity — Téléphonie professionnelle et agents vocaux IA",
-    template: "%s | Antigravity",
+    default: "Buster Call — Téléphonie professionnelle et agents vocaux IA",
+    template: "%s | Buster Call",
   },
   description:
-    "Plateforme B2B de communication d'entreprise : numéros professionnels, softphone cloud, routage d'appels, SMS et WhatsApp, agents vocaux assistés par intelligence artificielle.",
+    "Plateforme B2B de communication d'entreprise : numéros professionnels, Buster Call, routage d'appels, SMS et WhatsApp, agents vocaux assistés par intelligence artificielle.",
   keywords: [
     "softphone",
     "téléphonie professionnelle",
@@ -43,28 +41,28 @@ export const metadata: Metadata = {
     "WhatsApp Business",
     "PWA",
   ],
-  authors: [{ name: "Antigravity" }],
-  creator: "Antigravity",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  authors: [{ name: "Buster Call" }],
+  creator: "Buster Call",
+  metadataBase: new URL(siteConfig.url),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    title: "Antigravity",
+    title: "Buster Call",
     statusBarStyle: "black-translucent",
   },
   openGraph: {
     type: "website",
     locale: "fr_FR",
-    siteName: "Antigravity",
-    title: "Antigravity — Téléphonie professionnelle et agents vocaux IA",
+    siteName: "Buster Call",
+    title: "Buster Call — Téléphonie professionnelle et agents vocaux IA",
     description:
-      "Numéros professionnels, softphone cloud, routage d'appels, messagerie multicanal et agents vocaux assistés par intelligence artificielle.",
+      "Numéros professionnels, Buster Call, routage d'appels, messagerie multicanal et agents vocaux assistés par intelligence artificielle.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Antigravity — Téléphonie professionnelle et agents vocaux IA",
+    title: "Buster Call — Téléphonie professionnelle et agents vocaux IA",
     description:
-      "Numéros professionnels, softphone cloud, routage d'appels et agents vocaux assistés par intelligence artificielle.",
+      "Numéros professionnels, Buster Call, routage d'appels et agents vocaux assistés par intelligence artificielle.",
   },
   icons: {
     icon: "/icon-192x192.png",
@@ -80,8 +78,6 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   // Permet à l'app de s'étendre sous la barre de statut iOS (type island etc.)
   viewportFit: "cover",
 };
@@ -104,15 +100,10 @@ export default function RootLayout({
       <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans`}>
         <ThemeProvider defaultTheme="dark">
           <AuthProvider>
+            <PrivateStorageBoundary />
             <LanguageProvider>
-              <AppCallProvider>
-                <TelnyxProvider>
-                  {children}
-                  <GlobalIncomingCall />
-                  <GlobalAppIncomingCall />
-                  <PwaInstallBanner />
-                </TelnyxProvider>
-              </AppCallProvider>
+              {children}
+              <PwaInstallBanner />
             </LanguageProvider>
           </AuthProvider>
           <Toaster position="top-center" theme="dark" />

@@ -414,8 +414,8 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
     <div className="w-full">
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Telnyx Mission Control</h1>
-          <p className="text-[var(--text-secondary)]">Manage your master Telnyx account, view balance, and configure routing.</p>
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Provider Configuration (Telnyx)</h1>
+          <p className="text-[var(--text-secondary)]">Gérez la configuration du fournisseur, visualisez le solde et configurez le routage.</p>
         </div>
         
         {balanceData && (
@@ -475,7 +475,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
         <div className="mb-6 bg-red-500/10 border border-red-500/30 text-red-400 p-4 rounded-xl flex items-start gap-3">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <div>
-            <div className="font-bold">Telnyx API Error</div>
+            <div className="font-bold">Erreur de configuration</div>
             <div className="text-sm opacity-80">{error}</div>
           </div>
         </div>
@@ -489,7 +489,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
               Master API Key
             </h2>
             <p className="text-sm text-[var(--text-secondary)] mb-6">
-              This API key is used globally across the God Mode to manage Telnyx resources (fetch balances, buy numbers, list Webhooks).
+              Cette clé API est utilisée globalement dans le God Mode pour gérer les ressources du fournisseur (solde, numéros, webhooks).
               Do not share this key.
             </p>
             <form onSubmit={handleSaveKey} className="space-y-4">
@@ -527,7 +527,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                   type="password"
                   value={newPublicKey}
                   onChange={(event) => setNewPublicKey(event.target.value)}
-                  placeholder={publicKeyConfigured ? "Configurée — saisir pour remplacer" : "Copiez la clé publique Telnyx"}
+                  placeholder={publicKeyConfigured ? "Configurée — saisir pour remplacer" : "Copiez la clé publique Ed25519"}
                   className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-4 py-3 text-white font-mono focus:outline-none focus:border-cyan-500"
                 />
                 <p className="mt-2 text-xs text-[var(--text-secondary)]">
@@ -561,7 +561,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                      API Connection Successful
                    </div>
-                   <p className="text-sm text-emerald-400/80">Your God Mode is securely connected to Telnyx.</p>
+                   <p className="text-sm text-emerald-400/80">God Mode connecté au fournisseur.</p>
                  </div>
                </div>
              ) : (
@@ -1091,7 +1091,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
               </button>
             </div>
             {!voiceAudit ? (
-              <p className="text-sm text-[var(--text-secondary)]">L’audit interroge Telnyx sans modifier la configuration.</p>
+              <p className="text-sm text-[var(--text-secondary)]">L’audit interroge le fournisseur sans modifier la configuration.</p>
             ) : (
               <div className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -1120,7 +1120,7 @@ export function TelnyxHubClient({ initialSettings }: { initialSettings: any }) {
                 )}
                 {voiceAudit.deliveries.length > 0 && (
                   <div>
-                    <h3 className="font-semibold mb-2">Dernières livraisons vocales Telnyx</h3>
+                    <h3 className="font-semibold mb-2">Dernières livraisons vocales</h3>
                     <div className="overflow-x-auto rounded-xl border border-[var(--border-subtle)]">
                       <table className="w-full text-left text-xs">
                         <thead className="bg-[var(--bg-surface-hover)] text-[var(--text-secondary)]"><tr><th className="px-3 py-2">Événement</th><th className="px-3 py-2">Date</th><th className="px-3 py-2">HTTP</th><th className="px-3 py-2">État</th></tr></thead>

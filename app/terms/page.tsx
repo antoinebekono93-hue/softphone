@@ -13,7 +13,7 @@ const metaTitle = "Conditions générales";
 export const metadata: Metadata = {
   title: metaTitle,
   description:
-    "Conditions générales d'utilisation de la plateforme Antigravity : compte, abonnements, paiement, renouvellement, résiliation, propriété intellectuelle, responsabilité et données.",
+    `Conditions générales d'utilisation de la plateforme ${siteConfig.brand} : compte, abonnements, paiement, renouvellement, résiliation, propriété intellectuelle, responsabilité et données.`,
   alternates: { canonical: "/terms" },
   openGraph: {
     type: "article",
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     url: "/terms",
     title: `${metaTitle} | ${siteConfig.brand}`,
     description:
-      "Conditions générales d'utilisation, d'abonnement et de paiement de la plateforme Antigravity.",
+      `Conditions générales d'utilisation, d'abonnement et de paiement de la plateforme ${siteConfig.brand}.`,
   },
 };
 
@@ -41,7 +41,7 @@ const sections: LegalSectionData[] = [
       <>
         Les présentes conditions générales régissent l&apos;accès et l&apos;utilisation de la
         plateforme <strong className="text-[var(--text-primary)]">{siteConfig.product}</strong>,
-        plateforme en ligne de téléphonie professionnelle, de softphone cloud et d&apos;agents
+        plateforme en ligne de téléphonie professionnelle, de Buster Call cloud et d&apos;agents
         vocaux assistés par intelligence artificielle (ci-après « la Plateforme »). Elles forment un
         contrat entre vous, en qualité d&apos;utilisateur professionnel ou de représentant d&apos;une
         organisation, et l&apos;éditeur de la Plateforme.
@@ -83,7 +83,7 @@ const sections: LegalSectionData[] = [
     list: [
       <>Attribution et gestion de numéros professionnels dans un pays et un fuseau horaire donnés.</>,
       <>
-        Softphone web et application mobile utilisables dans un navigateur ou sur mobile, pour
+        Buster Call web et application mobile utilisables dans un navigateur ou sur mobile, pour
         émettre et recevoir des appels.
       </>,
       <>

@@ -321,10 +321,10 @@ export function resolveIceTransportPolicy({
  * Ne modifie jamais `iceServers` : les credentials TURN continuent de provenir
  * exclusivement du serveur (/api/app-calls/ice-config).
  */
-export function applyIceTransportPolicy<T extends RTCConfiguration>(
-  config: T,
+export function applyIceTransportPolicy(
+  config: RTCConfiguration,
   policy: IceTransportPolicy
-): T {
+): RTCConfiguration {
   if (policy !== "relay") return config;
   return { ...config, iceTransportPolicy: "relay" };
 }

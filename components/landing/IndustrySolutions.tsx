@@ -68,9 +68,9 @@ const industries = [
     border: "border-cyan-500/50",
     bg: "bg-cyan-500/10",
     title: "Support vocal et intégrations pour vos équipes produit",
-    description: "Softphone dans le navigateur, espace de travail installable et webhooks pour relier vos propres outils.",
+    description: "Buster Call dans le navigateur, espace de travail installable et webhooks pour relier vos propres outils.",
     points: [
-      "Softphone web, mobile et desktop",
+      "Buster Call web, mobile et desktop",
       "Webhooks sortants authentifiés",
       "Import de documents pour les agents"
     ]

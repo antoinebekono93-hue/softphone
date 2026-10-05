@@ -9,7 +9,7 @@ export async function GET() {
     }
 
     if (!process.env.TELNYX_API_KEY) {
-      return NextResponse.json({ error: "Telnyx API key not configured" }, { status: 500 });
+      return NextResponse.json({ error: "Service de transcription non configure" }, { status: 500 });
     }
 
     const response = await fetch("https://api.telnyx.com/v2/voice_clones", {

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, MessageCircle, Mail, Phone, Plus, Package, Hand } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, User, CheckCircle2, AlertCircle, Clock, Bot, UserPlus, XCircle, Sparkles, MessageCircle, Mail, Phone, Plus, Package, Hand } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useMobileDetail } from "@/hooks/useMobileDetail";
 
 export type OmnichannelEvent = {
   id: string;
@@ -32,7 +33,11 @@ export default function UnifiedInboxClient({
   orgId?: string
 }) {
   const [events, setEvents] = useState<OmnichannelEvent[]>(initialEvents);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(initialEvents.length > 0 ? initialEvents[0].id : null);
+  // URL-driven selection: on mobile the conversation takes the whole screen and
+  // the browser Back button returns to the list at the same scroll position.
+  const eventDetail = useMobileDetail("event");
+  const selectedEventId = eventDetail.selected;
+  const setSelectedEventId = eventDetail.open;
   const [replyText, setReplyText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -220,16 +225,16 @@ export default function UnifiedInboxClient({
   return (
     <div className="flex w-full h-full bg-[var(--bg-base)]">
       {/* Left Pane: Conversation List */}
-      <div className="w-full md:w-96 border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex flex-col h-full shrink-0">
+      <div className={`w-full md:w-96 border-r border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] flex-col h-full shrink-0 ${selectedEventId ? "hidden md:flex" : "flex"}`}>
         <div className="p-4 border-b border-[var(--border-subtle)] bg-emerald-500/10">
-          <h2 className="text-xl font-bold text-emerald-600 flex items-center gap-2">
+          <h2 className="text-lg md:text-xl font-bold text-emerald-600 flex items-center gap-2">
              <MessageSquare className="w-5 h-5" />
              Inbox Unifiée
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">{sortedConversations.length} conversations</p>
         </div>
         
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto custom-scrollbar">
           {sortedConversations.length === 0 ? (
             <div className="p-8 text-center text-[var(--text-secondary)]">
               Aucun message WhatsApp.
@@ -286,17 +291,18 @@ export default function UnifiedInboxClient({
       </div>
 
       {/* Right Pane: Chat Detail */}
-      <div className="hidden md:flex flex-1 bg-[#efeae2] flex-col h-full relative dark:bg-[#0b141a]">
+      <div className={`min-w-0 flex-1 bg-[#efeae2] flex-col h-full relative dark:bg-[#0b141a] ${selectedEventId ? "flex" : "hidden md:flex"}`}>
         {contactNumber ? (
           <div className="h-full flex flex-col">
             {/* Detail Header */}
-            <div className="p-4 border-b border-gray-300 dark:border-gray-800 flex items-center justify-between bg-gray-100 dark:bg-[#202c33] shrink-0 shadow-sm z-10">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+            <div className="p-3 md:p-4 border-b border-gray-300 dark:border-gray-800 flex items-center justify-between gap-2 bg-gray-100 dark:bg-[#202c33] shrink-0 shadow-sm z-10">
+              <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                <button onClick={eventDetail.close} aria-label="Retour aux conversations" className="md:hidden min-h-11 min-w-11 grid place-items-center rounded-xl hover:bg-gray-200 dark:hover:bg-[#2b3b44]"><ArrowLeft className="h-5 w-5" /></button>
+                <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center shrink-0">
                    <User className="w-6 h-6 text-gray-500 dark:text-gray-300" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 min-w-0 break-all">
                     {contactNumber}
                     {currentContactId && contactEscalations[currentContactId]?.status === 'REQUESTED' && (
                       <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1 font-bold animate-pulse">
@@ -356,7 +362,7 @@ export default function UnifiedInboxClient({
             )}
 
             {/* Chat Content */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar relative z-0 flex flex-col" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundRepeat: 'repeat', opacity: 0.9 }}>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 md:p-8 custom-scrollbar relative z-0 flex flex-col" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundRepeat: 'repeat', opacity: 0.9 }}>
                <div className="max-w-4xl mx-auto space-y-4 w-full flex-1">
                   {currentContactId && contactSummaries[currentContactId] && (
                     <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 shadow-sm mb-6 dark:bg-indigo-900/20 dark:border-indigo-800">
@@ -537,9 +543,10 @@ export default function UnifiedInboxClient({
             </div>
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center text-gray-500">
-            <MessageSquare className="w-16 h-16 opacity-20 mb-4" />
+          <div className="h-full flex flex-col items-center justify-center text-gray-500 gap-4 p-6 text-center">
+            <MessageSquare className="w-16 h-16 opacity-20" />
             <p className="text-lg">Sélectionnez une conversation WhatsApp.</p>
+            <button onClick={eventDetail.close} className="md:hidden min-h-11 text-[var(--brand)]">Retour aux conversations</button>
           </div>
         )}
       </div>
