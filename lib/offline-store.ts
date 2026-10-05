@@ -68,3 +68,11 @@ export function clearPrivateLocalStorage() {
     });
   } catch { /* Storage may be denied. */ }
 }
+/** True when this device still holds data that belongs to a signed-in account. */
+export function hasPrivateLocalData() {
+  try {
+    if (localStorage.getItem("antigravity-storage-owner")) return true;
+    return Object.keys(localStorage).some(key =>
+      key.startsWith("antigravity-private:") || key.startsWith("antigravity-call-history"));
+  } catch { return false; }
+}

@@ -32,15 +32,17 @@ export function LegalNote({ children }: { children: React.ReactNode }) {
 
 export function LegalIdentity() {
   const rows = [
-    siteConfig.legalEntity && { label: "Éditeur", value: siteConfig.legalEntity },
+    siteConfig.legalEntity && { label: "Éditeur / Opérateur", value: siteConfig.legalEntity },
     siteConfig.tradeName &&
-      siteConfig.tradeName !== siteConfig.legalEntity && { label: "Nom commercial", value: siteConfig.tradeName },
-    siteConfig.companyRegistry && { label: "Immatriculation", value: siteConfig.companyRegistry },
-    siteConfig.vatId && { label: "Numéro de TVA", value: siteConfig.vatId },
+      siteConfig.tradeName !== siteConfig.legalEntity && { label: "Marque", value: siteConfig.tradeName },
     siteConfig.companyAddress && {
       label: "Adresse",
-      value: [siteConfig.companyAddress, siteConfig.country].filter(Boolean).join("\n"),
+      value: siteConfig.addressLines.join("\n"),
     },
+    // RCCM / NIU: rendered only when the business actually provides them.
+    siteConfig.companyRegistry && { label: "RCCM", value: siteConfig.companyRegistry },
+    siteConfig.taxId && { label: "NIU / identifiant fiscal", value: siteConfig.taxId },
+    siteConfig.supportEmail && { label: "E-mail support", value: siteConfig.supportEmail },
     siteConfig.supportPhone && { label: "Téléphone", value: siteConfig.supportPhone },
   ].filter((row): row is { label: string; value: string } => Boolean(row));
 
@@ -49,16 +51,21 @@ export function LegalIdentity() {
   }
 
   return (
-    <dl className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 space-y-2">
-      {rows.map((row) => (
-        <div key={row.label} className="flex flex-col sm:flex-row sm:gap-3">
-          <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] sm:w-44 shrink-0">
-            {row.label}
-          </dt>
-          <dd className="text-sm text-[var(--text-primary)] whitespace-pre-line">{row.value}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="space-y-3">
+      {siteConfig.publisherStatement ? (
+        <p className="text-sm text-[var(--text-primary)]">{siteConfig.publisherStatement}</p>
+      ) : null}
+      <dl className="rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 space-y-2">
+        {rows.map((row) => (
+          <div key={row.label} className="flex flex-col sm:flex-row sm:gap-3">
+            <dt className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] sm:w-44 shrink-0">
+              {row.label}
+            </dt>
+            <dd className="text-sm text-[var(--text-primary)] whitespace-pre-line">{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 

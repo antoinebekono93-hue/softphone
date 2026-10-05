@@ -40,7 +40,8 @@ const sections: LegalSectionData[] = [
     paragraphs: [
       <>
         Le responsable du traitement des données personnelles collectées via la plateforme{" "}
-        <strong className="text-[var(--text-primary)]">{siteConfig.product}</strong> est l&apos;éditeur
+        <strong className="text-[var(--text-primary)]">{siteConfig.legalEntity}</strong>, qui
+        exploite la marque {siteConfig.tradeName}, est l&apos;éditeur
         de la Plateforme, identifié en tête du présent document et sur la page{" "}
         <LegalLink href="/contact" label="Contact" />.
       </>,

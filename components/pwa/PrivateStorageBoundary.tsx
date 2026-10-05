@@ -1,22 +1,13 @@
 "use client";
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { clearOfflineSnapshots, clearPrivateLocalStorage } from "@/lib/offline-store";
+import { clearOfflineSnapshots, clearPrivateLocalStorage, hasPrivateLocalData } from "@/lib/offline-store";
 
 const OWNER_KEY = "antigravity-storage-owner";
 
 // A temporary network or server failure must never be mistaken for a sign-out:
 // drafts, call history and offline snapshots are only discarded once the server
 // explicitly confirms that no session exists.
-function hasPrivateLocalData() {
-  try {
-    if (localStorage.getItem(OWNER_KEY)) return true;
-    return Object.keys(localStorage).some(key =>
-      key.startsWith("antigravity-private:") || key.startsWith("antigravity-call-history"));
-  } catch {
-    return false;
-  }
-}
 
 export function PrivateStorageBoundary() {
   const { data: session, status } = useSession();

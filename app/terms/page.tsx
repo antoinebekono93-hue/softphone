@@ -40,8 +40,9 @@ const sections: LegalSectionData[] = [
     paragraphs: [
       <>
         Les présentes conditions générales régissent l&apos;accès et l&apos;utilisation de la
-        plateforme <strong className="text-[var(--text-primary)]">{siteConfig.product}</strong>,
-        plateforme en ligne de téléphonie professionnelle, de Buster Call cloud et d&apos;agents
+        plateforme <strong className="text-[var(--text-primary)]">{siteConfig.tradeName}</strong>,
+        exploitée par {siteConfig.legalEntity}, plateforme en ligne de téléphonie professionnelle,
+        de softphone cloud et d&apos;agents
         vocaux assistés par intelligence artificielle (ci-après « la Plateforme »). Elles forment un
         contrat entre vous, en qualité d&apos;utilisateur professionnel ou de représentant d&apos;une
         organisation, et l&apos;éditeur de la Plateforme.

@@ -40,8 +40,9 @@ const sections: LegalSectionData[] = [
     paragraphs: [
       <>
         La présente politique définit les usages qui sont interdits sur la plateforme{" "}
-        <strong className="text-[var(--text-primary)]">{siteConfig.product}</strong>. Elle
-        s&apos;applique à l&apos;ensemble des fonctions du service : Buster Call, appels, numéros
+        <strong className="text-[var(--text-primary)]">{siteConfig.tradeName}</strong>, exploitée
+        par {siteConfig.legalEntity}. Elle
+        s&apos;applique à l&apos;ensemble des fonctions du service : softphone, appels, numéros
         professionnels, routage, SMS, messagerie WhatsApp, agents vocaux assistés par intelligence
         artificielle, enregistrement, transcription et analytiques.
       </>,
