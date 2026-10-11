@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
 
 const industries = [
   {
@@ -82,7 +81,7 @@ export default function IndustrySolutions() {
   const current = industries.find((i) => i.id === active)!;
 
   return (
-    <section className="py-24 px-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
+    <section className="py-14 sm:py-24 px-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
       <div className="max-w-7xl mx-auto w-full">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
@@ -111,15 +110,10 @@ export default function IndustrySolutions() {
         </div>
 
         {/* Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={active}
-            initial={{ opacity: 0, y: 14, scale: 0.995 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.995 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="rounded-[32px] glass-panel-premium p-8 md:p-12"
-          >
+        <div
+          key={active}
+          className="reveal rounded-[32px] glass-panel-premium p-8 md:p-12"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div>
               <h3 className={`text-2xl md:text-3xl font-bold mb-4 ${current.color} text-[var(--text-primary)]`}>
@@ -145,7 +139,7 @@ export default function IndustrySolutions() {
               </Link>
             </div>
             <div className="hidden md:block">
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/40 p-10 aspect-square flex items-center justify-center relative overflow-hidden">
+              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/40 p-6 sm:p-10 aspect-square flex items-center justify-center relative overflow-hidden">
                 <div className={`absolute inset-0 bg-gradient-to-br ${current.bg} opacity-20`}></div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={`${current.color}`}>
                   <rect width="18" height="18" x="3" y="3" rx="4"/><path d="M12 3v18"/><path d="M3 12h18"/>
@@ -153,8 +147,7 @@ export default function IndustrySolutions() {
               </div>
             </div>
           </div>
-        </motion.div>
-        </AnimatePresence>
+        </div>
       </div>
     </section>
   );

@@ -35,6 +35,13 @@
   /* Remise sur les sizes de tailwind pour faciliter l'échelle radius */
   --spacing: 0.25rem;
 
+  /* Typographie fluide (clamp) : min mobile -> max desktop, sans media query.
+     Utilisable via text-fluid-h1 / h2 / h3 / body. */
+  --text-fluid-h1: clamp(2rem, 5vw + 1rem, 3rem);
+  --text-fluid-h2: clamp(1.5rem, 3vw + 0.75rem, 2.25rem);
+  --text-fluid-h3: clamp(1.25rem, 2vw + 0.5rem, 1.5rem);
+  --text-fluid-body: clamp(1rem, 0.5vw + 0.875rem, 1.125rem);
+
   /* Mappage shadcn → palette telecom (tokens canoniques, vérifiés utilisés) */
   --color-background: var(--bg-base);
   --color-foreground: var(--text-primary);
@@ -526,6 +533,58 @@ tr:hover td {
 }
 
 /* ============================================================
+   Reveal (CSS-only) — contenu visible SANS JavaScript.
+   La révélation est purement décorative : l'état de base de l'élément
+   reste VISIBLE (aucun `opacity:0` émis au SSR). L'animation n'ajoute
+   qu'un mouvement d'entrée → jamais de page blanche si le JS ne s'exécute
+   pas (vieille version iOS, erreur de parsing, hydration lente, JS coupé).
+   ============================================================ */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(var(--reveal-y, 24px)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes reveal-word {
+  from { opacity: 0; transform: translateY(18px); filter: blur(6px); -webkit-filter: blur(6px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); -webkit-filter: blur(0); }
+}
+.reveal {
+  animation: reveal-up 0.7s var(--ease-emphasized, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: var(--reveal-delay, 0s);
+}
+.word-reveal {
+  animation: reveal-word 0.55s var(--ease-emphasized, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: var(--reveal-delay, 0s);
+}
+.reveal-group > * {
+  animation: reveal-up 0.6s var(--ease-emphasized, cubic-bezier(0.16, 1, 0.3, 1)) both;
+  animation-delay: calc(var(--reveal-group-delay, 0s) + var(--reveal-group-stagger, 0.08s) * var(--reveal-group-index, 0));
+}
+.reveal-group > *:nth-child(1) { --reveal-group-index: 0; }
+.reveal-group > *:nth-child(2) { --reveal-group-index: 1; }
+.reveal-group > *:nth-child(3) { --reveal-group-index: 2; }
+.reveal-group > *:nth-child(4) { --reveal-group-index: 3; }
+.reveal-group > *:nth-child(5) { --reveal-group-index: 4; }
+.reveal-group > *:nth-child(6) { --reveal-group-index: 5; }
+.reveal-group > *:nth-child(7) { --reveal-group-index: 6; }
+.reveal-group > *:nth-child(8) { --reveal-group-index: 7; }
+.reveal-group > *:nth-child(9) { --reveal-group-index: 8; }
+.reveal-group > *:nth-child(n+10) { --reveal-group-index: 9; }
+
+/* Filet de sécurité no-JS : force l'affichage de tout élément de révélation,
+   même si une animation n'est pas supportée ou est désactivée. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .word-reveal,
+  .reveal-group > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+  }
+}
+
+/* ============================================================
    Reduced motion : neutraliser le décoratif
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {
@@ -675,3 +734,35 @@ main {
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================
+   Mobile foundations — lisibilité et interaction tactile
+   ============================================================ */
+
+/* Empêche l'auto-zoom d'iOS Safari : les champs de formulaire doivent
+   faire au moins 16px sur mobile (sinon la page reste zoomée après focus). */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Empêche l'ajustement automatique de la taille du texte par le navigateur
+   (iOS agrandit le texte en paysage sinon, créant des incohérences). */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Supprime le délai de double-tap zoom sur les éléments interactifs. */
+button,
+a,
+[role="button"],
+input[type="submit"],
+input[type="button"],
+label[for] {
+  touch-action: manipulation;
+}
+

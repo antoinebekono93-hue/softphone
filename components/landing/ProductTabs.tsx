@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
 
 const tabs = [
   {
@@ -87,7 +86,7 @@ export default function ProductTabs() {
   const current = tabs.find((t) => t.id === active)!;
 
   return (
-    <section id="solutions" className="py-24 px-4 max-w-7xl mx-auto w-full">
+    <section id="solutions" className="py-14 sm:py-24 px-4 max-w-7xl mx-auto w-full">
       <div className="text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
           Une plateforme pensée pour <span className="text-gradient">chaque métier.</span>
@@ -116,15 +115,10 @@ export default function ProductTabs() {
       </div>
 
       {/* Active tab content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={active}
-          initial={{ opacity: 0, y: 14, scale: 0.995 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -8, scale: 0.995 }}
-          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[32px] glass-panel-premium p-8 md:p-12 relative overflow-hidden"
-        >
+      <div
+        key={active}
+        className="reveal rounded-[32px] glass-panel-premium p-8 md:p-12 relative overflow-hidden"
+      >
         <div className={`absolute inset-0 bg-gradient-to-br ${current.gradient} to-transparent pointer-events-none`}></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative">
           <div>
@@ -164,8 +158,7 @@ export default function ProductTabs() {
             </div>
           </div>
         </div>
-      </motion.div>
-      </AnimatePresence>
+      </div>
     </section>
   );
 }

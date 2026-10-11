@@ -1,77 +1,42 @@
-"use client";
-
 import Link from "next/link";
-import { motion, useReducedMotion } from "motion/react";
-import { WordReveal } from "./motion";
+import type { CSSProperties } from "react";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
+type CssVars = CSSProperties & Record<`--${string}`, string | number>;
 
 export default function HeroSection() {
-  const reduced = useReducedMotion();
-
   return (
-    <main className="flex-1 flex flex-col items-center text-center px-4 pt-32 pb-20 relative overflow-hidden">
-      {/* Glow de fond animé */}
-      <motion.div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-cyan-500/20 blur-[120px] rounded-full pointer-events-none -z-10"
-        animate={
-          reduced
-            ? { opacity: 0.6 }
-            : { opacity: [0.5, 0.9, 0.5], scale: [1, 1.08, 1] }
-        }
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[300px] bg-violet-500/20 blur-[100px] rounded-full pointer-events-none -z-10"
-        animate={
-          reduced
-            ? { opacity: 0.4 }
-            : { opacity: [0.3, 0.7, 0.3], scale: [1, 1.15, 1] }
-        }
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+    <main className="flex-1 flex flex-col items-center text-center px-4 pt-24 pb-12 md:pt-32 md:pb-20 relative overflow-hidden">
+      {/* Dégradé statique : aucun filtre animé pendant le défilement */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-[400px] pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(6,182,212,0.15),transparent_70%)]"
       />
 
       {/* Badge */}
-      <motion.div
-        initial={{ opacity: 0, y: reduced ? 0 : 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.05, ease: EASE }}
-        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-400 mb-8 shadow-sm"
+      <div
+        className="reveal inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-xs text-cyan-400 mb-8 shadow-sm"
+        style={{ "--reveal-delay": "0.05s" } as CssVars}
       >
         <span className="font-bold">Nouveau :</span>
         <span>Plateforme IA Vocal Agentic en ligne</span>
-      </motion.div>
+      </div>
 
-      {/* H1 dévoilé mot à mot */}
-      <motion.h1
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="text-5xl md:text-[5.5rem] font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.05] text-[var(--text-primary)]"
-      >
-        <WordReveal text="Buster Call — Le système télécom qui révolutionne votre" delay={0.1} />
-        <span className="n8n-gradient-text">
-          <WordReveal text="relation client." delay={0.42} />
-        </span>
-      </motion.h1>
+      {/* Titre visible dès le HTML initial */}
+      <h1 className="relative text-[clamp(2rem,8vw,3rem)] md:text-[5.5rem] font-extrabold tracking-tight mb-6 max-w-4xl leading-[1.08] text-balance text-[var(--text-primary)]">
+        Buster Call — Le système télécom qui révolutionne votre{" "}
+        <span className="n8n-gradient-text">relation client.</span>
+      </h1>
 
       {/* Sous-titre */}
-      <motion.p
-        initial={{ opacity: 0, y: reduced ? 0 : 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
-        className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
+      <p
+        className="reveal text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 font-normal leading-relaxed"
+        style={{ "--reveal-delay": "0.6s" } as CssVars}
       >
         Une plateforme pour centraliser vos appels, vos numéros professionnels et vos agents vocaux IA dans Buster Call.
-      </motion.p>
+      </p>
 
       {/* CTAs */}
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.72 } } }}
-        className="flex flex-col sm:flex-row gap-4 items-center mb-10"
-      >
+      <div className="flex flex-col sm:flex-row gap-4 items-center mb-10">
         {[
           <Link key="cta1" href="/register" className="text-base font-semibold n8n-gradient-bg text-white px-8 py-4 rounded-full shadow-lg shadow-cyan-500/30 hover:scale-105 transition-all flex items-center gap-2">
             Créer un compte <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -84,31 +49,27 @@ export default function HeroSection() {
             Parler à un expert
           </Link>,
         ].map((node, i) => (
-          <motion.div key={i} variants={{ hidden: { opacity: 0, y: reduced ? 0 : 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: EASE } } }}>
+          <div key={i} className="reveal" style={{ "--reveal-delay": `${0.72 + i * 0.1}s` } as CssVars}>
             {node}
-          </motion.div>
+          </div>
         ))}
-      </motion.div>
+      </div>
 
       {/* Trust badges */}
-      <motion.div
-        initial={{ opacity: 0, y: reduced ? 0 : 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 1.0, ease: EASE }}
-        className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-[var(--text-secondary)] mb-16"
+      <div
+        className="reveal flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-medium text-[var(--text-secondary)] mb-16"
+        style={{ "--reveal-delay": "1s" } as CssVars}
       >
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Buster Call web, mobile et desktop</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Numéros professionnels par utilisateur</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Appels internes illimités entre utilisateurs (app-to-app)</span>
         <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Sans carte bancaire pour créer un compte</span>
-      </motion.div>
+      </div>
 
       {/* Hero Visual Mockup */}
-      <motion.div
-        initial={{ opacity: 0, y: reduced ? 0 : 48, scale: reduced ? 1 : 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.9, delay: 1.05, ease: EASE }}
-        className="w-full max-w-5xl relative mt-4"
+      <div
+        className="reveal w-full max-w-5xl relative mt-4"
+        style={{ "--reveal-delay": "1.05s", "--reveal-y": "48px" } as CssVars}
       >
         <div className="rounded-3xl bg-[var(--bg-surface-hover)] p-4 md:p-8 overflow-hidden relative">
           <div className="rounded-xl bg-[var(--bg-surface-solid)] shadow-2xl overflow-hidden border border-[var(--border-subtle)]">
@@ -132,9 +93,9 @@ export default function HeroSection() {
             </div>
 
             {/* Fake Dashboard Inner Content */}
-            <div className="aspect-[21/9] md:aspect-[16/9] flex items-center justify-center relative bg-[var(--bg-base)]">
+            <div className="py-6 px-3 md:py-0 md:px-0 md:aspect-[16/9] flex items-center justify-center relative bg-[var(--bg-base)]">
               {/* Fake Softphone UI */}
-              <div className="w-80 h-[80%] rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-lg relative z-0 flex flex-col p-6 overflow-hidden mt-8">
+              <div className="w-full max-w-80 md:h-[80%] rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] shadow-lg relative z-0 flex flex-col p-5 md:p-6 overflow-hidden md:mt-8">
                 <div className="w-full flex justify-between items-center mb-8">
                   <div className="text-[var(--text-secondary)] text-xs font-bold uppercase tracking-widest">Appel en cours</div>
                   <div className="text-emerald-500 text-xs font-mono font-bold">04:12</div>
@@ -157,7 +118,7 @@ export default function HeroSection() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </main>
   );
 }

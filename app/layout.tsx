@@ -90,6 +90,12 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <head>
+        {/* Compatibilité iOS anciens : iOS < 15.4 lit ces balises Apple spécifiques
+            (Next.js n'émet que la variante standard `mobile-web-app-capable`). */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Buster Call" />
+        <meta name="format-detection" content="telephone=no" />
         {/* Theme init (avant paint pour éviter le flash) */}
         <script
           dangerouslySetInnerHTML={{

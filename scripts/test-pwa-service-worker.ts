@@ -29,8 +29,8 @@ const onlineHook = read("hooks/useOnline.ts");
 
 console.log("  next.config.ts");
 check("reloadOnOnline is disabled", /reloadOnOnline:\s*false/.test(nextConfig));
-check("skipWaiting is disabled", /skipWaiting:\s*false/.test(nextConfig));
-check("clientsClaim is disabled", /clientsClaim:\s*false/.test(nextConfig));
+check("skipWaiting is enabled so new builds activate immediately", /skipWaiting:\s*true/.test(nextConfig));
+check("clientsClaim is enabled so controlled clients adopt the new build", /clientsClaim:\s*true/.test(nextConfig));
 check("cacheStartUrl is disabled", /cacheStartUrl:\s*false/.test(nextConfig));
 check("cacheOnFrontEndNav is disabled", /cacheOnFrontEndNav:\s*false/.test(nextConfig));
 check("aggressive front-end nav caching is off", /aggressiveFrontEndNavCaching:\s*false/.test(nextConfig));

@@ -80,8 +80,8 @@ export default withPWA({
         options: { cacheName: "app-assets-v1", expiration: { maxEntries: 80, maxAgeSeconds: 604800 } },
       },
     ],
-    skipWaiting: false,
-    clientsClaim: false,
+    skipWaiting: true,
+    clientsClaim: true,
   },
 })(withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
