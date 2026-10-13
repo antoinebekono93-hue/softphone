@@ -1288,6 +1288,7 @@ model PushSubscription {
 
   @@index([userId])
 }
+
 model FcmDeviceToken {
   id             String        @id @default(cuid())
   userId         String
