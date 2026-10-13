@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { debitWalletAtomically } from "@/lib/billing";
+import { debitWalletAtomically, getSystemRates } from "@/lib/billing";
 
 export async function GET(request: Request) {
   try {
@@ -87,7 +87,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No organization found" }, { status: 404 });
     }
 
-    const { type, name, price } = await request.json();
+    const { type, name } = await request.json();
+
+    // Le prix est TOUJOURS calculé côté serveur : un montant fourni par le
+    // client permettait de débiter (ou créditer via un négatif) n'importe quelle
+    // valeur. On s'appuie sur le tarif eSIM configuré (God Mode → Tarifs).
+    const rates = await getSystemRates();
+    const price = rates.eSimRate.toNumber();
+    if (!Number.isFinite(price) || price <= 0) {
+      return NextResponse.json({ error: "Tarif eSIM non configuré." }, { status: 500 });
+    }
 
     // Early balance check (fast-fail). La garantie réelle est le débit atomique gardé (§3).
     if (org.walletBalance.toNumber() < price) {
@@ -158,6 +167,17 @@ export async function POST(request: Request) {
           lpaCode: activationCode,
           organizationId: org.id,
         }
+      });
+
+      // Trace grand livre : tout débit du wallet doit avoir sa WalletTransaction,
+      // sinon Σ(ledger) dérive du solde réel.
+      await tx.walletTransaction.create({
+        data: {
+          organizationId: org.id,
+          amount: -price,
+          type: "DEBIT",
+          description: `Achat eSIM (${iccid || telnyxSimId || "eSIM"})`,
+        },
       });
     });
 

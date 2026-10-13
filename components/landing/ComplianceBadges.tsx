@@ -14,25 +14,25 @@ export default function ComplianceBadges() {
   const reduced = useReducedMotion();
 
   return (
-    <section className="py-20 px-4 max-w-7xl mx-auto w-full">
-      <Reveal className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
+    <section className="landing-section landing-container max-w-7xl mx-auto w-full">
+      <Reveal className="landing-section-heading text-center">
+        <h2 className="landing-heading font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
           Sécurité et conformité <span className="text-gradient">des données</span>
         </h2>
-        <p className="text-[var(--text-secondary)] text-lg font-medium">
+        <p className="text-[var(--text-secondary)] landing-body font-medium">
           Standards de protection appliqués à vos communications et à votre historique client.
         </p>
       </Reveal>
 
-      <Stagger className="flex flex-wrap justify-center gap-4">
+      <Stagger className="landing-grid landing-compliance-grid">
         {securityStandards.map((item, i) => (
           <Item key={i}>
             <motion.div
               whileHover={reduced ? undefined : { y: -3, scale: 1.02 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="flex items-center gap-3 px-6 py-3.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-emerald-500/40 hover:shadow-lg transition-all"
+              className="landing-compliance-card flex items-center gap-3 border border-[var(--border-subtle)] bg-[var(--bg-surface)] hover:border-emerald-500/40 hover:shadow-lg transition-all"
             >
-              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+              <div className="w-2 h-2 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
               <div>
                 <div className="text-sm font-bold text-[var(--text-primary)]">{item.name}</div>
                 <div className="text-xs text-[var(--text-secondary)] font-medium">{item.description}</div>

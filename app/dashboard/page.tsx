@@ -122,7 +122,7 @@ export default async function DashboardPage() {
   const estimatedCost = (minutesToday * 0.05) + (smsToday * 0.01);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 custom-scrollbar">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8 custom-scrollbar">
       <div>
         <h1 className="text-3xl font-extrabold text-[var(--text-primary)]">
           Console de Supervision

@@ -6,6 +6,7 @@ import { signIn } from "next-auth/react";
 import { registerUser } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -58,10 +59,18 @@ export default function RegisterPage() {
           </p>
 
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm">
+            <div role="alert" className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm">
               {error}
             </div>
           )}
+
+          <GoogleAuthButton callbackUrl="/auth/redirect" label="Continuer avec Google" />
+
+          <div className="my-6 flex items-center gap-4 text-xs font-medium uppercase tracking-wide text-[var(--text-secondary)]">
+            <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+            <span className="text-center">ou s'inscrire avec un e-mail</span>
+            <span className="h-px flex-1 bg-[var(--border-subtle)]" />
+          </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
              <div className="flex flex-col gap-2">

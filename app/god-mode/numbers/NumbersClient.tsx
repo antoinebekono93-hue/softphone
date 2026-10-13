@@ -350,12 +350,12 @@ const [voicemailGreeting, setVoicemailGreeting] = useState("");
                   {/* §19 — diagnostic only. A missing owner is never guessed:
                       it is surfaced so an operator can resolve it explicitly. */}
                   {!num.assignedUserId && (
-                    <span className="mt-2 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <span className="mt-2 inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-widest bg-amber-500/15 text-amber-300 border border-amber-500/30">
                       Non attribué
                     </span>
                   )}
                   {attributionCase(num) === "D" && (
-                    <span className="mt-2 ml-2 inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest bg-red-500/15 text-red-300 border border-red-500/30">
+                    <span className="mt-2 ml-2 inline-block px-2 py-1 rounded text-xs font-bold uppercase tracking-widest bg-red-500/15 text-red-300 border border-red-500/30">
                       Utilisateur hors organisation
                     </span>
                   )}
@@ -372,8 +372,8 @@ const [voicemailGreeting, setVoicemailGreeting] = useState("");
                 </td>
                 <td className="px-6 py-4 text-right">
                    <div className="flex items-center justify-end gap-2">
-                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${num.capabilities?.includes('voice') ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)]'}`}>Voice</span>
-                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-widest ${num.capabilities?.includes('sms') ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)]'}`}>SMS</span>
+                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-widest ${num.capabilities?.includes('voice') ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)]'}`}>Voice</span>
+                     <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-widest ${num.capabilities?.includes('sms') ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)]'}`}>SMS</span>
                    </div>
                 </td>
               </tr>

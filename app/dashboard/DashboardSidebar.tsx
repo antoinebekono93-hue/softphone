@@ -189,7 +189,7 @@ export function DashboardSidebar({
           {navGroups.map((group, idx) => (
             <div key={idx}>
               {!isCollapsed && (
-                <div className="px-3 mb-3 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
+                <div className="px-3 mb-3 text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">
                   {group.title}
                 </div>
               )}

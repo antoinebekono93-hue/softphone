@@ -28,7 +28,7 @@ export default async function IntegrationsPage() {
   ];
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Integrations</h1>
         <p className="text-[var(--text-secondary)]">Connect Buster Call with your favorite tools to automate your workflows.</p>

@@ -31,7 +31,7 @@ export default async function AdminDashboardPage() {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-[var(--text-primary)]">Administration Système</h1>
         <p className="text-[var(--text-secondary)] mt-2">Vue d'ensemble des portefeuilles et transactions de toutes les organisations.</p>

@@ -11,21 +11,21 @@ const capabilities = [
 
 export default function StatsBar() {
   return (
-    <section className="py-24 px-4 max-w-7xl mx-auto w-full">
-      <Reveal className="text-center mb-16">
-        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
+    <section className="landing-section landing-container max-w-7xl mx-auto w-full">
+      <Reveal className="landing-section-heading text-center">
+        <h2 className="landing-heading font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
           Une architecture conçue pour la performance
         </h2>
-        <p className="text-[var(--text-secondary)] text-lg font-medium">
+        <p className="text-[var(--text-secondary)] landing-body font-medium">
           Fiabilité et réactivité au service de vos échanges professionnels.
         </p>
       </Reveal>
 
-      <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+      <Stagger className="landing-grid landing-stats-grid">
         {capabilities.map((item, i) => (
           <Item key={i}>
-            <div className="rounded-[32px] glass-panel-premium p-8 text-center h-full flex flex-col justify-center">
-              <div className="text-3xl md:text-4xl font-extrabold n8n-gradient-text mb-2">
+            <div className="landing-card glass-panel-premium text-center h-full flex flex-col justify-center">
+              <div className="landing-stat-value font-extrabold n8n-gradient-text mb-2">
                 {item.value}
               </div>
               <div className="text-sm font-medium text-[var(--text-secondary)]">{item.label}</div>

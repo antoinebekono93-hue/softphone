@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "./landing.css";
 import type { Metadata } from "next";
 import MarketingHeader from "@/components/marketing/MarketingHeader";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
@@ -34,7 +35,7 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-cyan-500/30 font-sans overflow-x-hidden">
+    <div className="landing-page flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] selection:bg-cyan-500/30 font-sans">
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes marquee {
           0% { transform: translateX(0%); }
@@ -58,6 +59,7 @@ export default function LandingPage() {
       {/* 1. Header */}
       <MarketingHeader />
 
+      <main id="landing-content">
       {/* 2. Hero */}
       <HeroSection />
 
@@ -89,15 +91,15 @@ export default function LandingPage() {
       <ThoughtLeadership />
 
       {/* 12. Integrations Banner */}
-      <section id="integrations" className="py-24 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-           <h2 className="text-3xl md:text-4xl font-extrabold mb-12 text-[var(--text-primary)]">S&apos;intègre avec votre <span className="text-gradient">écosystème actuel.</span></h2>
-<div className="flex flex-wrap justify-center items-center gap-10 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
+      <section id="integrations" className="landing-section border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
+        <div className="landing-container max-w-4xl mx-auto text-center">
+           <h2 className="landing-heading font-extrabold mb-6 text-[var(--text-primary)]">S&apos;intègre avec votre <span className="text-gradient">écosystème actuel.</span></h2>
+<div className="landing-integrations">
             
-            <div className="text-2xl font-bold text-[var(--text-primary)]">WhatsApp Business</div>
-            <div className="text-2xl font-bold text-[var(--text-primary)]">Meta</div>
-            <div className="text-2xl font-bold text-[var(--text-primary)]">OpenAI</div>
-            <div className="text-2xl font-bold text-[var(--text-primary)]">Cloudflare TURN</div>
+            <div className="landing-integration-name font-bold text-[var(--text-primary)]">WhatsApp Business</div>
+            <div className="landing-integration-name font-bold text-[var(--text-primary)]">Meta</div>
+            <div className="landing-integration-name font-bold text-[var(--text-primary)]">OpenAI</div>
+            <div className="landing-integration-name font-bold text-[var(--text-primary)]">Cloudflare TURN</div>
           </div>
           <p className="mt-6 text-xs font-medium text-[var(--text-secondary)] max-w-2xl mx-auto">
             Ces éditeurs fournissent les briques techniques utilisées par la plateforme. Leur mention n&apos;implique
@@ -115,6 +117,7 @@ export default function LandingPage() {
       {/* 13. Final CTA */}
       <FinalCTA />
 
+      </main>
       {/* 14. Footer */}
       <MarketingFooter />
     </div>

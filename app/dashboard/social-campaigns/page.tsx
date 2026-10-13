@@ -55,7 +55,7 @@ export default async function SocialCampaignsPage() {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
       <CampaignsClient 
         groups={groups} 
         templates={templates} 

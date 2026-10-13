@@ -1,4 +1,4 @@
-import { SoftphoneWorkspace } from "@/components/softphone/SoftphoneWorkspace";
+import { SoftphoneExperience } from "@/components/softphone/SoftphoneExperience";
 import { PageHeader } from "@/components/ui/page-header";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
@@ -18,9 +18,7 @@ export default async function SoftphonePage() {
         />
       </div>
 
-      <div className="flex-1 min-h-0 flex">
-        <SoftphoneWorkspace />
-      </div>
+      <SoftphoneExperience />
     </div>
   );
 }

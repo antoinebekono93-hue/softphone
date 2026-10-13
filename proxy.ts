@@ -42,6 +42,7 @@ const publicPaths = [
   "/api/voice/twiml",
   "/api/voice/status",
   "/api/stripe/webhook",
+  "/api/cinetpay/webhook",
   "/api/webhooks",
   "/api/cron",
   "/api/health",

@@ -108,7 +108,7 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
               }`}
             >
               {plan.recommended && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 n8n-gradient-bg text-[11px] font-bold uppercase tracking-wider rounded-full text-white">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 n8n-gradient-bg text-xs font-bold uppercase tracking-wider rounded-full text-white">
                   Recommandé
                 </div>
               )}
@@ -143,7 +143,7 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
               </Link>
 
               <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--bg-surface)]/60 px-3 py-2.5 mb-5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
                   Renouvellement
                 </p>
                 <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
@@ -166,7 +166,7 @@ export function PricingClient({ plans }: { plans: PricingPlanCard[] }) {
 
               {plan.fairUse && (
                 <div className="mt-5 rounded-[var(--radius-md)] border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-400 mb-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">
                     Limites d&apos;usage loyal
                   </p>
                   <p className="text-xs leading-relaxed text-[var(--text-secondary)]">

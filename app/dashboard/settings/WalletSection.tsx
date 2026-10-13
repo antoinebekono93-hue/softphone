@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Wallet, CreditCard, ArrowUpRight, ArrowDownRight, History, Loader2, AlertCircle, ExternalLink, Zap, Phone, MessageSquare } from "lucide-react";
+import { Wallet, CreditCard, ArrowUpRight, ArrowDownRight, History, Loader2, AlertCircle, Zap, Phone, MessageSquare } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Card } from "@/components/ui/card";
 
@@ -15,7 +15,7 @@ export function WalletSection({
   planStatus?: string | null;
 }) {
   const { t } = useLanguage();
-  const [toppingUp, setToppingUp] = useState<"stripe" | "flutterwave" | null>(null);
+  const [toppingUp, setToppingUp] = useState<"cinetpay" | null>(null);
   const [customAmount, setCustomAmount] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -23,25 +23,64 @@ export function WalletSection({
 
   const topAmounts = [10, 25, 50, 100];
 
-  const handleTopUp = async (amount: number, provider: "stripe" | "flutterwave") => {
-    setToppingUp(provider);
-    try {
-      const endpoint =
-        provider === "stripe"
-          ? "/api/stripe/create-checkout-session"
-          : "/api/billing/checkout/flutterwave";
+  // =====================================================================
+  // ANCIENS MODES DE PAIEMENT (Stripe / Flutterwave) — DÉSACTIVÉS.
+  // CinetPay est désormais le mode de paiement principal.
+  // =====================================================================
+  // const handleTopUp = async (amount: number, provider: "stripe" | "flutterwave") => {
+  //   setToppingUp(provider);
+  //   try {
+  //     const endpoint =
+  //       provider === "stripe"
+  //         ? "/api/stripe/create-checkout-session"
+  //         : "/api/billing/checkout/flutterwave";
+  //
+  //     const res = await fetch(endpoint, {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ amount }),
+  //     });
+  //
+  //     const data = await res.json();
+  //     if (data.url) {
+  //       window.location.href = data.url;
+  //     } else {
+  //       alert(data.error || "Erreur de génération du lien de paiement.");
+  //     }
+  //   } catch (e) {
+  //     alert("Erreur réseau. Veuillez réessayer.");
+  //   } finally {
+  //     setToppingUp(null);
+  //   }
+  // };
+  //
+  // const handleCustomTopUp = (provider: "stripe" | "flutterwave") => {
+  //   const amount = parseFloat(customAmount);
+  //   if (isNaN(amount) || amount < 5) {
+  //     alert("Le montant minimum est de 5€");
+  //     return;
+  //   }
+  //   handleTopUp(amount, provider);
+  // };
 
-      const res = await fetch(endpoint, {
+  // CinetPay — mode de paiement principal.
+  const handleCinetPayTopUp = async (amount: number) => {
+    setToppingUp("cinetpay");
+    try {
+      const res = await fetch("/api/cinetpay/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({
+          amount,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
 
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
+      if (res.ok && data.url) {
+        window.location.assign(data.url);
       } else {
-        alert(data.error || "Erreur de génération du lien de paiement.");
+        alert(data.error || "Erreur de génération du lien de paiement CinetPay.");
       }
     } catch (e) {
       alert("Erreur réseau. Veuillez réessayer.");
@@ -50,13 +89,13 @@ export function WalletSection({
     }
   };
 
-  const handleCustomTopUp = (provider: "stripe" | "flutterwave") => {
+  const handleCustomCinetPayTopUp = () => {
     const amount = parseFloat(customAmount);
     if (isNaN(amount) || amount < 5) {
       alert("Le montant minimum est de 5€");
       return;
     }
-    handleTopUp(amount, provider);
+    handleCinetPayTopUp(amount);
   };
 
   const loadHistory = async () => {
@@ -152,11 +191,11 @@ export function WalletSection({
           <div className="flex items-center gap-2 text-[var(--text-secondary)] text-sm font-medium mb-3">
             <CreditCard className="w-4 h-4" /> Recharger
           </div>
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
             {topAmounts.map((amount) => (
               <button
                 key={amount}
-                onClick={() => handleTopUp(amount, "stripe")}
+                onClick={() => handleCinetPayTopUp(amount)}
                 disabled={!!toppingUp}
                 className="px-3 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] hover:border-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/5 text-[var(--text-primary)] font-bold text-sm transition-all disabled:opacity-50"
               >
@@ -174,13 +213,29 @@ export function WalletSection({
               className="flex-1 bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-xl px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-primary)] transition-colors"
             />
             <button
-              onClick={() => handleCustomTopUp("stripe")}
+              onClick={handleCustomCinetPayTopUp}
               disabled={!!toppingUp || !customAmount}
               className="px-4 py-2 rounded-xl bg-[var(--accent-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-1.5"
             >
-              {toppingUp === "stripe" ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+              {toppingUp === "cinetpay" ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
             </button>
           </div>
+          <button
+            onClick={() => {
+              const amount = parseFloat(customAmount) || 10;
+              handleCinetPayTopUp(amount);
+            }}
+            disabled={!!toppingUp}
+            className="w-full mt-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] text-xs font-medium hover:text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            {toppingUp === "cinetpay" ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <>Payer via CinetPay</>
+            )}
+          </button>
+          {/* =====================================================
+              ANCIEN MODE DE PAIEMENT (Flutterwave) — DÉSACTIVÉ
           <button
             onClick={() => {
               const amount = parseFloat(customAmount) || 10;
@@ -189,12 +244,9 @@ export function WalletSection({
             disabled={!!toppingUp}
             className="w-full mt-2 px-4 py-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] text-xs font-medium hover:text-[var(--text-primary)] hover:border-[var(--accent-primary)] transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
-            {toppingUp === "flutterwave" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <>Via Flutterwave <ExternalLink className="w-3 h-3" /></>
-            )}
+            Via Flutterwave
           </button>
+              ===================================================== */}
         </div>
       </div>
 

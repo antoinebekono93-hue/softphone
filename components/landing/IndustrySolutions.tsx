@@ -81,23 +81,25 @@ export default function IndustrySolutions() {
   const current = industries.find((i) => i.id === active)!;
 
   return (
-    <section className="py-14 sm:py-24 px-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
+    <section className="landing-section landing-container border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
       <div className="max-w-7xl mx-auto w-full">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
+        <div className="landing-section-heading text-center">
+          <h2 className="landing-heading font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
             Des solutions pour <span className="text-gradient">chaque secteur</span>
           </h2>
-          <p className="text-[var(--text-secondary)] text-lg font-medium">
+          <p className="text-[var(--text-secondary)] landing-body font-medium">
             Communiquez mieux avec vos clients, quel que soit votre domaine.
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap justify-center gap-2 mb-12">
+        <div className="landing-selectors">
           {industries.map((industry) => (
             <button
               key={industry.id}
               onClick={() => setActive(industry.id)}
+              aria-pressed={active === industry.id}
+              aria-controls="IndustrySolutions-content"
               className={`px-5 py-3 rounded-full text-sm font-semibold transition-all ${
                 active === industry.id
                   ? `${industry.bg} ${industry.color} border ${industry.border}`
@@ -112,17 +114,18 @@ export default function IndustrySolutions() {
         {/* Content */}
         <div
           key={active}
-          className="reveal rounded-[32px] glass-panel-premium p-8 md:p-12"
+          id="IndustrySolutions-content"
+          className="reveal landing-card landing-panel glass-panel-premium"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+          <div className="landing-panel-grid items-center">
             <div>
-              <h3 className={`text-2xl md:text-3xl font-bold mb-4 ${current.color} text-[var(--text-primary)]`}>
+              <h3 className={`landing-card-heading font-bold mb-4 ${current.color} text-[var(--text-primary)]`}>
                 {current.title}
               </h3>
-              <p className="text-[var(--text-secondary)] text-lg font-medium mb-8">
+              <p className="text-[var(--text-secondary)] landing-body font-medium mb-8">
                 {current.description}
               </p>
-<ul className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<ul className="grid grid-cols-1 gap-4">
                  {current.points.map((point, i) => (
                    <li key={i} className="flex items-start gap-2 text-sm font-medium text-[var(--text-secondary)]">
                      <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${current.color.replace("text-", "bg-")}`} />
@@ -138,7 +141,7 @@ export default function IndustrySolutions() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </Link>
             </div>
-            <div className="hidden md:block">
+            <div className="landing-panel-visual">
               <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/40 p-6 sm:p-10 aspect-square flex items-center justify-center relative overflow-hidden">
                 <div className={`absolute inset-0 bg-gradient-to-br ${current.bg} opacity-20`}></div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={`${current.color}`}>

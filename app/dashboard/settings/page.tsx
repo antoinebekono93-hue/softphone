@@ -24,8 +24,31 @@ export default async function SettingsPage() {
     dbError = true;
   }
 
+  // Login methods: Google is considered connected when an OAuth account link
+  // exists for this user. No tokens are read or displayed (auth only).
+  let googleConnected = false;
+  let hasPassword = false;
+  if (session?.user?.id && !dbError) {
+    try {
+      const [googleAccounts, userRecord] = await Promise.all([
+        prisma.account.findMany({
+          where: { userId: session.user.id, provider: "google" },
+          select: { id: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { passwordHash: true },
+        }),
+      ]);
+      googleConnected = googleAccounts.length > 0;
+      hasPassword = Boolean(userRecord?.passwordHash);
+    } catch (e) {
+      console.error("Failed to fetch login methods for settings:", e);
+    }
+  }
+
   return (
-    <div className="p-8 max-w-4xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Organization Settings</h1>
         <p className="text-[var(--text-secondary)]">Manage your account and organization preferences.</p>
@@ -61,6 +84,39 @@ export default async function SettingsPage() {
           <div className="mt-6 flex justify-end">
             <button className="px-5 py-2.5 bg-[var(--bg-surface-solid)] text-[var(--text-primary)] font-medium rounded-lg hover:bg-[var(--bg-surface-hover)] transition-colors">Save Changes</button>
           </div>
+        </Card>
+
+        {/* Login Methods Section */}
+        <Card className="p-6">
+          <h2 className="text-xl font-medium mb-1">Login methods</h2>
+          <p className="text-sm text-[var(--text-secondary)] mb-4">How you can sign in to your Buster Call account.</p>
+          <div className="flex flex-col divide-y divide-[var(--border-subtle)]">
+            <div className="flex items-center justify-between gap-4 py-3">
+              <div className="flex items-center gap-3">
+                <svg aria-hidden="true" viewBox="0 0 18 18" className="h-5 w-5 shrink-0">
+                  <path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9087c1.7027-1.5673 2.6836-3.874 2.6836-6.615z" />
+                  <path fill="#34A853" d="M9 18c2.43 0 4.4673-.8059 5.9564-2.1805l-2.9087-2.2581c-.806-.54-1.8364-.8591-3.0477-.8591-2.3441 0-4.3282 1.5831-5.0359 3.7104H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z" />
+                  <path fill="#FBBC05" d="M3.9641 11.4132c-.1805-.54-.2836-1.1168-.2836-1.7132s.1031-1.1732.2836-1.7132V5.6545H.9573C.3477 6.8718 0 8.2586 0 9.7s.3477 2.8282.9573 4.0455l3.0068-2.3323z" />
+                  <path fill="#EA4335" d="M9 3.5955c1.3214 0 2.5077.4541 3.4405 1.3459l2.5813-2.5813C13.4632.8918 11.4259 0 9 0 5.4818 0 2.4382 2.0168.9573 5.6545l3.0068 2.3323C4.6718 5.8591 6.6559 3.5955 9 3.5955z" />
+                </svg>
+                <span className="text-sm font-medium">Google</span>
+              </div>
+              <span className={`text-sm font-medium ${googleConnected ? "text-emerald-500" : "text-[var(--text-secondary)]"}`}>
+                {googleConnected ? "Connected" : "Not connected"}
+              </span>
+            </div>
+            {hasPassword && (
+              <div className="flex items-center justify-between gap-4 py-3">
+                <span className="text-sm font-medium">Email &amp; password</span>
+                <span className="text-sm font-medium text-[var(--text-secondary)]">Not connected</span>
+              </div>
+            )}
+          </div>
+          {!googleConnected && (
+            <p className="mt-4 text-xs text-[var(--text-secondary)]">
+              Pour associer Google à ce compte, connectez-vous d'abord avec le même e-mail via Google. La connexion explicite depuis les paramètres arrivera dans une prochaine mise à jour.
+            </p>
+          )}
         </Card>
 
         {/* Organization Section */}

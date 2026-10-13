@@ -21,7 +21,7 @@ export default async function TeamPage() {
   });
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
@@ -111,8 +111,8 @@ export default async function TeamPage() {
                   <span className="text-xs text-[var(--text-secondary)]">2 members</span>
                 </div>
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full border-2 border-[var(--bg-surface-hover)] bg-blue-500 text-[10px] text-white flex items-center justify-center font-bold">AS</div>
-                  <div className="w-8 h-8 rounded-full border-2 border-[var(--bg-surface-hover)] bg-purple-500 text-[10px] text-white flex items-center justify-center font-bold">BJ</div>
+                  <div className="w-8 h-8 rounded-full border-2 border-[var(--bg-surface-hover)] bg-blue-500 text-xs text-white flex items-center justify-center font-bold">AS</div>
+                  <div className="w-8 h-8 rounded-full border-2 border-[var(--bg-surface-hover)] bg-purple-500 text-xs text-white flex items-center justify-center font-bold">BJ</div>
                 </div>
               </div>
               <div className="p-4 border border-[var(--border-subtle)] rounded-xl bg-[var(--bg-surface-hover)] hover:border-cyan-500/50 transition-colors cursor-pointer">
@@ -121,7 +121,7 @@ export default async function TeamPage() {
                   <span className="text-xs text-[var(--text-secondary)]">1 member</span>
                 </div>
                 <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full border-2 border-[var(--bg-surface-hover)] bg-emerald-500 text-[10px] text-white flex items-center justify-center font-bold">DP</div>
+                  <div className="w-8 h-8 rounded-full border-2 border-[var(--bg-surface-hover)] bg-emerald-500 text-xs text-white flex items-center justify-center font-bold">DP</div>
                 </div>
               </div>
               <button className="mt-2 text-sm text-cyan-500 font-medium flex items-center gap-1 hover:text-cyan-400 transition-colors">

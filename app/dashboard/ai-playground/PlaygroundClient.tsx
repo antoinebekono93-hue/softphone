@@ -204,7 +204,7 @@ export default function PlaygroundClient() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col animate-in fade-in duration-500">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto h-[calc(100vh-2rem)] flex flex-col animate-in fade-in duration-500">
       
       <div className="mb-6 flex justify-between items-end">
         <div>

@@ -95,7 +95,7 @@ export default function BuyNumberPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
       <Link href={dashboardModuleHref('/dashboard/numbers', activeModule)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2 mb-6 w-fit">
         <ArrowLeft className="w-4 h-4" /> Retour à l'inventaire
       </Link>
@@ -246,7 +246,7 @@ export default function BuyNumberPage() {
                   {(num.features || []).map((feat: any) => {
                     const featName = typeof feat === 'string' ? feat : feat.name;
                     return (
-                    <span key={featName} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                    <span key={featName} className="px-2 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
                       {featName}
                     </span>
                   )})}

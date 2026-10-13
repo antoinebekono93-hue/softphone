@@ -7,6 +7,11 @@ import { JSDOM } from "jsdom";
 
 const root = resolve(__dirname, "..");
 const read = (file: string) => readFileSync(resolve(root, file), "utf8");
+/** Source with line comments removed, so prose about 100vh does not fail a check. */
+const readCode = (file: string) => read(file)
+  .split("\n")
+  .filter(line => !line.trim().startsWith("//") && !line.trim().startsWith("*"))
+  .join("\n");
 
 async function main() {
   console.log("\nMobile list/detail regressions\n");
@@ -21,6 +26,9 @@ async function main() {
     HTMLElement: dom.window.HTMLElement,
     requestAnimationFrame: (cb: FrameRequestCallback) => setTimeout(cb, 0),
     localStorage: dom.window.localStorage,
+    // The browser has a single Event class; without this the component would
+    // build Node's Event and window.dispatchEvent would reject it.
+    Event: dom.window.Event,
     IS_REACT_ACT_ENVIRONMENT: true,
   });
   Object.defineProperty(globalThis, "navigator", { configurable: true, value: dom.window.navigator });
@@ -31,11 +39,14 @@ async function main() {
     removeEventListener() {},
   })) as unknown as typeof window.matchMedia;
 
-  const React = await import("react");
+  // Both imports must go through CommonJS: a mixed ESM/CJS load would give the
+  // component and the test two different SessionContext instances.
+  const React = require("react");
   const { act } = React;
-  const { createRoot } = await import("react-dom/client");
-  const { PrivateStorageBoundary } = await import("../components/pwa/PrivateStorageBoundary");
-  const { draftKey } = await import("../lib/offline-store");
+  const { createRoot } = require("react-dom/client");
+  const { SessionContext } = require("next-auth/react");
+  const { PrivateStorageBoundary } = require("../components/pwa/PrivateStorageBoundary");
+  const { draftKey } = require("../lib/offline-store");
   const localStorage = dom.window.localStorage;
   localStorage.clear();
 
@@ -47,10 +58,11 @@ async function main() {
     throw new Error("Unexpected request: " + url);
   };
 
-  const { SessionContext } = await import("next-auth/react");
   const container = document.getElementById("root")!;
-  const root = createRoot(container);
+  // Each case mounts a fresh root: the boundary keys its effect on
+  // [scope, status], so re-rendering with the same session would not re-run it.
   const render = async () => {
+    const root = createRoot(container);
     await act(async () => {
       root.render(
         React.createElement(
@@ -60,6 +72,8 @@ async function main() {
         ),
       );
     });
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    await act(async () => root.unmount());
   };
 
   localStorage.setItem(draftKey("org:user", "a", "shared"), "brouillon vital");
@@ -81,14 +95,12 @@ async function main() {
     "A definitive empty session purges private data");
   assert.equal(localStorage.getItem("antigravity-storage-owner"), null);
 
-  probe = async () => new Response(JSON.stringify({ user: null }), { status: 200 });
   localStorage.setItem(draftKey("org:other", "a", "shared"), "brouillon autre");
   localStorage.setItem("antigravity-storage-owner", "org:other");
   Object.defineProperty(dom.window.navigator, "onLine", { configurable: true, value: false });
   await render();
   assert.equal(localStorage.getItem(draftKey("org:other", "a", "shared")), "brouillon autre",
     "Offline browsers cannot prove a sign-out");
-  await act(async () => root.unmount());
   dom.window.close();
   console.log("  PrivateStorageBoundary: transient failures preserve drafts, definitive sign-out purges.");
 
@@ -104,7 +116,7 @@ async function main() {
   assert.match(messages, /usePathname/, "Legacy messages layout must read the current route");
   assert.match(messages, /hidden md:flex/, "Legacy messages layout must collapse the list on mobile");
 
-  const contact = read("app/dashboard/contacts/[id]/page.tsx");
+  const contact = readCode("app/dashboard/contacts/[id]/page.tsx");
   assert.doesNotMatch(contact, /100vh/, "Contact timeline must not be sized from 100vh");
   assert.match(contact, /min-h-11 min-w-11/, "Contact header back button must be a 44px target");
   assert.match(contact, /dvh/, "Contact timeline must use a dynamic viewport unit");

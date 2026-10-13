@@ -419,7 +419,7 @@ export default function RoomParticipantView() {
               ) : (
                 chatMessages.map(msg => (
                   <div key={msg.id} className={`flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
-                    <div className="text-[10px] text-white/40 mb-1 flex items-center gap-2">
+                    <div className="text-xs text-white/40 mb-1 flex items-center gap-2">
                       <span>{msg.sender}</span>
                       <span>{msg.time}</span>
                     </div>

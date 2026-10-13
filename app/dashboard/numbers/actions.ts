@@ -20,6 +20,18 @@ import { revalidatePath } from "next/cache";
  * audit removes. The page renders an explicit error instead.
  */
 export async function getNumbers(organizationId: string) {
+  // Endpoint HTTP ("use server") : sans garde, un organizationId connu permet
+  // de lire l'inventaire d'un autre tenant. On exige l'org de la session.
+  const session = await auth();
+  if (!session?.user?.id) throw new Error("Unauthorized");
+  const account = await getCurrentAccountContext(session.user.id);
+  if (
+    !account?.organizationId ||
+    (account.organizationId !== organizationId && !account.isSuperAdmin)
+  ) {
+    throw new Error("Unauthorized");
+  }
+
   const numbers = await prisma.phoneNumber.findMany({
     where: { organizationId },
     include: {

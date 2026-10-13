@@ -63,6 +63,16 @@ export async function POST(
           voicePhoneNumber: mockPhoneNumber
         }
       });
+
+      // Trace grand livre (sinon le solde dérive du ledger).
+      await tx.walletTransaction.create({
+        data: {
+          organizationId: org.id,
+          amount: -1,
+          type: "DEBIT",
+          description: "Activation de la voix sur eSIM",
+        },
+      });
     });
 
     return NextResponse.json(updated);

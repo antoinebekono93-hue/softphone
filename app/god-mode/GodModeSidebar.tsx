@@ -41,7 +41,7 @@ export function GodModeSidebar() {
         {navItems.map((item, idx) => {
           if (item.isHeader) {
             return (
-              <div key={idx} className={`text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2 px-2 ${item.mt ? 'mt-6' : 'mt-2'}`}>
+              <div key={idx} className={`text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-2 px-2 ${item.mt ? 'mt-6' : 'mt-2'}`}>
                 {item.label}
               </div>
             );

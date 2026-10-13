@@ -54,7 +54,7 @@ export default function SessionAnalysisClient() {
               <DollarSign className="w-3 h-3" /> {node.cost.event_cost}
             </div>
             {parseFloat(node.cost.cumulative_cost) > parseFloat(node.cost.event_cost) && (
-              <div className="text-[10px] text-[var(--text-secondary)] font-mono">Cumul: ${node.cost.cumulative_cost}</div>
+              <div className="text-xs text-[var(--text-secondary)] font-mono">Cumul: ${node.cost.cumulative_cost}</div>
             )}
           </div>
         </div>

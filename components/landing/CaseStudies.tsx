@@ -54,24 +54,24 @@ export default function CaseStudies() {
   const reduced = useReducedMotion();
 
   return (
-    <section className="py-24 px-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
+    <section className="landing-section landing-container border-t border-[var(--border-subtle)] bg-[var(--bg-surface-solid)]/30">
       <div className="max-w-7xl mx-auto w-full">
-        <Reveal className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
-            Cas d'usage <span className="text-gradient">concrets</span>
+        <Reveal className="landing-section-heading text-center">
+          <h2 className="landing-heading font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
+            Cas d&apos;usage <span className="text-gradient">concrets</span>
           </h2>
-          <p className="text-[var(--text-secondary)] text-lg font-medium">
-            Exemples d'organisations qui centralisent leurs communications avec la plateforme.
+          <p className="text-[var(--text-secondary)] landing-body font-medium">
+            Exemples d&apos;organisations qui centralisent leurs communications avec la plateforme.
           </p>
         </Reveal>
 
-        <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Stagger className="landing-grid landing-two-grid">
           {useCases.map((uc, i) => (
             <Item key={i}>
               <motion.div
                 whileHover={reduced ? undefined : { y: -6, boxShadow: "0 20px 40px -12px rgba(0,0,0,0.15)" }}
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                className="rounded-[32px] glass-panel-premium p-8 relative overflow-hidden group h-full"
+                className="landing-card glass-panel-premium relative overflow-hidden group h-full"
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${uc.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                 <div className="relative">
@@ -101,7 +101,7 @@ export default function CaseStudies() {
 
         <Reveal className="text-center mt-12" delay={0.1}>
           <Link href="/contact" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)] hover:text-[var(--accent-primary)] transition-colors">
-            Discusser votre cas d'usage avec notre équipe
+            Discusser votre cas d&apos;usage avec notre équipe
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </Link>
         </Reveal>

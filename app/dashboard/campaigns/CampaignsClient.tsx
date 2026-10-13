@@ -141,13 +141,13 @@ export function CampaignsClient({ campaigns, numbers, contacts }: { campaigns: a
             <h3 className="font-bold text-[var(--text-primary)] text-lg mb-1">{camp.name}</h3>
             <p className="text-xs text-[var(--text-secondary)] mb-6 truncate">{camp.body}</p>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="bg-[var(--bg-surface-hover)] p-3 rounded-lg">
-                <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Audience</p>
+                <p className="text-xs uppercase font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1"><Users className="w-3 h-3" /> Audience</p>
                 <p className="font-mono text-lg text-[var(--text-primary)]">{camp._count?.recipients || 0}</p>
               </div>
               <div className="bg-[var(--bg-surface-hover)] p-3 rounded-lg">
-                <p className="text-[10px] uppercase font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1"><Send className="w-3 h-3" /> Sent</p>
+                <p className="text-xs uppercase font-bold text-[var(--text-secondary)] mb-1 flex items-center gap-1"><Send className="w-3 h-3" /> Sent</p>
                 <p className="font-mono text-lg text-[var(--text-primary)]">{camp.sentCount}</p>
               </div>
             </div>

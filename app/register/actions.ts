@@ -1,7 +1,10 @@
 "use server";
 
+"use server";
+
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/auth";
+import { provisionOrganizationWithAdmin } from "@/lib/organization-provisioning";
 
 export async function registerUser(data: any) {
   try {
@@ -17,33 +20,12 @@ export async function registerUser(data: any) {
       return { error: "Email already registered" };
     }
 
-    // Create URL-friendly slug
-    const baseSlug = orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    let slug = baseSlug;
-    let counter = 1;
-    
-    // Ensure slug is unique
-    while (await prisma.organization.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
-    }
-
     const passwordHash = await hashPassword(password);
 
-    // Create Org and User
-    const newOrg = await prisma.organization.create({
-      data: {
-        name: orgName,
-        slug,
-        planStatus: "TRIALING",
-        users: {
-          create: {
-            email,
-            passwordHash,
-            role: "ADMIN",
-          }
-        }
-      }
+    await provisionOrganizationWithAdmin({
+      orgName,
+      email,
+      passwordHash,
     });
 
     return { success: true };

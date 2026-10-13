@@ -1,13 +1,26 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { accountSessionClaims, accountSessionSelect } from "@/lib/account-session";
+import { resolveOrProvisionOAuthUser, recordOAuthAccountLink } from "@/lib/oauth-provisioning";
 
 if (!process.env.AUTH_SECRET) {
   process.env.AUTH_SECRET = process.env.NEXTAUTH_SECRET!;
 }
+
+// Google is only registered when credentials are configured. This keeps the
+// app fully functional (email/password) if Google is not set up yet, and avoids
+// exposing a broken provider. Credentials belong in environment / provider
+// configuration, never in client code.
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const googleEnabled = Boolean(googleClientId && googleClientSecret);
+
+// The only OAuth provider currently allowed. No other social provider is
+// configured on purpose; they will be added later, one at a time.
+const oauthAllowedProviders = new Set(["google"]);
 
 async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
@@ -43,6 +56,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     newUser: "/register",
   },
   providers: [
+    ...(googleEnabled
+      ? [
+          GoogleProvider({
+            clientId: googleClientId!,
+            clientSecret: googleClientSecret!,
+            // Minimal scopes: authentication only. No access to any Google
+            // product API is requested.
+            authorization: {
+              params: { scope: "openid email profile" },
+            },
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -82,7 +108,46 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
 callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ account }) {
+      // Only the Google OAuth provider is allowed. Any other social provider
+      // is rejected even if later added by mistake. Credentials sign-in is
+      // handled by its own provider.
+      if (account && account.type !== "credentials") {
+        return oauthAllowedProviders.has(account.provider);
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      // First OAuth sign-in: `user.id` is the provider account id (Google sub),
+      // NOT a Buster Call user id. Resolve/provision the Buster Call account by
+      // email (same-email accounts are linked, never duplicated) and bind the
+      // internal id to the JWT, then reuse the exact same claim refresh path.
+      if (account && account.type !== "credentials") {
+        const email = user?.email ?? (token.email as string | undefined);
+        if (!email) return null;
+
+        const resolved = await resolveOrProvisionOAuthUser({
+          email,
+          name: user?.name ?? (token.name as string | undefined) ?? null,
+          image: user?.image ?? null,
+        });
+
+        if (account.provider && account.providerAccountId) {
+          await recordOAuthAccountLink(
+            resolved.userId,
+            account.provider,
+            account.providerAccountId
+          );
+        }
+
+        const oauthUser = await prisma.user.findUnique({
+          where: { id: resolved.userId },
+          select: accountSessionSelect,
+        });
+        if (!oauthUser) return null;
+        return { ...token, id: resolved.userId, ...accountSessionClaims(oauthUser) };
+      }
+
       // INVARIANT D — identity vs mutable account state.
       // Identity (`id`) is immutable and stays in the signed JWT.
       // Mutable account state (role, isSuperAdmin, organization, plan,
@@ -121,6 +186,20 @@ callbacks: {
         session.user.plan = token.plan as string;
       }
       return session;
+    },
+    async redirect({ url, baseUrl }) {
+      // Never hand the browser an external destination. Relative paths are
+      // resolved against the app origin; absolute same-origin URLs are kept;
+      // anything else falls back to the dashboard.
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      try {
+        if (new URL(url).origin === new URL(baseUrl).origin) return url;
+      } catch {
+        // fall through to baseUrl
+      }
+      return baseUrl;
     },
   },
 });

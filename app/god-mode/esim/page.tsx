@@ -43,7 +43,7 @@ export default function GodModeEsimPage() {
                         <Download className="w-4 h-4 text-cyan-500" />
                         <h3 className="font-bold text-[var(--text-primary)]">Téléchargement passif</h3>
                      </div>
-                     <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-500 text-[10px] font-bold uppercase rounded">Recommandé pour IoT</span>
+                     <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-500 text-xs font-bold uppercase rounded">Recommandé pour IoT</span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)]">
                      Le profil est téléchargé sur le composant (eUICC) mais ne consomme pas de forfait tant qu'il n'est pas réveillé par API.
@@ -56,7 +56,7 @@ export default function GodModeEsimPage() {
                         <QrCode className="w-4 h-4 text-emerald-500" />
                         <h3 className="font-bold text-[var(--text-primary)]">Activation immédiate (QR Code)</h3>
                      </div>
-                     <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase rounded">Smartphones</span>
+                     <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase rounded">Smartphones</span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mb-3">
                      Idéal pour les employés. Le forfait est activé dès le premier scan.
@@ -165,7 +165,7 @@ export default function GodModeEsimPage() {
                            Connecté (Orange FR)
                         </div>
                      </td>
-                     <td className="py-4"><span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase rounded-md">Actif</span></td>
+                     <td className="py-4"><span className="px-2 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase rounded-md">Actif</span></td>
                   </tr>
                   <tr className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-surface-hover)] transition-colors">
                      <td className="py-4 font-mono text-xs text-[var(--text-primary)]">
@@ -181,7 +181,7 @@ export default function GodModeEsimPage() {
                            Hors ligne (Depuis 2j)
                         </div>
                      </td>
-                     <td className="py-4"><span className="px-2 py-1 bg-cyan-500/10 text-cyan-500 text-[10px] font-bold uppercase rounded-md">Téléchargé</span></td>
+                     <td className="py-4"><span className="px-2 py-1 bg-cyan-500/10 text-cyan-500 text-xs font-bold uppercase rounded-md">Téléchargé</span></td>
                   </tr>
                   <tr className="hover:bg-[var(--bg-surface-hover)] transition-colors">
                      <td className="py-4 font-mono text-xs text-[var(--text-primary)]">
@@ -197,7 +197,7 @@ export default function GodModeEsimPage() {
                            Jamais connecté
                         </div>
                      </td>
-                     <td className="py-4"><span className="px-2 py-1 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-[10px] font-bold uppercase rounded-md">Inactif</span></td>
+                     <td className="py-4"><span className="px-2 py-1 bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)] text-xs font-bold uppercase rounded-md">Inactif</span></td>
                   </tr>
                </tbody>
             </table>

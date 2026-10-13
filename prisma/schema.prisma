@@ -62,21 +62,22 @@ model User {
   telnyxTelephonyCredentialId  String? @unique
   telnyxCredentialConnectionId String?
 
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  accounts       Account[]
-  callLogs       CallLog[]
-  internalNotes  InternalNote[]
-  opportunities  Opportunity[]
-  phoneNumbers   PhoneNumber[]    @relation("AssignedUser")
-  sessions       Session[]
-  smsMessages    SmsMessage[]
-  contacts       Contact[]        @relation("AssignedContactUser")
-  organization   Organization?    @relation(fields: [organizationId], references: [id])
-  usageLogs      UsageLog[]
-  appCallsCaller AppCallSession[] @relation("Caller")
-  appCallsCallee AppCallSession[] @relation("Callee")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  accounts          Account[]
+  callLogs          CallLog[]
+  internalNotes     InternalNote[]
+  opportunities     Opportunity[]
+  phoneNumbers      PhoneNumber[]      @relation("AssignedUser")
+  sessions          Session[]
+  smsMessages       SmsMessage[]
+  contacts          Contact[]          @relation("AssignedContactUser")
+  organization      Organization?      @relation(fields: [organizationId], references: [id])
+  usageLogs         UsageLog[]
+  appCallsCaller    AppCallSession[]   @relation("Caller")
+  appCallsCallee    AppCallSession[]   @relation("Callee")
   pushSubscriptions PushSubscription[]
+  fcmDeviceTokens   FcmDeviceToken[]
 
   @@unique([organizationId, callUsername])
   @@unique([organizationId, callExtension])
@@ -111,6 +112,7 @@ model Organization {
   webhookUrl                 String?
   webhookSecret              String?
   tenantSettings             Json?
+  timezone                   String                   @default("UTC")
   activeCallsCount           Int                      @default(0)
   automationWorkflows        AutomationWorkflow[]
   callLogs                   CallLog[]
@@ -135,6 +137,7 @@ model Organization {
   ecommerceStores            EcommerceStore[]
   carts                      Cart[]
   walletTransactions         WalletTransaction[]
+  paymentIntents             PaymentIntent[]
   whatsappAccount            WhatsAppAccount?
   whatsappTemplates          WhatsAppTemplate[]
   whatsappFlows              WhatsAppFlow[]
@@ -150,6 +153,8 @@ model Organization {
   usageLogs                  UsageLog[]
   callReservations           CallReservation[]
   appCallSessions            AppCallSession[]
+  appointments               Appointment[]
+  fcmDeviceTokens            FcmDeviceToken[]
 
   @@index([slug])
   @@index([pricingPlanId])
@@ -246,6 +251,7 @@ model Contact {
   smsMessages             SmsMessage[]
   socialMessages          SocialMessage[]
   groups                  ContactGroup[]           @relation("ContactToContactGroup")
+  appointments            Appointment[]
   assignedUserId          String?
   assignedUser            User?                    @relation("AssignedContactUser", fields: [assignedUserId], references: [id])
 
@@ -270,6 +276,7 @@ model ContactGroup {
 model CallLog {
   id                    String           @id @default(cuid())
   telnyxCallControlId   String           @unique
+  telnyxConversationId  String? // Telnyx AI Assistant conversation id (voice AI calls)
   direction             String
   status                String           @default("INITIATED")
   fromNumber            String
@@ -455,6 +462,8 @@ model AIEmployee {
 
   // Technical identifiers
   openaiAssistantId     String?
+  telnyxAssistantId     String? @unique // Telnyx AI Assistant (managed Voice AI runtime)
+  voiceProvider         String  @default("LEGACY") // LEGACY | TELNYX — gates which voice runtime handles this agent
   voicePhoneNumberId    String? @unique
   whatsappPhoneNumberId String? // Optional if we link specifically
 
@@ -472,6 +481,10 @@ model AIEmployee {
   replyToCommentsPublicly  Boolean @default(true)
   replyToCommentsPrivately Boolean @default(false)
 
+  // AI tool authorization. Empty by default: a write tool such as
+  // create_appointment stays disabled until explicitly granted here.
+  allowedWriteTools String[] @default([])
+
   organizationId  String
   knowledgeBaseId String?
   createdAt       DateTime @default(now())
@@ -485,6 +498,7 @@ model AIEmployee {
   socialMessages   SocialMessage[]
   template         AgentTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
   skills           AgentSkill[]
+  appointments     Appointment[]
 
   @@index([organizationId])
   @@index([templateId])
@@ -589,6 +603,37 @@ model WebhookEvent {
 
   @@unique([provider, eventId])
   @@index([provider])
+}
+
+/// Paiement en attente / finalisé pour une recharge de portefeuille via CinetPay.
+/// Sert de mapping fiable entre le `merchantTransactionId` CinetPay et
+/// l'organisation à créditer, ainsi que le montant exact à créditer au wallet
+/// (le webhook CinetPay ne renvoie pas le montant : on ne fait jamais confiance
+/// au payload, on crédite le montant préalablement enregistré après avoir
+/// confirmé le statut SUCCESS auprès de l'API de vérification).
+model PaymentIntent {
+  id                    String       @id @default(cuid())
+  organizationId        String
+  provider              String       @default("CINETPAY")
+  merchantTransactionId String       @unique
+  providerTransactionId String?
+  /// Montant crédité au portefeuille (dans la devise du wallet, ex: EUR).
+  amount                Decimal      @db.Decimal(12, 4)
+  /// Montant réellement débité chez CinetPay (unité entière de chargeCurrency).
+  chargeAmount          Int
+  chargeCurrency        String
+  /// Pays CinetPay utilisé à l'initialisation (ISO alpha-2), requis pour
+  /// interroger le statut via les bons credentials lors du webhook.
+  chargeCountry         String?
+  /// Token de notification retourné à l'initialisation, utilisé pour vérifier le webhook.
+  notifyToken           String?
+  status                String       @default("PENDING")
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([providerTransactionId])
 }
 
 model WhatsAppAccount {
@@ -1243,4 +1288,57 @@ model PushSubscription {
 
   @@index([userId])
 }
+model FcmDeviceToken {
+  id             String        @id @default(cuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  token          String        @unique
+  deviceInfo     String?
+  platform       String?
+  appVersion     String?
+  userAgent      String?
+  enabled        Boolean       @default(true)
+  revokedAt      DateTime?
+  lastSeenAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
+  @@index([userId])
+  @@index([organizationId])
+  @@index([lastSeenAt])
+  @@index([enabled])
+}
+
+/// Rendez-vous créé par un outil d'écriture IA (Phase 4A : create_appointment).
+/// Aucune donnée externe (Cal.com) : la disponibilité et les conflits sont
+/// calculés localement par chevauchement d'intervalles. `startsAt`/`endsAt`
+/// sont stockés en UTC ; `timezone` est l'IANA utilisée pour l'interprétation.
+/// `idempotencyKey` porte la garantie anti-doublon d'un webhook rejoué.
+model Appointment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  aiEmployeeId    String?
+  contactId       String?
+  customerName    String?
+  customerPhone   String?
+  reason          String?
+  startsAt        DateTime
+  endsAt          DateTime
+  timezone        String
+  status          String   @default("CONFIRMED")
+  idempotencyKey  String   @unique
+  sourceRequestId String?
+  createdByTool   String   @default("create_appointment")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aiEmployee   AIEmployee?  @relation(fields: [aiEmployeeId], references: [id], onDelete: SetNull)
+  contact      Contact?     @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, startsAt])
+  @@index([aiEmployeeId, startsAt])
+  @@index([contactId])
+}

@@ -20,7 +20,7 @@ export default function BillingPage() {
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === 'success') {
+    if (status === 'success' || status === 'success_cinetpay') {
       toast.success('Paiement réussi. Votre portefeuille a été crédité !');
     } else if (status === 'success_flutterwave') {
       toast.success('Paiement Flutterwave réussi. Le solde sera mis à jour dans quelques instants.');
@@ -55,24 +55,54 @@ export default function BillingPage() {
     }
   };
 
-  const handleTopUp = async (amount: number, provider: 'stripe' | 'flutterwave') => {
-    setIsProcessing(`${provider}-${amount}`);
-    try {
-      const endpoint = provider === 'stripe' 
-        ? '/api/stripe/create-checkout-session' 
-        : '/api/flutterwave/create-payment-link';
+  // =====================================================================
+  // ANCIENS MODES DE PAIEMENT (Stripe / Flutterwave) — DÉSACTIVÉS.
+  // CinetPay est désormais le mode de paiement principal (voir handleCinetPay).
+  // =====================================================================
+  // const handleTopUp = async (amount: number, provider: 'stripe' | 'flutterwave') => {
+  //   setIsProcessing(`${provider}-${amount}`);
+  //   try {
+  //     const endpoint = provider === 'stripe'
+  //       ? '/api/stripe/create-checkout-session'
+  //       : '/api/flutterwave/create-payment-link';
+  //
+  //     const res = await fetch(endpoint, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify({ amount })
+  //     });
+  //
+  //     const data = await res.json();
+  //     if (data.url) {
+  //       window.location.href = data.url;
+  //     } else {
+  //       toast.error(data.error || 'Erreur de génération de lien.');
+  //     }
+  //   } catch (e) {
+  //     toast.error('Erreur réseau.');
+  //   } finally {
+  //     setIsProcessing(null);
+  //   }
+  // };
 
-      const res = await fetch(endpoint, {
+  // CinetPay — mode de paiement principal.
+  const handleCinetPay = async (amount: number) => {
+    setIsProcessing(`cinetpay-${amount}`);
+    try {
+      const res = await fetch('/api/cinetpay/create-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({
+          amount,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
 
       const data = await res.json();
-      if (data.url) {
+      if (res.ok && data.url) {
         window.location.href = data.url;
       } else {
-        toast.error(data.error || 'Erreur de génération de lien.');
+        toast.error(data.error || 'Erreur de génération du lien CinetPay.');
       }
     } catch (e) {
       toast.error('Erreur réseau.');
@@ -116,32 +146,46 @@ export default function BillingPage() {
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Recharger le Portefeuille</CardTitle>
-            <CardDescription>Choisissez un montant à créditer. Sécurisé par Stripe ou Flutterwave.</CardDescription>
+            <CardDescription>Choisissez un montant à créditer. Paiement sécurisé par CinetPay.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[10, 50, 100].map((amount) => (
                 <div key={amount} className="border rounded-xl p-4 flex flex-col items-center justify-center gap-2 bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-surface)] transition-colors">
                   <span className="text-2xl font-bold">{amount} €</span>
                   <div className="flex flex-col w-full gap-2 mt-2">
-                    <Button 
-                      variant="default" 
-                      className="w-full text-xs" 
+                    {/* CinetPay — mode de paiement principal */}
+                    <Button
+                      variant="default"
+                      className="w-full text-xs"
+                      onClick={() => handleCinetPay(amount)}
+                      disabled={!!isProcessing}
+                    >
+                      {isProcessing === `cinetpay-${amount}` ? <Loader2 className="w-3 h-3 animate-spin mr-2"/> : <CreditCard className="w-3 h-3 mr-2" />}
+                      Via CinetPay
+                    </Button>
+
+                    {/* =====================================================
+                        ANCIENS MODES DE PAIEMENT (Stripe / Flutterwave) — DÉSACTIVÉS
+                    <Button
+                      variant="default"
+                      className="w-full text-xs"
                       onClick={() => handleTopUp(amount, 'stripe')}
                       disabled={!!isProcessing}
                     >
                       {isProcessing === `stripe-${amount}` ? <Loader2 className="w-3 h-3 animate-spin mr-2"/> : <CreditCard className="w-3 h-3 mr-2" />}
                       Via Stripe
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full text-xs" 
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs"
                       onClick={() => handleTopUp(amount, 'flutterwave')}
                       disabled={!!isProcessing}
                     >
                       {isProcessing === `flutterwave-${amount}` ? <Loader2 className="w-3 h-3 animate-spin mr-2"/> : null}
                       Via Flutterwave
                     </Button>
+                        ===================================================== */}
                   </div>
                 </div>
               ))}

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useTelnyx } from "@/contexts/TelnyxContext";
 import { useAppCall } from "@/contexts/AppCallContext";
-import { useRingtone } from "@/hooks/useRingtone";
 import { useCallRouter } from "@/hooks/useCallRouter";
 import { StatusDot } from "@/components/ui/status-dot";
 import { Dialpad } from "./Dialpad";
@@ -40,7 +39,8 @@ export function Softphone() {
   } = useTelnyx();
 
   const { appCallStatus } = useAppCall();
-  useRingtone();
+  // Ringtone is owned globally by CommunicationProvider (GlobalRingtone) so a
+  // single instance covers both the mobile shell and the desktop workspace.
   const { routeCall } = useCallRouter();
 
   const [mode, setMode] = useState<"pstn" | "app">("pstn");
@@ -90,7 +90,8 @@ export function Softphone() {
     if (callState === "active") {
       interval = setInterval(() => setCallDuration((prev) => prev + 1), 1000);
     } else {
-      setCallDuration(0);
+      const reset = window.setTimeout(() => setCallDuration(0), 0);
+      return () => window.clearTimeout(reset);
     }
     return () => clearInterval(interval);
   }, [callState]);
@@ -134,7 +135,7 @@ export function Softphone() {
                 <>
                   {(availableNumbers.length > 0 || isLoadingNumbers) && (
                     <div className="w-full max-w-[280px]">
-                      <label className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider mb-1 block">Appeler depuis (Caller ID)</label>
+                      <label className="text-xs uppercase font-bold text-[var(--text-secondary)] tracking-wider mb-1 block">Appeler depuis (Caller ID)</label>
                       {isLoadingNumbers ? (
                         <div className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] animate-pulse">
                           Chargement...

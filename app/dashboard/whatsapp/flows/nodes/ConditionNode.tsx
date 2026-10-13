@@ -19,8 +19,8 @@ export default function ConditionNode({ data, selected }: any) {
       </div>
       
       <div className="flex justify-between mt-2 pt-2 border-t border-[var(--border-subtle)]">
-        <div className="text-[10px] font-bold text-emerald-500">VRAI</div>
-        <div className="text-[10px] font-bold text-rose-500">FAUX</div>
+        <div className="text-xs font-bold text-emerald-500">VRAI</div>
+        <div className="text-xs font-bold text-rose-500">FAUX</div>
       </div>
 
       {/* True Handle */}

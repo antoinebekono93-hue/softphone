@@ -90,17 +90,17 @@ export default function IntegrationSearch({ integrations }: { integrations: Inte
             <p className="text-sm text-[var(--text-secondary)] font-medium leading-relaxed">{integration.description}</p>
             <div className="mt-auto">
               {integration.status === "native" && (
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
+                <span className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400">
                   Natif
                 </span>
               )}
               {integration.status === "recommandee" && (
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-400">
+                <span className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-400">
                   Recommandée
                 </span>
               )}
               {integration.status === "api" && (
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
+                <span className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
                   Via API / Webhook
                 </span>
               )}

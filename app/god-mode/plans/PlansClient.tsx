@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createOrUpdatePlan, syncPlanToStripe, syncPlanToFlutterwave } from "./actions";
+import { createOrUpdatePlan } from "./actions";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 
@@ -74,29 +74,32 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
     });
   };
 
-  const handleSyncToStripe = (planId: string) => {
-    startTransition(async () => {
-      try {
-        await syncPlanToStripe(planId);
-        alert("Synced to Stripe successfully!");
-      } catch (err: any) {
-        console.error(err);
-        alert("Stripe Error: " + err.message);
-      }
-    });
-  };
-
-  const handleSyncToFlutterwave = (planId: string) => {
-    startTransition(async () => {
-      try {
-        await syncPlanToFlutterwave(planId);
-        alert("Synced to Flutterwave successfully!");
-      } catch (err: any) {
-        console.error(err);
-        alert("Flutterwave Error: " + err.message);
-      }
-    });
-  };
+  // ANCIENS MODES DE PAIEMENT (Stripe / Flutterwave) — DÉSACTIVÉS.
+  // La synchronisation des plans vers ces fournisseurs a été supprimée.
+  //
+  // const handleSyncToStripe = (planId: string) => {
+  //   startTransition(async () => {
+  //     try {
+  //       await syncPlanToStripe(planId);
+  //       alert("Synced to Stripe successfully!");
+  //     } catch (err: any) {
+  //       console.error(err);
+  //       alert("Stripe Error: " + err.message);
+  //     }
+  //   });
+  // };
+  //
+  // const handleSyncToFlutterwave = (planId: string) => {
+  //   startTransition(async () => {
+  //     try {
+  //       await syncPlanToFlutterwave(planId);
+  //       alert("Synced to Flutterwave successfully!");
+  //     } catch (err: any) {
+  //       console.error(err);
+  //       alert("Flutterwave Error: " + err.message);
+  //     }
+  //   });
+  // };
 
   return (
     <div className="w-full">
@@ -115,7 +118,7 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
         {initialPlans.map((plan) => (
           <div key={plan.id} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface-hover)] p-6 relative flex flex-col">
             <div className="absolute top-6 right-6">
-               <span className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
+               <span className="px-2 py-1 text-xs font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/30">
                  {plan.isActive ? "Active" : "Archived"}
                </span>
             </div>
@@ -155,16 +158,18 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mt-auto">
+            <div className="grid grid-cols-1 gap-2 mt-auto">
                <button onClick={() => openModal(plan)} disabled={isPending} className="py-2 text-xs font-medium bg-[var(--bg-surface-hover)] hover:bg-[var(--bg-surface-solid)] rounded-lg transition-colors border border-[var(--border-subtle)]">
                  Edit Plan
                </button>
+               {/* ANCIENS MODES DE PAIEMENT (Stripe / Flutterwave) — DÉSACTIVÉS
                <button onClick={() => handleSyncToStripe(plan.id)} disabled={isPending || !!plan.stripePriceId} className={`py-2 text-xs font-medium rounded-lg transition-colors border border-[var(--border-subtle)] flex items-center justify-center gap-1 ${plan.stripePriceId ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 opacity-50 cursor-not-allowed' : 'bg-[var(--bg-surface-hover)] hover:bg-indigo-600'}`}>
                  {plan.stripePriceId ? 'Stripe ✓' : 'Stripe Sync'}
                </button>
                <button onClick={() => handleSyncToFlutterwave(plan.id)} disabled={isPending || !!plan.flutterwavePlanId} className={`py-2 text-xs font-medium rounded-lg transition-colors border border-[var(--border-subtle)] flex items-center justify-center gap-1 ${plan.flutterwavePlanId ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 opacity-50 cursor-not-allowed' : 'bg-[var(--bg-surface-hover)] hover:bg-orange-600'}`}>
                  {plan.flutterwavePlanId ? 'Flutter ✓' : 'Flutter Sync'}
                </button>
+               */}
             </div>
           </div>
         ))}
@@ -181,7 +186,7 @@ export function PlansClient({ initialPlans }: { initialPlans: Plan[] }) {
                 <label className="block text-sm text-[var(--text-secondary)] mb-1">Plan Name</label>
                 <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2 text-[var(--text-primary)]" />
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm text-[var(--text-secondary)] mb-1">Price ($/mo)</label>
                   <input required type="number" value={formData.monthlyPrice} onChange={e => setFormData({...formData, monthlyPrice: Number(e.target.value)})} className="w-full bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] rounded-lg px-3 py-2" />

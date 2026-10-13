@@ -225,7 +225,7 @@ export default function BuyNumberPage() {
                 
                 <div className="flex flex-wrap gap-2 mb-8">
                   {num.features.map(feat => (
-                    <span key={feat} className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+                    <span key={feat} className="px-2 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
                       {feat}
                     </span>
                   ))}

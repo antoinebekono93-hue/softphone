@@ -141,7 +141,7 @@ export default function GodModeVoicePage() {
                         <h3 className="font-bold text-[var(--text-primary)] mb-1">Agents Vocaux (IA)</h3>
                         <p className="text-xs text-[var(--text-secondary)]">Connectez OpenAI ou Claude pour une conversation naturelle.</p>
                      </div>
-                     <span className="px-2 py-1 bg-violet-500/20 text-violet-400 text-[10px] font-bold rounded uppercase tracking-wider">BETA</span>
+                     <span className="px-2 py-1 bg-violet-500/20 text-violet-400 text-xs font-bold rounded uppercase tracking-wider">BETA</span>
                   </div>
                </div>
 

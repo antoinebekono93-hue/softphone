@@ -80,7 +80,7 @@ export default async function CampaignsPage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div className="p-3 bg-[var(--bg-surface-hover)] rounded-lg">
                       <div className="text-muted-foreground mb-1">Contacts</div>
                       <div className="text-2xl font-semibold">{total}</div>

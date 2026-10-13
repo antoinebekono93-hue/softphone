@@ -1,8 +1,8 @@
 # PADDLE WEBSITE READINESS REPORT
 
-**Site** : https://softphone-xi.vercel.app
+**Site** : https://softphone-xi.vercel.app (origine technique temporaire — le domaine Buster Call définitif la remplacera)
 **Dépôt** : `C:\Users\Antoine\3D Objects\github\2`
-**Périmètre** : site public de marketing uniquement (pages publiques, metadata, SEO, claims, identité légale, pricing). Aucun changement sur Telnyx, WebRTC, routage d'appels, wallet, facturation backend ou authentification.
+**Périmètre** : site public de marketing uniquement (pages publiques, metadata, SEO, claims, identité légale, pricing). Aucun changement sur Telnyx, WebRTC, routage d'appels, wallet, facturation backend ou authentification. Aucun code Paddle.
 
 ---
 
@@ -10,218 +10,134 @@
 
 | Champ | Valeur |
 |---|---|
-| `TECHNICAL_WEBSITE_READINESS` | **NOT_READY** (build de production non vérifié de bout en bout — voir §T) |
-| `CLAIMS_READINESS` | **READY** (aucun claim non vérifié restant sur les pages publiques rendues) |
-| `LEGAL_IDENTITY_READINESS` | **WAITING_USER** (11 champs requis non fournis) |
+| `BRAND` | **BUSTER_CALL** |
+| `BRAND_IDENTITY_READINESS` | **READY** |
+| `BUSINESS_CONTACT_READINESS` | **READY** |
+| `LEGAL_ENTITY_NAME_READINESS` | **READY** |
+| `LEGAL_ADDRESS_READINESS` | **READY** |
+| `SUPPORT_CONTACT_READINESS` | **READY** |
+| `RCCM_READINESS` | **WAITING_USER** |
+| `TAX_ID_READINESS` | **WAITING_USER** |
+| `LEGAL_EMAIL_READINESS` | **OPTIONAL_OR_WAITING_USER** |
+| `SALES_EMAIL_READINESS` | **OPTIONAL_OR_WAITING_USER** |
+| `BILLING_EMAIL_READINESS` | **OPTIONAL_OR_WAITING_USER** |
+| `LEGAL_IDENTITY_READINESS` | **PARTIAL** |
+| `CLAIMS_READINESS` | **READY** |
 | `PRICING_CURRENCY` | **USD** |
-| `CURRENCY_BUSINESS_VALIDATION` | **PENDING_USER** |
-| `PRICING_PLAN_CONFLICTS` | **NONE** (conflit 29 USD tranché en CAS A) |
-| `PADDLE_SITE_READINESS` | **WAITING_BUSINESS_INFO** |
-
-**Paddle n'est pas intégré et ne doit pas l'être à ce stade.** Aucun `paddle.js`, aucun checkout Paddle, aucun webhook Paddle, aucun produit/entitlement Paddle. Le backend de facturation existant est hors périmètre.
-
-Le blocage n'est pas technique : il est **documentaire**. Les pages légales ne peuvent pas être publiées en l'état sans identité réelle de l'éditeur (raison sociale, adresse, RCS/RM, TVA) ni coordonnées de contact officielles.
+| `CURRENCY_BUSINESS_VALIDATION` | **CONFIRMED** |
+| `PRICING_PLAN_CONFLICTS` | **NONE** |
+| `TECHNICAL_WEBSITE_READINESS` | **NOT_READY** |
+| `TYPESCRIPT` | **PASS** (`npx tsc --noEmit` → exit 0, 0 erreur) |
+| `BUILD` | **BLOCKED_BY_ENVIRONMENT** |
+| `PADDLE_SITE_READINESS` | **WAITING_LEGAL_REGISTRATION** |
 
 ---
 
-## A. Pages créées
+## BUSINESS_IDENTITY
 
-| Route | Rôle | État |
-|---|---|---|
-| `/terms` | Conditions générales | Créée, vérifiée |
-| `/privacy` | Politique de confidentialité | Créée, vérifiée |
-| `/refund-policy` | Politique de remboursement | Créée, vérifiée |
-| `/acceptable-use` | Conditions d'utilisation acceptable | Créée, vérifiée |
-| `/contact` | Contact / canaux de support | Créée, vérifiée |
-| `/about` | À propos / éditeur | Créée, vérifiée |
-| `/etudes-de-cas` | Conservée (→ scénarios d'usage) | Créée, vérifiée |
-| `app/sitemap.ts` | Sitemap XML | Créé, **corrigé cette passe** |
-| `app/robots.ts` | Robots.txt | Créé, **corrigé cette passe** |
-
-## B. Pages corrigées
-
-| Route | Correction |
+| Champ | Valeur |
 |---|---|
-| `/` | Claims non prouvés retirés (volumétrie clients, taux de disponibilité) |
-| `/pricing` | Clarification de l'écart entre les deux offres à 29 USD, limites d'usage |
-| `/ia`, `/receptionniste-ia` | Retrait de métriques et de témoignages non prouvés |
-| `/integrations` | 16 intégrations placeholder sur 19 retirées, liste alignée sur le code réel |
-| `/secteurs` | ROI sectoriels non prouvés retirés |
-| `/etudes-de-cas` | Réécrite en scénarios d'usage illustratifs |
-| Toutes pages publiques | Marque centralisée sur `siteConfig.brand` |
+| Legal/operator name | **MERCO** |
+| Brand | **Buster Call** |
+| Country | **Cameroun** (Cameroon) |
+| Address | **Kamkop 1** |
+| City | **Bafoussam** |
+| Support email | **antoinebekono93@gmail.com** |
+| Business phone | **+237 698 105 696** |
+| Registration number (RCCM) | **NOT_AVAILABLE** |
+| Tax ID (NIU) | **NOT_AVAILABLE** |
+| Sales email | **NOT_AVAILABLE** |
+| Billing email | **NOT_AVAILABLE** |
+| Legal email | **NOT_AVAILABLE** |
 
-## C. Pricing
+Aucune forme juridique (SARL / SAS / LTD / Inc. / LLC) n'est écrite, car elle n'a pas été fournie : le nom est rendu simplement « MERCO ». Formulation publique utilisée : « Buster Call est une marque exploitée par MERCO, basée à Kamkop 1, Bafoussam, Cameroun. »
 
-- Devise unique : **USD**, aucune occurrence de `€` / `EUR` / `FCFA` sur `app/`, `components/landing`, `components/marketing`, `app/pricing` (vérifié par recherche).
-- `CURRENCY_BUSINESS_VALIDATION` reste **PENDING_USER** : USD est appliqué par défaut, mais n'a pas été confirmé comme devise commerciale définitive.
-- **Conflit des deux offres à 29 USD → CAS A.** Les deux offres restent et sont distinctes :
+---
 
-| | Appels Illimités | Standard |
+## A. Brand
+
+- `BRAND = BUSTER_CALL`. `siteConfig.brand = "Buster Call"` est l'unique source de vérité.
+- « Antigravity », « Softphone Xi » et « Softphone-Xi » ne sont réintroduits nulle part comme nom produit visible.
+- Le mot générique « softphone » reste utilisé uniquement comme terme descriptif/SEO.
+- `node scripts/check-branding.js` → `PUBLIC_ANTIGRAVITY_OCCURRENCES = 0`, `PUBLIC_SOFTPHONE_BRAND_OCCURRENCES = 0`, `PUBLIC_TELNYX_BRAND_OCCURRENCES = 0`.
+
+## B. Legal / operator name
+
+- **MERCO**, écrit sans suffixe de forme juridique. Centralisé dans `siteConfig.legalEntity`.
+
+## C. Address
+
+- **Kamkop 1**, **Bafoussam**, **Cameroun**. Centralisé dans `siteConfig.companyAddress`, `siteConfig.city`, `siteConfig.country`.
+
+## D. Country
+
+- **Cameroun** (valeur française affichée sur un site francophone).
+
+## E. Support email
+
+- **antoinebekono93@gmail.com** (`siteConfig.supportEmail`).
+- Cet email n'est **pas** réutilisé comme email commercial, facturation ou juridique : ces canaux restent désactivés tant qu'aucune adresse dédiée n'existe.
+
+## F. Phone
+
+- **+237 698 105 696** (`siteConfig.supportPhone`).
+
+## G. Missing registration fields
+
+| Champ | État | Traitement public |
 |---|---|---|
-| Prix | 29 USD/mois | 29 USD/mois |
-| Minutes PSTN incluses | 0 | 500 |
-| SMS inclus | 0 | 200 |
-| Appels internes app-to-app | Illimités | Non inclus |
-| Appels simultanés | 1 | 2 |
-| Plafond horaire / journalier | 20 / 100 | 30 / 150 |
-| Durée max / appel | 3600 s | 3600 s |
-| Numéro professionnel inclus | Oui (1) | Non |
-| Enregistrement | Non | Oui |
-| Transfert d'appel | Non | Non |
-| Appels internationaux | Non | Non |
+| RCCM / immatriculation | NOT_AVAILABLE | Omis, aucun placeholder |
+| NIU / identifiant fiscal | NOT_AVAILABLE | Omis, aucun placeholder |
+| TVA | NOT_AVAILABLE | Omis, aucun placeholder |
+| Email commercial | NOT_AVAILABLE | Canal désactivé |
+| Email facturation | NOT_AVAILABLE | Canal désactivé |
+| Email juridique | NOT_AVAILABLE | Canal désactivé |
 
-- `PRICING_PLAN_CONFLICTS = NONE`. Source de vérité : `prisma/seedPlans.ts`.
-- La page `/pricing` affiche désormais la comparaison et une FAQ expliquant l'origine des appels (interne vs réseau public), plus la distinction abonnement logiciel / consommation telecom.
-- **À confirmer par le business** : les identifiants métier des plans ne sont pas des constantes dans le seed (ils sont générés en base). Aucun identifiant n'a été inventé dans le rapport.
+Aucune valeur fictive (RCCM, NIU, TVA, RCS, RM, forme juridique, email) n'a été générée. `missingLegalIdentityFields` reste **interne** : les pages publiques omettent un champ vide au lieu d'afficher « RCCM à venir » ou « NIU manquant ».
 
-## D. Terms
+## H. Currency
 
-- Rédigées en français, structurellement complètes.
-- Identité de l'éditeur alimentée par `siteConfig` (jamais des valeurs en dur).
-- Champs manquants affichés explicitement plutôt que masqués.
+- `PRICING_CURRENCY = USD`, `CURRENCY_BUSINESS_VALIDATION = CONFIRMED`.
+- Aucune occurrence de `€` / `EUR` / `FCFA` / `XOF` sur les surfaces publiques de pricing (vérifié par recherche).
 
-## E. Refund Policy
+## I. Pricing
 
-- Couvre : éligibilité, délai de demande, renouvellements, consommation de minutes/messages, recharges de solde, procédure et délai de traitement.
-- Aucun montant ni délai inventé.
+- `PRICING_PLAN_CONFLICTS = NONE` : les deux offres à 29 USD restent distinctes (CAS A), l'une orientée appels internes app-to-app, l'autre PSTN/SMS.
+- Aucun prix ni plan modifié lors de cette passe.
+- Vérification fonctionnelle de la route `/pricing` toujours à faire dans un environnement DB (voir §Q).
 
-## F. Privacy
+## J. Canonical domain
 
-- Couvre : données de compte, historique d'appels, SMS/WhatsApp, enregistrements, transcriptions, données IA, données d'usage et de facturation, bases légales, durées, sécurité, droits.
-- Aucune adresse d'éditeur ni DPO fictif.
+- Origine publique réelle : **https://softphone-xi.vercel.app** (temporaire).
+- `PUBLIC_ORIGIN` a un fallback https ; aucun `localhost` exposé dans canonical / `og:url` / sitemap / structured data.
+- Aucun domaine `bustercall.*` inventé comme origine fonctionnelle. Le futur domaine Buster Call remplacera `NEXT_PUBLIC_SITE_URL`, `APP_URL` et l'origine canonique.
 
-## G. Contact
+## K. Sitemap
 
-- Canaux rendus conditionnels : un canal n'apparaît que si la variable d'environnement correspondante est renseignée.
-- Aucun e-mail ni téléphone inventé.
+- `/sitemap.xml` → public, HTTP 200, `application/xml`, 13 URL publiques avec l'origine réelle.
 
-## H. About
+## L. Robots
 
-- Présente l'éditeur via `LegalIdentity`.
-- Aucun chiffre de CA, nombre de clients, ancienneté ou date de création inventé.
+- `/robots.txt` → public, HTTP 200, `text/plain`, `Sitemap: https://softphone-xi.vercel.app/sitemap.xml`, exclusion de `/dashboard`, `/god-mode`, `/onboarding`, `/buy-test`, `/api`.
+- Protection anti-régression ajoutée : `scripts/check-public-seo-routes.js` (`npm run check:seo`) vérifie en statique que `/sitemap.xml`, `/robots.txt` et `/manifest.json` restent hors de l'auth, qu'aucun `localhost` ne fuit et qu'un fallback https existe ; en mode `--url`, il fait aussi le contrôle HTTP live.
 
-## I. Acceptable Use
+## M. Claims
 
-- Couvre l'usage acceptable, l'abus, la responsabilité et le contact juridique.
+- `CLAIMS_READINESS = READY`. Aucune certification (ISO, SOC2, HIPAA, PCI), aucun analyste (Gartner, G2), aucun logo client, aucun témoignage et aucune statistique de volumétrie sur les pages publiques rendues.
+- Règle : toute affirmation sans preuve dans le dépôt est retirée ou rendue générique.
 
-## J. Footer
-
-- Liens publics vérifiés : aucun `href="#"`, aucun `javascript:`, aucun lien mort sur les pages publiques.
-- **Résidu hors périmètre** : `app/dashboard/integrations/page.tsx:57` contient encore un `<a href="#">Learn more</a>`. C'est une page de tableau de bord authentifiée, hors périmètre marketing public ; **non modifié**, à traiter dans une passe produit séparée.
-
-## K. Homepage
-
-- Contrôlée par rendu réel (HTML servi), pas seulement par lecture de source.
-- Aucun logo client, aucune marque de référence, aucun chiffre de volumétrie, aucun pourcentage de disponibilité, aucun témoignage.
-- La liste de fournisseurs réellement utilisés (Telnyx, Meta, OpenAI, Cloudflare) est explicitement présentée comme des **technologies utilisées**, jamais comme des clients.
-
-## L. Claims vérifiés / placeholders / inconnus
-
-**Règle appliquée** : sans preuve explicite dans le dépôt, un `UNKNOWN` ou `PLACEHOLDER` est retiré ou rendu générique. Aucune exception faite par confort éditorial.
-
-### L.1 Retirés (non publiés, à titre d'historique de cette passe)
-
-- Référentiels d'analystes et places de marché : supprimés.
-- Certifications et labels de conformité non attestés : supprimés.
-- Logos d'entreprises en faux clients : supprimés.
-- Témoignages clients, y compris anonymes : supprimés.
-- Statistiques de volumétrie, de pays desservis et de disponibilité : supprimées.
-- Intégrations et CRM sans implémentation : supprimés.
-- Nombres de langues et délais de traitement non mesurés : supprimés.
-- ROI sectoriels chiffrés : supprimés.
-
-### L.2 Conservés car adossés au code
-
-- Softphone web et mobile, routage d'appels, SMS, WhatsApp Business, agents vocaux IA, transcription, mémoire documentaire sur le chemin texte, webhooks sortants,Cloudflare TURN, Telnyx, Meta, OpenAI.
-- Absence de carte bancaire à l'inscription : vérifié dans le parcours d'inscription.
-- Abonnements, renouvellement et consommation : adossés au schéma Prisma et à la logique de facturation.
-- Les deux offres à 29 USD : adossées à `prisma/seedPlans.ts`.
-
-### L.3 Inconnus / non affirmés
-
-- Absence de certification, d'audit externe, d(pool de servers) et de Contracts clients nommés : **aucune affirmation n'est faite**.
-- Les offres sont présentées comme des fonctionnalités techniques réelles, sans volume, sans client et sans garantie de performance chiffrée.
-
-**Résultat de recherche globale** : aucune occurrence résiduelle de ces éléments dans le code public. Les seules occurrences historiques restantes se trouvaient dans l'ancienne version de ce rapport et dans `package-lock.json` (faux positifs par hachage, pas de contenu marketing).
-
-## M. Abonnement / renouvellement
-
-- Distinction abonnement logiciel / consommation telecom explicitée.
-- Consommation de minutes et de messages distinguée du forfait.
-- Recharge de solde traitée comme un service de prépaiement distinct.
-
-## N. Séparation SaaS / Telecom / Wallet
-
-- Trois natures de flux distingués dans les pages légales : abonnement plateforme, consommation de télécommunications, solde prépayé.
-- Aucun bundling déguisé décrit comme inclus.
-
-## O. SEO
-
-### O.1 Correction critique appliquée cette passe
-
-`proxy.ts` plaçait `/sitemap.xml` et `/robots.txt` **derrière le garde d'authentification**. Vérifié par requête réelle :
+## N. Branding check
 
 ```
-/sitemap.xml -> 307 (redirection vers /login)
-/robots.txt -> 307 (redirection vers /login)
+node scripts/check-branding.js
+Files checked: 54 — Violations found: 0
+PUBLIC_ANTIGRAVITY_OCCURRENCES = 0
+PUBLIC_SOFTPHONE_BRAND_OCCURRENCES = 0
+PUBLIC_TELNYX_BRAND_OCCURRENCES = 0
+BUSTER_CALL_BRANDING = READY
 ```
 
-Les robots ne pouvaient pas lire ces fichiers : le référencement était cassé en production. Corrigé par ajout des deux chemins à la liste publique du proxy. Vérification après correction :
-
-```
-/sitemap.xml -> 200, Content-Type: application/xml
-/robots.txt  -> 200, Content-Type: text/plain
-Sitemap: https://softphone-xi.vercel.app/sitemap.xml
-```
-
-### O.2 Origine canonique
-
-`NEXT_PUBLIC_SITE_URL` et `NEXT_PUBLIC_APP_URL` n'étaient **pas définies** dans l'environnement. `siteConfig.url` retombait sur `http://localhost:3000`, ce qui produisait des canonicals, des URLs OpenGraph et un sitemap pointant sur localhost. Corrigé : l'origine publique réelle est désormais la valeur de repli.
-
-Vérifié après correction :
-
-```
-canonical   https://softphone-xi.vercel.app/
-og:url      https://softphone-xi.vercel.app/
-sitemap     13 URL, toutes en https://softphone-xi.vercel.app/...
-```
-
-Les autres surfaces SEO (canonical, `og:url`, sitemap, robots) utilisent des chemins relatifs résolus via `metadataBase`, donc plus aucun `localhost` n'est exposé publiquement. Les replis `localhost` restants sont dans des routes API backend (Stripe, Flutterwave, facturation) : hors périmètre.
-
-### O.3 Cohérence de marque
-
-`siteConfig.brand` vaut « Buster Call », mais plusieurs pages publiques et le manifeste PWA affichaient « Antigravity ». Toutes les pages publiques utilisent désormais `siteConfig.brand`. Le nom de marque est désormais modifiable en **un seul endroit**.
-
-Point à trancher par le business : le nom commercial retenu. Le code est prêt pour l'un ou l'autre.
-
-### O.4 Métadonnées
-
-- `lang="fr"`, titles et descriptions FR, OpenGraph (`fr_FR`) et Twitter cards présents sur les pages publiques.
-- Sitemap : 13 routes publiques, frequencies et priorities définies.
-- Robots : `/dashboard`, `/god-mode`, `/onboarding`, `/buy-test`, `/api` exclus.
-
-## P. Mobile
-
-- Classes responsive présentes sur les grilles et sections landing.
-- **Non vérifié** : rendu visuel réel aux breakpoints 1440 / 768 / 390 / 320. Aucune assertion de conformité responsive n'est faite dans ce rapport.
-
-## Q. Accessibility
-
-- Textes alternatifs sur les images de contenu.
-- Arborescence et contrastes des sections landing cohérents.
-- **Non vérifié** : audit automatisé complet, navigation clavier, lecteurs d'écran.
-
-## R. Fichiers modifiés (cette passe)
-
-- `lib/site-config.ts` — identité légale centralisée, origine canonique publique.
-- `app/layout.tsx` — `metadataBase` dérivé de `siteConfig`.
-- `proxy.ts` — déblocage de `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest`.
-- `public/manifest.webmanifest` — cohérence de marque.
-- `app/terms/page.tsx`, `app/privacy/page.tsx`, `app/refund-policy/page.tsx`, `app/contact/page.tsx`, `app/about/page.tsx`, `app/global-error.tsx` — marque centralisée.
-- `app/sitemap.ts`, `app/robots.ts` — origine canonique.
-- Pages marketing et composants landing : voir l'historique de la passe (claims, intégrations, secteurs, scénarios, pricing).
-
-## S. tsc
+## O. TypeScript
 
 ```
 npx tsc --noEmit
@@ -229,96 +145,53 @@ npx tsc --noEmit
 → 0 erreur
 ```
 
-Le premier passage renvoyait 142 erreurs, **toutes** dans `.next/dev/types/validator.ts` et `.next/types/validator.ts` : il s'agissait de types de routes générés par Next, désynchronisés, dont un export manquant et un `ParamMap` résolu à `never`. Ces fichiers sont générés et ignorés par git (`.gitignore` : `/.next/`, non suivis). Après régénération, le type-check passe sans aucune erreur. Aucune erreur ne résidait dans le code applicatif.
+Les erreurs précédentes étaient soit dans des types générés Next (`.next/**/types/validator.ts`, cache stale) soit dues à un client Prisma non régénéré (`PushSubscription` présent dans `schema.prisma` mais absent du client généré). Après `npx prisma generate`, plus aucune erreur.
 
-## T. build
-
-**Non vérifié de bout en bout — statut `NOT_READY` conservé.**
-
-`npm run build` commence par `node scripts/migrate-deploy.mjs`, qui exécute `prisma migrate deploy`. Cet environnement n'atteint pas la base :
+## P. Build
 
 ```
-Error: P1001: Can't reach database server at `kgebwferveweznnuutxc.db.eu-central-1.nhost.run:5432`
-[migrate] échec après plusieurs tentatives
+npm run build
+→ prisma migrate deploy : OK cette passe (11 migrations, "No pending migrations")
+→ next build : échec de compilation UNIQUEMENT sur next/font/google
+   getaddrinfo ENOTFOUND fonts.googleapis.com
+   `next/font` error: Failed to fetch `Inter` from Google Fonts.
+   `next/font` error: Failed to fetch `JetBrains Mono` from Google Fonts.
+   Build failed because of webpack errors
 ```
 
-Le build s'arrête donc **avant** la compilation Next.js, sur un prérequis d'infrastructure. Ce n'est pas un échec du code modifié.
+`BUILD = BLOCKED_BY_ENVIRONMENT`. La base a été joignable cette fois, les migrations ont été appliquées et la compilation Next a démarré : l'échec est un blocage réseau de l'environnement (Google Fonts inaccessible), pas une erreur de code ni de TypeScript. Aucune logique de build/migration n'a été modifiée et aucune sécurité DB n'a été contournée. `BUILD = PASS` ne sera déclaré qu'après un `npm run build` réellement terminé avec exit 0 (cas normal sur Vercel, où Google Fonts est accessible).
 
-Ce qui a été vérifié à la place, par compilation et rendu réels via le serveur de développement :
+## Q. Pricing route verification
 
-```
-/                   200
-/ia                 200
-/receptionniste-ia  200
-/integrations       200
-/secteurs          200
-/about             200
-/contact           200
-/etudes-de-cas      200
-/terms             200
-/privacy           200
-/refund-policy     200
-/acceptable-use    200
-/sitemap.xml       200
-/robots.txt        200
-```
+- `/pricing` n'a pas pu être rendue lors des contrôles locaux précédents (accès DB). La base est de nouveau joignable (migrations OK cette passe) mais la route n'a pas été re-testée en HTTP dans cette passe.
+- Elle reste `force-dynamic`, type-checkée, et son contenu statique (libellés, audiences, FAQ, comparaison, devise USD) a été relu en source.
+- **À valider en environnement DB** : rendu HTTP 200 et affichage correct des deux offres à 29 USD.
 
-`/pricing` n'a pas pu être rendu localement : la page interroge la base de données, injoignable ici. Elle est forcée en rendu dynamique, type-checkée, et son contenu statique (libellés, audiences, FAQ, comparaison) a été relu en source. Elle reste à confirmer sur un environnement disposant de la base.
+## R. Paddle readiness
 
-**À exécuter avant mise en production, dans un environnement ayant accès à la base : `npm run build`.**
+- `PADDLE_SITE_READINESS = WAITING_LEGAL_REGISTRATION`.
+- Aucun code Paddle (Checkout, API, webhooks, SDK, backend billing) n'a été ajouté. Ce chantier est strictement website / business identity / legal / pricing-public compliance.
+- Blocages restants avant de déclarer READY : RCCM / immatriculation non fournis, NIU / tax ID non fournis, build complet non confirmé, `/pricing` non vérifiée en environnement DB.
+- Si et seulement si le business décide d'introduire Paddle : choix du modèle Merchant of Record et cohérence avec le backend de facturation existant. Rien n'est implémenté.
 
-## U. Points à valider business
+## S. Files modified
 
-### U.1 Identité légale — bloquant
+Cette passe :
+- `lib/site-config.ts` — identité réelle confirmée (MERCO / Buster Call / Cameroun / Kamkop 1 / Bafoussam / support email / téléphone), adresse multi-lignes, `publisherStatement`, séparation des emails, champs RCCM/NIU laissés vides.
+- `components/marketing/LegalDocument.tsx` — `LegalIdentity` affiche l'identité réelle et omet les champs vides.
+- `app/terms/page.tsx`, `app/privacy/page.tsx`, `app/acceptable-use/page.tsx` — l'éditeur est désormais MERCO (et non Buster Call) ; mention « exploitée par MERCO ».
+- `scripts/check-public-seo-routes.js` — nouveau garde anti-régression SEO.
+- `package.json` — scripts `check:branding` et `check:seo`.
+- `PADDLE_WEBSITE_READINESS_REPORT.md` — mis à jour.
 
-Aucune des variables suivantes n'est renseignée dans le dépôt. Elles doivent provenir de l'éditeur, jamais être devinées.
-
-| Champ | Variable | État |
-|---|---|---|
-| Raison sociale | `NEXT_PUBLIC_LEGAL_ENTITY` | MISSING |
-| Nom commercial | `NEXT_PUBLIC_TRADE_NAME` | MISSING |
-| Pays | `NEXT_PUBLIC_COMPANY_COUNTRY` | MISSING |
-| Adresse du siège | `NEXT_PUBLIC_COMPANY_ADDRESS` | MISSING |
-| Registre (RCS / RM) | `NEXT_PUBLIC_COMPANY_REGISTRY` | MISSING |
-| TVA intracommunautaire | `NEXT_PUBLIC_VAT_ID` | MISSING |
-| Téléphone support | `NEXT_PUBLIC_SUPPORT_PHONE` | MISSING |
-| E-mail support | `NEXT_PUBLIC_SUPPORT_EMAIL` | MISSING |
-| E-mail commercial | `NEXT_PUBLIC_SALES_EMAIL` | MISSING |
-| E-mail facturation | `NEXT_PUBLIC_PAYMENT_EMAIL` | MISSING |
-| E-mail juridique / DPO | `NEXT_PUBLIC_LEGAL_EMAIL` | MISSING |
-
-Le code affiche honnêtement l'absence de ces informations. Tant qu'elles manquent, les pages légales ne sont pas publiables : raison sociale et coordonnées de contact sont des mentions légales obligatoires.
-
-### U.2 Devise
-
-USD est appliqué de façon cohérente. Une confirmation écrite est requise pour figer `PRICING_CURRENCY`.
-
-### U.3 Marque
-
-Arbitrer entre « Buster Call » (actuellement appliqué sur le site public) et « Antigravity » (utilisé dans le backend, les routes de facturation, l'onboarding, le `User-Agent` des webhooks et les données de seed). Le site public est prêt à basculer en modifiant `siteConfig.brand`.
-
-### U.4 Périmètre des deux offres à 29 USD
-
-Faire confirmer par le business que les deux offres doivent coexister avec des périmètres différents (CAS A), plutôt que d'en aligner une seule.
-
-## V. Points nécessaires avant Paddle Live
-
-Ces éléments sont **indépendants** du statut du site et ne sont pas traités ici.
-
-1. Validation juridique des pages légales avec les informations réelles de l'éditeur (U.1).
-2. Confirmation de la devise commerciale (U.2).
-3. Arbitrage de marque (U.3).
-4. Décision commerciale sur les deux offres à 29 USD (U.4).
-5. Exécution et réussite de `npm run build` dans un environnement disposant de la base de données (§T).
-6. Vérification visuelle responsive et audit d'accessibilité (P, Q).
-7. Si et seulement si le business décide d'introduire Paddle : choix du modèle (Merchant of Record) et cohérence avec le backend de facturation existant. Rien n'est implémenté à ce stade.
+Passe précédente (toujours effective) :
+- `app/about/page.tsx`, `app/contact/page.tsx`, `app/refund-policy/page.tsx`, `app/layout.tsx`, `app/global-error.tsx`, `app/sitemap.ts`, `app/robots.ts`, `proxy.ts`, `components/landing/*`, `components/marketing/*`.
+- `AUDIT_REPORT.md` — restauré byte-exact (tracked dans HEAD), non supprimé.
 
 ---
 
 ## Conclusion
 
-Le site public est **propre côté claims** et **techniquement cohérent** : les 13 pages publiques, le sitemap et le robots compiles et se rendent, le type-check passe sans erreur, la devise est homogène, l'identité légale est centralisée et les pages n'affirment rien qui ne soit pas démontré dans le code.
+Le site présente désormais honnêtement **Buster Call, opéré par MERCO, basé à Kamkop 1, Bafoussam, Cameroun**, avec un support réel (antoinebekono93@gmail.com, +237 698 105 696), sans inventer de société immatriculée, de RCCM, de NIU, d'email, de certification, ni de build validé.
 
-Deux défauts réels ont été trouvés et corrigés lors de cette passe : le **blocage des robots d'indexation par le proxy d'authentification** (`/sitemap.xml` et `/robots.txt` redirigeaient vers `/login`) et l'**origine canonique tombant sur localhost**.
-
-Le statut reste néanmoins `PADDLE_SITE_READINESS = WAITING_BUSINESS_INFO`, pour une raison unique : **les mentions légales obligatoires de l'éditeur et la confirmation de la devise n'ont pas été fournies.** Aucune de ces informations n'a été inventée.
+L'identité principale (marque, opérateur, adresse, contact) est complète et prête. Le statut reste `PADDLE_SITE_READINESS = WAITING_LEGAL_REGISTRATION` pour deux raisons factuelles : le RCCM et le NIU ne sont pas disponibles, et le build complet n'a pas encore terminé avec exit 0 dans un environnement disposant de la DB et de l'accès Google Fonts.

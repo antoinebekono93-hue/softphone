@@ -28,12 +28,12 @@ export async function create_payment_link(skuId: string, customerEmail?: string)
   // 1. Fetch official price from DB to prevent prompt injection.
   // We mock the DB fetch here:
   const officialPrice = Math.floor(Math.random() * 100) + 10;
-  console.log(`[Tools] Création du lien Flutterwave pour ${skuId}. Prix officiel : ${officialPrice} EUR`);
+  console.log(`[Tools] Création du lien CinetPay pour ${skuId}. Prix officiel : ${officialPrice} EUR`);
 
-  // 2. Call Flutterwave API (Simulated)
-  // const fwResponse = await fetch('https://api.flutterwave.com/v3/payments', ...)
-  
-  const paymentLink = `https://flutterwave.com/pay/mock_${skuId}_${Date.now()}`;
+  // 2. Call CinetPay API (Simulated)
+  // const cpResponse = await fetch('https://api-checkout.cinetpay.com/v2/payment', ...)
+
+  const paymentLink = `https://cinetpay.com/pay/mock_${skuId}_${Date.now()}`;
   
   return JSON.stringify({
     success: true,

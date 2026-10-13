@@ -766,3 +766,118 @@ label[for] {
   touch-action: manipulation;
 }
 
+/* ============================================================
+   Buster Call — Mobile Phone (Apple Phone app style)
+   Périmètre : module d'appel mobile `/dashboard/softphone`.
+   `.bc-light` force une palette claire et épurée inspirée de l'app
+   Téléphone iOS, quel que soit le thème du dashboard (dark par défaut).
+   `.bc-phone` est le shell plein écran mobile (md:hidden). Desktop intact.
+   ============================================================ */
+.bc-light {
+  color-scheme: light;
+
+  --bg-base: #f2f2f7;             /* iOS systemGroupedBackground */
+  --bg-surface: #ffffff;          /* cellules de liste */
+  --bg-surface-solid: #ffffff;
+  --bg-surface-hover: #e9e9ee;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.32);
+  --bg-glass: rgba(255, 255, 255, 0.82);
+
+  --border-subtle: rgba(60, 60, 67, 0.13);
+  --border-default: rgba(60, 60, 67, 0.22);
+  --border-active: #0a97b0;
+
+  --text-primary: #1c1c1e;
+  --text-secondary: #6c6c70;
+  --text-muted: #a1a1a6;
+
+  /* Accent = Buster Call (cyan/teal) — jamais Antigravity/Telnyx/Softphone */
+  --brand: #0a97b0;
+  --brand-hover: #0a87a0;
+  --brand-active: #087f94;
+  --brand-foreground: #ffffff;
+  --telecom: #0a97b0;
+  --ai: #6a5acd;
+  --success: #34c759;             /* vert iOS — bouton d'appel */
+  --warning: #ff9f0a;
+  --danger: #ff3b30;              /* rouge iOS — appels manqués */
+
+  --accent-primary: var(--brand);
+  --accent-foreground: var(--brand-foreground);
+  --accent-cyan: var(--brand);
+  --accent-green: var(--success);
+  --accent-violet: var(--ai);
+
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 8px 24px -8px rgba(0, 0, 0, 0.18);
+}
+
+.bc-phone {
+  position: fixed;
+  inset: 0;
+  z-index: 45; /* au-dessus de la nav mobile (z-40), sous les overlays d'appel (z-50/z-100) */
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+.bc-phone button,
+.bc-phone a,
+.bc-phone [role="button"] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Cellule de liste type iOS (fond blanc, séparateur géré par la liste) */
+.bc-cell {
+  background: var(--bg-surface);
+}
+.bc-cell:active {
+  background: var(--bg-surface-hover);
+}
+
+/* Champ de recherche iOS : neutralise les `!important` globaux des inputs */
+.bc-phone .bc-field {
+  background: var(--bg-surface-hover) !important;
+  border: 1px solid transparent !important;
+  color: var(--text-primary) !important;
+  box-shadow: none !important;
+  border-radius: 10px;
+}
+.bc-phone .bc-field:focus {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Touche circulaire du clavier type iPhone */
+.bc-key {
+  width: clamp(60px, 20vw, 76px);
+  height: clamp(60px, 20vw, 76px);
+  border-radius: 9999px;
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, transform 80ms ease;
+}
+.bc-key:active {
+  background: #dcdce1;
+  transform: scale(0.96);
+}
+
+/* Scrollbar masquée dans le shell pour un rendu natif */
+.bc-phone *::-webkit-scrollbar {
+  display: none;
+}
+.bc-phone * {
+  scrollbar-width: none;
+}
+

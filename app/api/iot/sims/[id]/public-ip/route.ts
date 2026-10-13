@@ -58,6 +58,16 @@ export async function POST(
         where: { id: sim.id },
         data: { publicIpEnabled: true }
       });
+
+      // Trace grand livre (sinon le solde dérive du ledger).
+      await tx.walletTransaction.create({
+        data: {
+          organizationId: org.id,
+          amount: -3,
+          type: "DEBIT",
+          description: "Attribution d'une IP publique eSIM",
+        },
+      });
     });
 
     return NextResponse.json(updated);

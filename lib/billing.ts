@@ -1,18 +1,21 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { fetchWithCache } from "@/lib/redis";
 
 /**
  * Récupère les tarifs globaux du système
  * Si la table est vide, crée et renvoie les valeurs par défaut.
  */
 export async function getSystemRates() {
-  let settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
-  if (!settings) {
-    settings = await prisma.systemSettings.create({
-      data: { id: "default" }
-    });
-  }
-  return settings;
+  return await fetchWithCache("system-settings:default", async () => {
+    let settings = await prisma.systemSettings.findUnique({ where: { id: "default" } });
+    if (!settings) {
+      settings = await prisma.systemSettings.create({
+        data: { id: "default" }
+      });
+    }
+    return settings;
+  }, 86400); // Cache for 24 hours
 }
 
 /** Selling rate for a standard PSTN minute. Kept server-side so a browser
@@ -45,6 +48,12 @@ export async function debitWalletAtomically(
   organizationId: string,
   amount: number
 ): Promise<boolean> {
+  // Garde défensive : un montant non fini ou négatif transformerait le débit en
+  // crédit (`decrement` d'un négatif = incrément) et `walletBalance >= amount`
+  // serait toujours vrai. Aucun chemin légitime ne débite un montant <= 0.
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("Le montant à débiter doit être un nombre positif.");
+  }
   const result = await tx.organization.updateMany({
     where: {
       id: organizationId,
@@ -159,7 +168,7 @@ export async function reserveSmsCharge(organizationId: string, reservationId: st
     const existing = await tx.walletTransaction.findFirst({
       where: { callControlId: reference, type: 'SMS' },
     });
-    if (existing) return { amount: existing.amount.toNumber(), reference };
+    if (existing) return { amount: existing.amount.abs().toNumber(), reference };
 
     const rates = await tx.systemSettings.findUnique({ where: { id: 'default' } });
     const amount = rates?.smsRate ?? new Prisma.Decimal('0.05');

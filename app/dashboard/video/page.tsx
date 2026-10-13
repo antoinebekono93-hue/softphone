@@ -49,7 +49,7 @@ export default function VideoDashboard() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
       <div className="flex justify-between items-end mb-10">
         <div>
           <h1 className="text-3xl font-bold mb-2 text-[var(--text-primary)] flex items-center gap-3">

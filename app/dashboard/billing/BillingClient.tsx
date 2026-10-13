@@ -38,36 +38,64 @@ export default function BillingClient({
     fetchWalletData();
   }, []);
 
-  const handleStripeCheckout = async (amount: number) => {
-    setIsPending(true);
-    try {
-      const res = await fetch("/api/stripe/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
-      });
-      if (!res.ok) throw new Error("Erreur de connexion à Stripe");
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (error: any) {
-      console.error(error);
-      toast.error("Erreur : " + error.message);
-      setIsPending(false);
-    }
-  };
+  // =====================================================================
+  // ANCIENS MODES DE PAIEMENT (Stripe / Flutterwave) — DÉSACTIVÉS.
+  // CinetPay est désormais le mode de paiement principal (voir handleCinetPayCheckout).
+  // =====================================================================
+  // const handleStripeCheckout = async (amount: number) => {
+  //   setIsPending(true);
+  //   try {
+  //     const res = await fetch("/api/stripe/create-checkout-session", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ amount }),
+  //     });
+  //     if (!res.ok) throw new Error("Erreur de connexion à Stripe");
+  //     const data = await res.json();
+  //     if (data.url) {
+  //       window.location.href = data.url;
+  //     }
+  //   } catch (error: any) {
+  //     console.error(error);
+  //     toast.error("Erreur : " + error.message);
+  //     setIsPending(false);
+  //   }
+  // };
 
-  const handleFlutterwaveCheckout = async (amount: number) => {
+  // const handleFlutterwaveCheckout = async (amount: number) => {
+  //   setIsPending(true);
+  //   try {
+  //     const res = await fetch("/api/flutterwave/create-payment-link", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ amount }),
+  //     });
+  //     if (!res.ok) throw new Error("Erreur de connexion à Flutterwave");
+  //     const data = await res.json();
+  //     if (data.url) {
+  //       window.location.href = data.url;
+  //     }
+  //   } catch (error: any) {
+  //     console.error(error);
+  //     toast.error("Erreur : " + error.message);
+  //     setIsPending(false);
+  //   }
+  // };
+
+  // CinetPay — mode de paiement principal.
+  const handleCinetPayCheckout = async (amount: number) => {
     setIsPending(true);
     try {
-      const res = await fetch("/api/flutterwave/create-payment-link", {
+      const res = await fetch("/api/cinetpay/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify({
+          amount,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        }),
       });
-      if (!res.ok) throw new Error("Erreur de connexion à Flutterwave");
       const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Erreur de connexion à CinetPay");
       if (data.url) {
         window.location.href = data.url;
       }
@@ -104,7 +132,7 @@ export default function BillingClient({
               <button
                 key={amount}
                 onClick={() => setCustomAmount(amount.toString())}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${parseInt(customAmount) === amount ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:text-[var(--text-primary)]'}`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${parseFloat(customAmount) === amount ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:text-[var(--text-primary)]'}`}
               >
                 +${amount}
               </button>
@@ -121,21 +149,33 @@ export default function BillingClient({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button 
-              onClick={() => handleStripeCheckout(parseInt(customAmount))}
-              disabled={isPending || !parseInt(customAmount) || parseInt(customAmount) < 5}
+          <div className="grid grid-cols-1 gap-3 pt-2">
+            {/* CinetPay — mode de paiement principal */}
+            <button
+              onClick={() => handleCinetPayCheckout(parseFloat(customAmount))}
+              disabled={isPending || !parseFloat(customAmount) || parseFloat(customAmount) < 5}
+              className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium n8n-gradient-bg shadow-lg shadow-cyan-500/20 hover:scale-105 text-white transition-all disabled:opacity-50"
+            >
+              {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Payer avec CinetPay"}
+            </button>
+
+            {/* =====================================================
+                ANCIENS MODES DE PAIEMENT (Stripe / Flutterwave) — DÉSACTIVÉS
+            <button
+              onClick={() => handleStripeCheckout(parseFloat(customAmount))}
+              disabled={isPending || !parseFloat(customAmount) || parseFloat(customAmount) < 5}
               className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium n8n-gradient-bg shadow-lg shadow-cyan-500/20 hover:scale-105 text-white transition-all disabled:opacity-50"
             >
               {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Stripe"}
             </button>
-            <button 
-              onClick={() => handleFlutterwaveCheckout(parseInt(customAmount))}
-              disabled={isPending || !parseInt(customAmount) || parseInt(customAmount) < 5}
+            <button
+              onClick={() => handleFlutterwaveCheckout(parseFloat(customAmount))}
+              disabled={isPending || !parseFloat(customAmount) || parseFloat(customAmount) < 5}
               className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium bg-gradient-to-r from-cyan-500 to-blue-600 hover:opacity-90 text-white transition-all disabled:opacity-50"
             >
               {isPending ? <RefreshCw className="w-5 h-5 animate-spin" /> : "Flutterwave"}
             </button>
+                ===================================================== */}
           </div>
         </div>
       </div>

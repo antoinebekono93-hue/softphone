@@ -91,7 +91,7 @@ export default function MessagingProfileDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto w-full flex items-center justify-center min-h-[50vh]">
+      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full flex items-center justify-center min-h-[50vh]">
         <Loader2 className="w-10 h-10 animate-spin text-cyan-500" />
       </div>
     );
@@ -99,7 +99,7 @@ export default function MessagingProfileDetailPage() {
 
   if (!profile) {
     return (
-      <div className="p-8 max-w-7xl mx-auto w-full">
+      <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
         <h1 className="text-3xl font-bold tracking-tight">Profil introuvable</h1>
         <Link href="/dashboard/sms/profiles" className="text-cyan-500 mt-4 inline-block">Retour</Link>
       </div>
@@ -110,7 +110,7 @@ export default function MessagingProfileDetailPage() {
   const unlinkedNumbers = numbers.filter(n => n.messagingProfileId !== profile.id);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
       <Link href="/dashboard/sms/profiles" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-2 mb-6 w-fit">
         <ArrowLeft className="w-4 h-4" /> Retour aux profils
       </Link>

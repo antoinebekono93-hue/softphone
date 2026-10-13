@@ -120,7 +120,7 @@ export function AppCallPanel() {
         <div className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1">
           Appel interne (App-to-App)
         </div>
-        <div className="text-[11px] text-[var(--text-secondary)]">
+        <div className="text-xs text-[var(--text-secondary)]">
           Composez un nom d&apos;utilisateur, une extension ou un email
         </div>
       </div>
@@ -144,7 +144,7 @@ export function AppCallPanel() {
         </button>
       </div>
 
-      <div className="text-[11px] uppercase font-bold text-[var(--text-secondary)] tracking-wider flex items-center gap-1.5">
+      <div className="text-xs uppercase font-bold text-[var(--text-secondary)] tracking-wider flex items-center gap-1.5">
         <Users className="w-3.5 h-3.5" /> Annuaire de l&apos;équipe
       </div>
       <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto pr-1">

@@ -190,7 +190,7 @@ export default function TemplatesClient({ initialTemplates, hasAccount }: { init
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-[var(--text-secondary)] mb-1">Catégorie</label>
                   <select value={category} onChange={e => setCategory(e.target.value)} className="w-full bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:border-emerald-500 outline-none">

@@ -381,7 +381,7 @@ export default function UnifiedInboxClient({
                       <div key={event.id} className={`flex ${isOutbound ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[75%] p-3 rounded-lg shadow-sm relative ${isOutbound ? 'bg-[#d9fdd3] dark:bg-[#005c4b] text-gray-900 dark:text-white rounded-tr-none' : 'bg-white dark:bg-[#202c33] text-gray-900 dark:text-white rounded-tl-none'}`}>
                           <p className="leading-relaxed whitespace-pre-wrap pr-12 text-[15px]">{event.body}</p>
-                          <span className="text-[11px] text-gray-500 dark:text-gray-400 absolute bottom-1 right-2 flex items-center gap-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 absolute bottom-1 right-2 flex items-center gap-1">
                             {formatTime(event.timestamp)}
                             {isOutbound && (
                               event.status === 'DELIVERED' ? <CheckCircle2 className="w-3 h-3 text-blue-500" /> : <Clock className="w-3 h-3" />

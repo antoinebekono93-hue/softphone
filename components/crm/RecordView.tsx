@@ -88,7 +88,7 @@ export default function RecordView({ opportunity, onClose, onRefresh }: RecordVi
           </div>
 
           {/* Form Grid */}
-          <div className="grid grid-cols-2 gap-x-12 gap-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-6">
             <div className="flex border-b border-[var(--border-subtle)] pb-3">
               <label className="w-1/3 text-sm font-bold text-[var(--text-secondary)]">Client</label>
               <div className="w-2/3 text-sm text-[var(--brand)] font-bold hover:underline cursor-pointer">
@@ -138,7 +138,7 @@ export default function RecordView({ opportunity, onClose, onRefresh }: RecordVi
       </div>
 
       {/* Right Pane : Chatter (Activity Stream) */}
-      <div className="w-[450px] bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-2xl flex flex-col overflow-hidden shadow-sm">
+      <div className="w-full sm:w-[450px] bg-[var(--bg-surface-solid)] border border-[var(--border-subtle)] rounded-2xl flex flex-col overflow-hidden shadow-sm">
         <Chatter opportunityId={opportunity.id} />
       </div>
 

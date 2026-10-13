@@ -10,7 +10,7 @@ export default function VerifyOtpPage() {
   const [activeTab, setActiveTab] = useState("profiles");
 
   return (
-    <div className="p-8 max-w-7xl mx-auto w-full">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
@@ -89,7 +89,7 @@ export default function VerifyOtpPage() {
                     <td className="px-6 py-4 font-bold text-[var(--text-primary)]">{item.name}</td>
                     <td className="px-6 py-4 font-mono text-xs text-[var(--text-secondary)]">{item.id}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-md ${item.method === 'SMS' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-purple-500/10 text-purple-500 border border-purple-500/20'}`}>
+                      <span className={`px-2.5 py-1 text-xs font-bold uppercase rounded-md ${item.method === 'SMS' ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20' : 'bg-purple-500/10 text-purple-500 border border-purple-500/20'}`}>
                          {item.method}
                       </span>
                     </td>

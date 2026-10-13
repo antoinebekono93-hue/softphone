@@ -62,7 +62,7 @@ export default function CallsPage() {
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="p-8 border-b border-[var(--border-subtle)]">
+      <div className="p-4 sm:p-6 md:p-8 border-b border-[var(--border-subtle)]">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
@@ -131,7 +131,7 @@ export default function CallsPage() {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="font-bold text-[var(--text-primary)]">{call.direction === "INBOUND" ? call.fromNumber : call.toNumber}</div>
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${call.status === 'COMPLETED' ? 'badge-glass-green' : call.status === 'CANCELED' || call.status === 'MISSED' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'badge-glass-gray'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${call.status === 'COMPLETED' ? 'badge-glass-green' : call.status === 'CANCELED' || call.status === 'MISSED' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'badge-glass-gray'}`}>
                       {call.status}
                     </span>
                   </div>

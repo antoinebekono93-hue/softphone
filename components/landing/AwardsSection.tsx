@@ -16,23 +16,23 @@ export default function AwardsSection() {
   const reduced = useReducedMotion();
 
   return (
-    <section className="py-24 px-4 max-w-7xl mx-auto w-full">
-      <Reveal className="text-center mb-16">
-        <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
+    <section className="landing-section landing-container max-w-7xl mx-auto w-full">
+      <Reveal className="landing-section-heading text-center">
+        <h2 className="landing-heading font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
           Garanties <span className="text-gradient">techniques</span>
         </h2>
-        <p className="text-[var(--text-secondary)] text-lg font-medium">
-          Une plateforme bâtie sur des standards ouverts et des choix d'architecture robustes.
+        <p className="text-[var(--text-secondary)] landing-body font-medium">
+          Une plateforme bâtie sur des standards ouverts et des choix d&apos;architecture robustes.
         </p>
       </Reveal>
 
-      <Stagger className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <Stagger className="landing-grid landing-three-grid">
         {architecturalGarantees.map((item, i) => (
           <Item key={i}>
             <motion.div
               whileHover={reduced ? undefined : { y: -4 }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="rounded-[32px] glass-panel-premium p-8 text-center group h-full"
+              className="landing-card glass-panel-premium text-center group h-full"
             >
               <div className="w-14 h-14 mx-auto mb-4 rounded-2xl flex items-center justify-center text-2xl bg-[var(--bg-surface-hover)] text-cyan-400">
                 {item.icon}

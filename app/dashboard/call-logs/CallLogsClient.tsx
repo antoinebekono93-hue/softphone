@@ -105,7 +105,7 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
                         {formatDuration(log.duration)}
                       </td>
                       <td className="p-4">
-                        <span className={`px-2.5 py-1 text-[10px] font-bold rounded-md ${isMissed ? 'badge-glass-red' : 'badge-glass-green'}`}>
+                        <span className={`px-2.5 py-1 text-xs font-bold rounded-md ${isMissed ? 'badge-glass-red' : 'badge-glass-green'}`}>
                            {log.status === 'COMPLETED' ? 'Answered' : log.status.replace('_', ' ')}
                          </span>
                       </td>
@@ -174,9 +174,9 @@ export function CallLogsClient({ initialLogs }: { initialLogs: any[] }) {
               {(selectedLog.hangupCause || selectedLog.mosScore) && (
                 <div className="mb-6">
                    <h3 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-2 mb-3">
-                      <div className="w-4 h-4 rounded-full border-2 border-amber-500 flex items-center justify-center"><span className="text-[10px] text-amber-500 font-bold">i</span></div> Diagnostics
+                      <div className="w-4 h-4 rounded-full border-2 border-amber-500 flex items-center justify-center"><span className="text-xs text-amber-500 font-bold">i</span></div> Diagnostics
                    </h3>
-                   <Card className="p-4 text-sm leading-relaxed text-[var(--text-primary)] grid grid-cols-2 gap-4">
+                   <Card className="p-4 text-sm leading-relaxed text-[var(--text-primary)] grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {selectedLog.mosScore && (
                         <div>
                           <p className="text-[var(--text-secondary)] text-xs uppercase mb-1">Quality (MOS)</p>

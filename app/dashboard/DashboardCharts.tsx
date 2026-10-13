@@ -72,7 +72,7 @@ export function DashboardCharts({ data, activities }: { data: ChartData[], activ
                 <div className="flex-1">
                   <p className="text-sm font-medium text-[var(--text-primary)]">{activity.title}</p>
                   {activity.description && <p className="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">{activity.description}</p>}
-                  <p className="text-[10px] text-[var(--text-secondary)] mt-1">{activity.time}</p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">{activity.time}</p>
                 </div>
               </div>
             ))

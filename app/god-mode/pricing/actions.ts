@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireSuperAdmin } from "@/lib/security";
+import { invalidateCache } from "@/lib/redis";
 
 export async function updatePricingSettings(settings: any) {
   try {
@@ -46,6 +47,10 @@ export async function updatePricingSettings(settings: any) {
         whatsappRate: values.whatsappRate
       }
     });
+
+    // Le tarif est mis en cache 24 h (`system-settings:default`) par le moteur
+    // de facturation : sans invalidation, le prix facturé diffère du prix affiché.
+    await invalidateCache("system-settings:default");
 
     return { success: true };
   } catch (error: any) {

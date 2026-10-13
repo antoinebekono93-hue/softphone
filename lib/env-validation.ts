@@ -15,9 +15,9 @@
  *                     TELNYX_API_KEY, TELNYX_PUBLIC_KEY, TELNYX_SIP_CONNECTION_ID.
  *
  *  3. OPTIONNEL     — intégrations débranchables : la dégradation est fail-closed
- *                     au niveau des routes (Stripe 503 sans clé, IA absente, etc.).
+ *                     au niveau des routes (CinetPay 503 sans clé, IA absente, etc.).
  *                     On journalise un WARNING clair, jamais un crash au boot.
- *                     OpenAI, Stripe, Pusher/Realtime, Upstash Redis, mémoire agent.
+ *                     OpenAI, CinetPay, Pusher/Realtime, Upstash Redis, mémoire agent.
  *
  * Règle NEXT_PUBLIC_* : inlinées au BUILD côté client ; leur absence au
  * runtime serveur n'est pas un problème. Seul un placeholder est signalé.
@@ -39,7 +39,9 @@ const OPTIONAL_FEATURES: Tier[] = [
   { label: "Mémoire des agents (Upstash Redis)", vars: ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"] },
   { label: "Mémoire des agents (variables REDIS_AGENT_MEMORY_*)", vars: ["REDIS_AGENT_MEMORY_URL", "REDIS_AGENT_MEMORY_KEY", "REDIS_AGENT_MEMORY_STORE_ID"] },
   { label: "IA conversationnelle (OpenAI)", vars: ["OPENAI_API_KEY"] },
-  { label: "Paiements en ligne (Stripe)", vars: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] },
+  // CinetPay accepte des credentials génériques (fallback pays par défaut) ou
+  // par pays via CINETPAY_API_KEY_<CC> / CINETPAY_API_PASSWORD_<CC> (CI, SN, ...).
+  { label: "Paiements en ligne (CinetPay)", vars: ["CINETPAY_API_KEY", "CINETPAY_API_PASSWORD"] },
   { label: "Realtime / notifications (Pusher)", vars: ["PUSHER_APP_ID", "PUSHER_SECRET", "NEXT_PUBLIC_PUSHER_KEY", "NEXT_PUBLIC_PUSHER_CLUSTER"] },
   { label: "Auth.js legacy (NEXTAUTH_*)", vars: ["NEXTAUTH_SECRET", "NEXTAUTH_URL"] },
 ];

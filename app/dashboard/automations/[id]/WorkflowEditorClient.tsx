@@ -340,14 +340,14 @@ export function WorkflowEditorClient({ flowId, initialName, initialIsActive, ini
                     {selectedRun?.id === run.id && (
                       <div className="p-3 bg-[var(--bg-base)] text-xs font-mono space-y-4">
                         <div>
-                          <div className="font-bold text-[var(--text-secondary)] mb-1 uppercase text-[10px]">Trigger Data</div>
+                          <div className="font-bold text-[var(--text-secondary)] mb-1 uppercase text-xs">Trigger Data</div>
                           <pre className="bg-[var(--bg-surface-solid)] p-2 rounded border border-[var(--border-subtle)] text-[var(--text-primary)] overflow-x-auto">
                             {JSON.stringify(run.triggerData, null, 2)}
                           </pre>
                         </div>
                         
                         <div>
-                          <div className="font-bold text-[var(--text-secondary)] mb-2 uppercase text-[10px]">Étapes (Nodes)</div>
+                          <div className="font-bold text-[var(--text-secondary)] mb-2 uppercase text-xs">Étapes (Nodes)</div>
                           {(() => {
                             let logs = [];
                             try { logs = JSON.parse(run.runLogs as string); } catch(e) {}
@@ -360,24 +360,24 @@ export function WorkflowEditorClient({ flowId, initialName, initialIsActive, ini
                                   <div className="flex items-center gap-2 mb-1">
                                     <span className="font-bold text-[var(--text-primary)]">{log.nodeType}</span>
                                     {log.status === 'SUCCESS' ? (
-                                      <span className="text-[10px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded font-bold">SUCCÈS</span>
+                                      <span className="text-xs bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 rounded font-bold">SUCCÈS</span>
                                     ) : (
-                                      <span className="text-[10px] bg-rose-500/10 text-rose-500 px-1.5 py-0.5 rounded font-bold">ÉCHEC</span>
+                                      <span className="text-xs bg-rose-500/10 text-rose-500 px-1.5 py-0.5 rounded font-bold">ÉCHEC</span>
                                     )}
                                   </div>
-                                  <div className="text-[10px] text-[var(--text-secondary)] mb-1">ID: {log.nodeId}</div>
+                                  <div className="text-xs text-[var(--text-secondary)] mb-1">ID: {log.nodeId}</div>
                                   
                                   {log.output && (
                                     <div className="mt-1">
-                                      <div className="text-[9px] text-[var(--text-secondary)] mb-0.5">Sortie:</div>
-                                      <pre className="bg-[var(--bg-surface-solid)] p-1.5 rounded border border-[var(--border-subtle)] text-[var(--text-primary)] overflow-x-auto text-[10px]">
+                                      <div className="text-xs text-[var(--text-secondary)] mb-0.5">Sortie:</div>
+                                      <pre className="bg-[var(--bg-surface-solid)] p-1.5 rounded border border-[var(--border-subtle)] text-[var(--text-primary)] overflow-x-auto text-xs">
                                         {JSON.stringify(log.output, null, 2)}
                                       </pre>
                                     </div>
                                   )}
                                   
                                   {log.error && (
-                                    <div className="mt-1 text-rose-500 bg-rose-500/10 p-1.5 rounded border border-rose-500/20 text-[10px]">
+                                    <div className="mt-1 text-rose-500 bg-rose-500/10 p-1.5 rounded border border-rose-500/20 text-xs">
                                       {log.error}
                                     </div>
                                   )}

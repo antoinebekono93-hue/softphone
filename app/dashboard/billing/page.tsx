@@ -21,7 +21,7 @@ export default async function BillingPage() {
   if (!org) redirect("/login");
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-8">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-[var(--text-primary)]">Billing & Usage</h1>
         <p className="text-[var(--text-secondary)] mt-2">Manage your subscription and wallet balance for communications.</p>

@@ -98,7 +98,7 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
                   <Card className="p-5 flex-1 hover:border-[var(--accent-cyan)] group">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[var(--bg-base)] text-[var(--text-secondary)]">
+                        <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-[var(--bg-base)] text-[var(--text-secondary)]">
                           Étape {step.stepOrder}
                         </span>
                         <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] font-medium bg-[var(--bg-surface-hover)] px-2 py-1 rounded-full">
@@ -171,7 +171,7 @@ export function SequenceEditorClient({ initialSequence }: { initialSequence: any
                    
                    <div>
                      <label className="block text-sm font-semibold mb-1 text-[var(--text-secondary)]">Type d'action</label>
-                     <div className="grid grid-cols-3 gap-3">
+                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                        {['SMS', 'WHATSAPP', 'AI_CALL'].map((type) => (
                          <button
                            key={type}

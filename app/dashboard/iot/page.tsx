@@ -131,7 +131,7 @@ export default function IotDashboardPage() {
   };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto relative">
+    <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto relative">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-[var(--text-primary)]">
@@ -249,7 +249,7 @@ export default function IotDashboardPage() {
                     <td className="px-6 py-4">
                       <div className="font-bold text-[var(--text-primary)] flex items-center gap-2">
                         {item.name}
-                        <span className={`px-2 py-0.5 text-[10px] uppercase font-bold rounded ${item.type === 'ESIM' ? 'bg-violet-500/10 text-violet-500 border border-violet-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}>{item.type}</span>
+                        <span className={`px-2 py-0.5 text-xs uppercase font-bold rounded ${item.type === 'ESIM' ? 'bg-violet-500/10 text-violet-500 border border-violet-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'}`}>{item.type}</span>
                       </div>
                       <div className="text-[var(--text-secondary)] text-xs mt-1 font-mono">{item.iccid}</div>
                     </td>
@@ -273,7 +273,7 @@ export default function IotDashboardPage() {
                           <div className={`h-full ${isWarning ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.5)]' : 'bg-gradient-to-r from-cyan-400 to-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.5)]'}`} style={{ width: `${percent}%` }}></div>
                         </div>
                       )}
-                      {item.alertEnabled && <div className="text-[10px] text-amber-500 font-semibold flex items-center gap-1 mt-1"><ShieldAlert className="w-3 h-3"/> Alertes activées</div>}
+                      {item.alertEnabled && <div className="text-xs text-amber-500 font-semibold flex items-center gap-1 mt-1"><ShieldAlert className="w-3 h-3"/> Alertes activées</div>}
                     </td>
                     <td className="px-6 py-4">
                       {item.voiceEnabled ? (
@@ -475,7 +475,7 @@ export default function IotDashboardPage() {
               
               <div>
                 <label className="block text-sm font-medium text-[var(--text-primary)] mb-2">Type de SIM</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <label className="border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] rounded-lg p-3 cursor-pointer hover:bg-[var(--bg-surface-hover)] flex flex-col gap-1 items-center justify-center text-center transition-colors">
                     <input type="radio" name="type" value="ESIM" defaultChecked className="sr-only peer" />
                     <div className="peer-checked:text-cyan-500 font-bold text-[var(--text-primary)]">eSIM</div>

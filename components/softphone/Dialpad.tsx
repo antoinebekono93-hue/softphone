@@ -244,7 +244,7 @@ export function Dialpad({ onDigitPress, onCall, disabled }: DialpadProps) {
             <span className="text-xl sm:text-3xl font-medium">
               {key.digit}
             </span>
-            <span className="text-[9px] sm:text-[10px] font-medium tracking-[0.1em] mt-0.5 min-h-[13px] opacity-70">
+            <span className="text-[11px] sm:text-xs font-medium tracking-[0.1em] mt-0.5 min-h-[13px] opacity-70">
               {key.letters}
             </span>
           </button>

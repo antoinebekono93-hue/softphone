@@ -249,7 +249,7 @@ export default function SmsDashboardClient({
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] px-2 py-0.5 rounded">{msg.type}</span>
+                        <span className="text-xs font-bold text-[var(--text-secondary)] uppercase bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] px-2 py-0.5 rounded">{msg.type}</span>
                         <span className="text-[var(--text-primary)] truncate max-w-[200px] md:max-w-[300px]" title={msg.body}>{msg.body}</span>
                       </div>
                     </td>

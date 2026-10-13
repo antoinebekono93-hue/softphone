@@ -639,7 +639,7 @@ export default function InboxClient({ organizationId, userId, initialEvents }: {
                   <div className="flex justify-between items-center mb-0.5">
                     <span className="font-semibold text-sm text-[var(--text-primary)] truncate">{contact.name}</span>
                     {contact.lastMessage && (
-                      <span className="text-[10px] text-[var(--text-secondary)] shrink-0 ml-2">
+                      <span className="text-xs text-[var(--text-secondary)] shrink-0 ml-2">
                         {new Date(contact.lastMessage.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
                     )}
@@ -649,16 +649,16 @@ export default function InboxClient({ organizationId, userId, initialEvents }: {
                   </p>
                   <div className="mt-1.5 flex gap-1.5">
                     {contact.botMode ? (
-                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 flex items-center gap-1">
+                      <span className="text-xs uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 flex items-center gap-1">
                         <Bot className="w-2.5 h-2.5" /> IA
                       </span>
                     ) : (
-                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 flex items-center gap-1">
+                      <span className="text-xs uppercase font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 flex items-center gap-1">
                         <User className="w-2.5 h-2.5" /> Humain
                       </span>
                     )}
                     {contact.escalationStatus === 'REQUESTED' && (
-                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500 flex items-center gap-1">
+                      <span className="text-xs uppercase font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-500 flex items-center gap-1">
                         <AlertTriangle className="w-2.5 h-2.5" /> Escaladé
                       </span>
                     )}
@@ -741,7 +741,7 @@ export default function InboxClient({ organizationId, userId, initialEvents }: {
                             {msg.body}
                           </p>
                         </div>
-                        <span className="text-[10px] text-[var(--text-secondary)] mt-1 px-1">
+                        <span className="text-xs text-[var(--text-secondary)] mt-1 px-1">
                           {new Date(msg.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </span>
                       </div>
@@ -753,7 +753,7 @@ export default function InboxClient({ organizationId, userId, initialEvents }: {
                       <div className={`max-w-[88%] md:max-w-[75%] rounded-2xl px-4 py-3 ${getChannelColor(msg.type, isOutbound)}`}>
                         <p className="whitespace-pre-wrap break-words leading-relaxed text-base md:text-sm">{msg.body}</p>
                       </div>
-                      <span className="text-[10px] text-[var(--text-secondary)] mt-1 px-1 flex items-center gap-1">
+                      <span className="text-xs text-[var(--text-secondary)] mt-1 px-1 flex items-center gap-1">
                         {isOutbound && getChannelIcon(msg.type)}
                         {new Date(msg.sentAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         {!isOutbound && getChannelIcon(msg.type)}

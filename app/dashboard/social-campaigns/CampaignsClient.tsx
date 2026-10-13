@@ -170,7 +170,7 @@ export default function CampaignsClient({ groups, templates, facebookAccounts, i
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button type="button" onClick={() => setChannel("WHATSAPP")} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${channel === 'WHATSAPP' ? 'border-emerald-500 bg-emerald-500/5' : 'border-[var(--border-subtle)] hover:border-emerald-500/50'}`}>
                   <div className={`p-3 rounded-full ${channel === 'WHATSAPP' ? 'bg-emerald-500 text-white' : 'bg-[var(--bg-surface-hover)] text-[var(--text-secondary)]'}`}>
                     <MessageSquare className="w-6 h-6" />

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import "./marketing-responsive.css";
 import { legalLinks, siteConfig } from "@/lib/site-config";
 
 const productLinks = [
@@ -27,13 +28,13 @@ function LinkColumn({
   links: ReadonlyArray<{ href: string; label: string }>;
 }) {
   return (
-    <nav aria-label={title} className="flex flex-col gap-3">
+    <nav aria-label={title} className="flex flex-col gap-1">
       <h2 className="text-sm font-bold text-[var(--text-primary)] mb-1">{title}</h2>
       {links.map((link) => (
         <Link
           key={link.href}
           href={link.href}
-          className="text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          className="marketing-footer-link text-sm font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
         >
           {link.label}
         </Link>
@@ -47,9 +48,9 @@ export default function MarketingFooter() {
   const holder = siteConfig.legalEntity || siteConfig.brand;
 
   return (
-    <footer className="border-t border-[var(--border-subtle)] pt-14 pb-8 px-6 sm:px-8 max-w-7xl mx-auto w-full bg-[var(--bg-base)]">
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10 mb-12">
-        <div className="col-span-2 md:col-span-1">
+    <footer className="marketing-footer border-t border-[var(--border-subtle)] max-w-7xl mx-auto w-full bg-[var(--bg-base)]">
+      <div className="marketing-footer-grid">
+        <div className="marketing-footer-brand">
           <div className="flex items-center gap-2 mb-4">
             <span
               aria-hidden="true"
@@ -57,7 +58,7 @@ export default function MarketingFooter() {
             />
             <span className="font-bold text-[var(--text-primary)]">{siteConfig.brand}</span>
           </div>
-          <p className="text-xs font-medium text-[var(--text-secondary)] leading-relaxed max-w-xs">
+          <p className="text-sm font-medium text-[var(--text-secondary)] leading-relaxed max-w-xs">
             Buster Call — Téléphonie professionnelle et agents vocaux IA pour les entreprises.
           </p>
         </div>
@@ -68,7 +69,7 @@ export default function MarketingFooter() {
         <LinkColumn title="Légal" links={legalLinks} />
       </div>
 
-      <div className="border-t border-[var(--border-subtle)] pt-6 flex flex-col gap-3 text-xs font-medium text-[var(--text-secondary)]">
+      <div className="border-t border-[var(--border-subtle)] pt-6 flex flex-col gap-1 text-xs font-medium text-[var(--text-secondary)]">
         <p>
           © {year} {holder}. Tous droits réservés.
         </p>

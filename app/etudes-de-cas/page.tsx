@@ -101,10 +101,10 @@ export default function CaseStudiesPage() {
               className="rounded-[32px] glass-panel-premium p-8 h-full flex flex-col gap-4"
             >
               <div className="flex flex-wrap gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+                <span className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
                   {scenario.solution}
                 </span>
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
+                <span className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
                   {scenario.sector}
                 </span>
               </div>

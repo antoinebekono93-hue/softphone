@@ -322,8 +322,11 @@ export default async function PricingPage() {
               subtitle="Comparaison détaillée des limites et fonctionnalités incluses dans chaque abonnement."
             />
           </div>
+          <p className="px-6 pb-3 text-xs font-medium text-[var(--text-secondary)] sm:hidden">
+            Faites défiler le tableau horizontalement&nbsp;→
+          </p>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left">
+            <table className="w-full min-w-[640px] text-left">
               <caption className="sr-only">
                 Comparaison des fonctionnalités incluses dans chaque abonnement
               </caption>
@@ -340,7 +343,7 @@ export default async function PricingPage() {
                     >
                       {plan.name}
                       {plan.recommended && (
-                        <div className="text-[11px] font-bold uppercase tracking-widest text-cyan-400 mt-1">
+                        <div className="text-xs font-bold uppercase tracking-widest text-cyan-400 mt-1">
                           Recommandé
                         </div>
                       )}
@@ -396,7 +399,7 @@ export default async function PricingPage() {
                 {addon.title}
               </h3>
               {addon.includedIn ? (
-                <div className="text-[11px] font-bold uppercase tracking-widest px-2 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 self-start">
+                <div className="text-xs font-bold uppercase tracking-widest px-2 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 self-start">
                   Inclus dans {addon.includedIn}
                 </div>
               ) : null}

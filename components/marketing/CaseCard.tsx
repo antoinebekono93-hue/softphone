@@ -22,10 +22,10 @@ export default function CaseCard({ study }: { study: CaseStudy }) {
       </div>
       <div className="p-6 flex flex-col gap-4">
         <div className="flex flex-wrap gap-2">
-          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
+          <span className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400">
             {study.solution}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
+          <span className="text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-surface-solid)] text-[var(--text-secondary)]">
             {study.size}
           </span>
         </div>
@@ -37,7 +37,7 @@ export default function CaseCard({ study }: { study: CaseStudy }) {
           {study.stats.map((stat) => (
             <div key={stat.label} className="rounded-2xl bg-[var(--bg-surface-hover)] border border-[var(--border-subtle)] p-3 text-center">
               <div className="text-lg font-extrabold n8n-gradient-text">{stat.value}</div>
-              <div className="text-[10px] font-bold text-[var(--text-secondary)] mt-1 leading-tight">{stat.label}</div>
+              <div className="text-xs font-bold text-[var(--text-secondary)] mt-1 leading-tight">{stat.label}</div>
             </div>
           ))}
         </div>

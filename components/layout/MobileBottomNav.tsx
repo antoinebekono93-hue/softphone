@@ -72,7 +72,7 @@ export function MobileBottomNav() {
         return <Link key={item.href} href={item.href} aria-current={isActive ? "page" : undefined}
           className={"relative min-w-0 flex flex-col items-center justify-center gap-1 rounded-xl touch-manipulation transition-colors " + (isActive ? "text-[var(--brand)]" : "text-[var(--text-secondary)]")}>
           <span className={"grid h-7 w-12 place-items-center rounded-full " + (isActive ? "bg-[var(--bg-surface-hover)]" : "")}><Icon aria-hidden="true" className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.8} /></span>
-          <span className="text-[11px] font-medium">{item.label}</span>
+          <span className="text-xs font-medium">{item.label}</span>
           {item.label === "Appels" && activeCall && <span className="absolute right-4 top-2 h-2 w-2 rounded-full bg-[var(--success)]"><span className="sr-only">Appel en cours</span></span>}
         </Link>;
       })}

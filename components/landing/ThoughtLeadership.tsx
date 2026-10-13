@@ -37,24 +37,24 @@ export default function ThoughtLeadership() {
   const reduced = useReducedMotion();
 
   return (
-    <section className="py-24 px-4 border-t border-[var(--border-subtle)]">
+    <section className="landing-section landing-container border-t border-[var(--border-subtle)]">
       <div className="max-w-7xl mx-auto w-full">
-        <Reveal className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
+        <Reveal className="landing-section-heading text-center">
+          <h2 className="landing-heading font-extrabold tracking-tight mb-4 text-[var(--text-primary)]">
             Ressources <span className="text-gradient">et insights</span>
           </h2>
-          <p className="text-[var(--text-secondary)] text-lg font-medium">
-            Restez à la pointe de l'IA conversationnelle avec nos contenus exclusifs.
+          <p className="text-[var(--text-secondary)] landing-body font-medium">
+            Restez à la pointe de l&apos;IA conversationnelle avec nos contenus exclusifs.
           </p>
         </Reveal>
 
-        <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Stagger className="landing-grid landing-three-grid">
           {resources.map((res, i) => (
             <Item key={i}>
               <motion.button
                 whileHover={reduced ? undefined : { y: -4 }}
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                className="rounded-[32px] glass-panel-premium p-8 text-left group w-full"
+                className="landing-card glass-panel-premium text-left group w-full"
               >
                 <div className="w-14 h-14 rounded-2xl bg-[var(--bg-surface-hover)] flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   {res.icon}

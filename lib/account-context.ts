@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { accountSessionSelect } from "@/lib/account-session";
+import { fetchWithCache } from "@/lib/redis";
 
 /**
  * Single source of truth for "what is the CURRENT account context of this user?".
@@ -31,20 +32,22 @@ export type CurrentAccountContext = {
  * request instead of the next login.
  */
 export const getCurrentAccountContext = cache(async (userId: string): Promise<CurrentAccountContext | null> => {
-  const account = await prisma.user.findUnique({
-    where: { id: userId },
-    select: accountSessionSelect,
-  });
-  if (!account) return null;
-  return {
-    userId,
-    organizationId: account.organizationId,
-    organizationName: account.organization?.name ?? null,
-    plan: account.organization?.pricingPlan?.name ?? null,
-    planStatus: account.organization?.planStatus ?? null,
-    role: account.role,
-    isSuperAdmin: account.isSuperAdmin,
-  };
+  return await fetchWithCache(`account-ctx:${userId}`, async () => {
+    const account = await prisma.user.findUnique({
+      where: { id: userId },
+      select: accountSessionSelect,
+    });
+    if (!account) return null;
+    return {
+      userId,
+      organizationId: account.organizationId,
+      organizationName: account.organization?.name ?? null,
+      plan: account.organization?.pricingPlan?.name ?? null,
+      planStatus: account.organization?.planStatus ?? null,
+      role: account.role,
+      isSuperAdmin: account.isSuperAdmin,
+    };
+  }, 60); // 1 minute cache, enough to relieve DB without keeping stale plan data too long
 });
 
 /**

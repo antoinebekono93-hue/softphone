@@ -45,7 +45,7 @@ export default async function PipelinePage() {
 
   if (loadError) {
     return (
-      <div className="p-8 max-w-full mx-auto w-full">
+      <div className="p-4 sm:p-6 md:p-8 max-w-full mx-auto w-full">
         <PageHeader title="Pipeline de Ventes" description="Suivez vos opportunités CRM WhatsApp et déplacez-les entre les étapes." />
         <Card className="p-8 flex flex-col items-center justify-center text-center">
           <AlertTriangle className="w-10 h-10 text-amber-500 mb-4" />
@@ -57,7 +57,7 @@ export default async function PipelinePage() {
   }
 
   return (
-    <div className="p-8 max-w-full mx-auto w-full h-full min-h-0 flex flex-col">
+    <div className="p-4 sm:p-6 md:p-8 max-w-full mx-auto w-full h-full min-h-0 flex flex-col">
       <PageHeader title="Pipeline de Ventes" description="Suivez vos opportunités CRM WhatsApp et déplacez-les entre les étapes." />
 
       <div className="flex-1 min-h-0 overflow-hidden">
