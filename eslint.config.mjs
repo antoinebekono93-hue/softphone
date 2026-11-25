@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Native Expo app and shared package are linted by their own configs.
+    "apps/**",
+    "packages/**",
   ]),
 ]);
 

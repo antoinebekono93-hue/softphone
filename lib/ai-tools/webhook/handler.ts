@@ -178,7 +178,24 @@ export async function handleTelnyxAIToolWebhook(
     INVALID_ARGUMENTS: 400,
     TEMPORARILY_UNAVAILABLE: 503,
     TIME_SLOT_UNAVAILABLE: 409,
+    TIME_OUTSIDE_BUSINESS_HOURS: 409,
     CUSTOMER_NOT_FOUND: 404,
+    LEAD_NOT_FOUND: 404,
+    LEAD_ALREADY_EXISTS: 409,
+    LEAD_AMBIGUOUS: 409,
+    INVALID_STAGE: 400,
+    WRITE_TOOL_NOT_ALLOWED: 403,
+    RECIPIENT_NOT_FOUND: 404,
+    RECIPIENT_HAS_NO_PHONE: 422,
+    RECIPIENT_OPTED_OUT: 403,
+    INVALID_DESTINATION: 400,
+    SMS_SENDER_UNAVAILABLE: 422,
+    SMS_SEND_FAILED: 502,
   };
-  return httpError(mapping[result.error.code] ?? 503, result.error.code);
+  const details = result.error.details;
+  return httpError(
+    mapping[result.error.code] ?? 503,
+    result.error.code,
+    details ? { details } : {}
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock, Phone } from "lucide-react";
+import { Clock, Phone, WifiOff } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { RecentCallList } from "./RecentCallList";
 import { EmptyStateMobile } from "./EmptyStateMobile";
@@ -39,11 +39,15 @@ export function MobileRecentsView({
   calls,
   contacts,
   loading,
+  error,
+  onRetry,
   onCall,
 }: {
   calls: PhoneCall[];
   contacts: PhoneContact[];
   loading: boolean;
+  error?: boolean;
+  onRetry?: () => void;
   onCall: (number: string) => void;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
@@ -86,19 +90,46 @@ export function MobileRecentsView({
       </div>
 
       {loading && calls.length === 0 ? (
-        <p className="px-4 py-10 text-center text-[14px] text-[var(--text-secondary)]">Chargement…</p>
+        <ul className="px-4">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <li key={i} className="flex items-center gap-3 py-2 min-h-[72px] animate-pulse">
+              <div className="h-12 w-12 shrink-0 rounded-full bg-[var(--bg-surface-hover)]" />
+              <div className="flex-1">
+                <div className="h-4 w-1/3 rounded bg-[var(--bg-surface-hover)]" />
+                <div className="mt-2 h-3 w-1/4 rounded bg-[var(--bg-surface-hover)]" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : error && calls.length === 0 ? (
+        <EmptyStateMobile
+          icon={WifiOff}
+          title="Impossible de charger les appels récents"
+          description="Vérifiez votre connexion puis réessayez."
+          action={
+            onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="min-h-11 rounded-full bg-[var(--brand)] px-6 text-[15px] font-semibold text-white"
+              >
+                Réessayer
+              </button>
+            ) : undefined
+          }
+        />
       ) : filtered.length === 0 ? (
         <EmptyStateMobile
           icon={filter === "missed" ? Phone : Clock}
-          title={filter === "missed" ? "Aucun appel manqué" : "Aucun appel"}
+          title={filter === "missed" ? "Aucun appel manqué" : "Aucun appel récent"}
           description={
             filter === "missed"
               ? "Vous n'avez aucun appel manqué. C'est une bonne nouvelle."
-              : "Vos appels entrants et sortants apparaîtront ici."
+              : "Votre historique d'appels apparaîtra ici."
           }
         />
       ) : (
-        <div className="px-4 pb-6">
+        <div className="pb-6">
           <RecentCallList calls={filtered} contacts={contacts} onCall={onCall} onInfo={setSelected} />
         </div>
       )}

@@ -1,9 +1,11 @@
-import type { AIToolErrorCode } from './errors';
+import type { AIToolErrorCode, AIToolErrorDetails } from './errors';
 import type { AIToolDataAccess } from './data-access';
 import type { AIToolRateLimiter } from './rate-limit';
 import type { AIToolReplayStore } from './replay';
 import type { AIToolEventSink } from './observability';
 import type { AppointmentWriter } from './appointments';
+import type { LeadWriter } from './leads';
+import type { SmsSenderPort, SmsWriter } from './sms';
 
 export type AIToolRiskLevel =
   | 'READ_ONLY'
@@ -15,7 +17,9 @@ export type AIToolRiskLevel =
 export type AIToolPermission =
   | 'contacts:read'
   | 'crm:read'
-  | 'appointments:write';
+  | 'appointments:write'
+  | 'leads:write'
+  | 'messages:write';
 
 export interface AuthorizedAssistant {
   assistantId: string;
@@ -56,7 +60,7 @@ export interface AIToolExecutionFailure {
   ok: false;
   toolName: string;
   requestId: string;
-  error: { code: AIToolErrorCode };
+  error: { code: AIToolErrorCode; details?: AIToolErrorDetails };
 }
 
 export type AIToolExecutionResult<T = unknown> =
@@ -81,4 +85,20 @@ export interface AIToolDeps {
    * absent a write tool fails closed with TEMPORARILY_UNAVAILABLE.
    */
   appointments?: AppointmentWriter;
+  /**
+   * Write port for CRM lead persistence (Phase 4B). Only provided in
+   * production; when absent a lead write tool fails closed.
+   */
+  leads?: LeadWriter;
+  /**
+   * Write port for SMS persistence/billing/idempotence (Phase 4C). Only
+   * provided in production; when absent `send_sms` fails closed.
+   */
+  sms?: SmsWriter;
+  /**
+   * Outbound SMS provider port (Phase 4C). Kept separate from `sms` so tests
+   * inject a pure fake and never touch the network. Absent ⇒ `send_sms` fails
+   * closed before any persistence or provider call.
+   */
+  smsSender?: SmsSenderPort;
 }

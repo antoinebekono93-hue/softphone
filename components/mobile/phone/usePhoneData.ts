@@ -8,6 +8,8 @@ interface PhoneData {
   calls: PhoneCall[];
   voicemails: PhoneVoicemail[];
   loading: boolean;
+  contactsError: boolean;
+  callsError: boolean;
   refresh: () => Promise<void>;
 }
 
@@ -22,6 +24,8 @@ export function usePhoneData(): PhoneData {
   const [calls, setCalls] = useState<PhoneCall[]>([]);
   const [voicemails, setVoicemails] = useState<PhoneVoicemail[]>([]);
   const [loading, setLoading] = useState(true);
+  const [contactsError, setContactsError] = useState(false);
+  const [callsError, setCallsError] = useState(false);
   const mountedRef = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -39,11 +43,16 @@ export function usePhoneData(): PhoneData {
       ]);
 
       if (!mountedRef.current) return;
+      setContactsError(!contactsRes.ok);
+      setCallsError(!callsRes.ok);
       if (Array.isArray(contactsData)) setContacts(contactsData);
       if (Array.isArray(callsData)) setCalls(callsData);
       if (Array.isArray(voicemailsData)) setVoicemails(voicemailsData);
     } catch {
-      // Réseau indisponible : on conserve les données déjà chargées.
+      if (mountedRef.current) {
+        setContactsError(true);
+        setCallsError(true);
+      }
     } finally {
       if (mountedRef.current) setLoading(false);
     }
@@ -66,5 +75,5 @@ export function usePhoneData(): PhoneData {
     };
   }, [refresh]);
 
-  return { contacts, calls, voicemails, loading, refresh };
+  return { contacts, calls, voicemails, loading, contactsError, callsError, refresh };
 }

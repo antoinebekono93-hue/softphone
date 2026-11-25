@@ -1,5 +1,5 @@
 import { resolveAuthorizedAssistant } from './context';
-import { toSafeErrorCode } from './errors';
+import { toSafeErrorCode, toSafeErrorDetails } from './errors';
 import { buildToolDefinitionsForPermissions, getAIToolDefinition, isDefinitionEnabled } from './registry';
 import type {
   AIToolDeps,
@@ -8,6 +8,7 @@ import type {
   AIToolExecutionContext,
   AuthorizedAssistant,
 } from './types';
+import type { AIToolErrorDetails } from './errors';
 import { asArgumentsObject, rejectUnknownKeys } from './validation';
 
 export interface ExecuteAIToolCallInput {
@@ -28,9 +29,10 @@ type ErrorCode = AIToolExecutionFailure['error']['code'];
 function failure(
   toolName: string,
   requestId: string,
-  code: ErrorCode
+  code: ErrorCode,
+  details?: AIToolErrorDetails
 ): AIToolExecutionFailure {
-  return { ok: false, toolName, requestId, error: { code } };
+  return { ok: false, toolName, requestId, error: { code, ...(details ? { details } : {}) } };
 }
 
 /**
@@ -188,6 +190,6 @@ export async function executeAIToolCall(
       errorCode: code,
       durationMs: deps.now() - startedAt,
     });
-    return failure(toolName, requestId, code);
+    return failure(toolName, requestId, code, toSafeErrorDetails(error));
   }
 }

@@ -881,3 +881,535 @@ label[for] {
   scrollbar-width: none;
 }
 
+/* ============================================================
+   Buster Call — Mobile Phone Design System
+   Tokens + utilitaires partagés pour tous les écrans mobiles.
+   Source : dialer Clavier approuvé. Ne pas modifier les valeurs
+   validées sans revue visuelle.
+   ============================================================ */
+
+/* --- Design Tokens : Couleurs --- */
+.bc-light {
+  /* Surfaces */
+  --bc-bg: #f8fbff;
+  --bc-bg-gradient: linear-gradient(180deg, #f8fbff 0%, #f3f7fb 100%);
+  --bc-surface: #ffffff;
+  --bc-surface-translucent: rgba(255, 255, 255, 0.85);
+  --bc-surface-hover: #e9e9ee;
+  --bc-surface-glass: rgba(255, 255, 255, 0.82);
+  --bc-surface-elevated: #ffffff;
+
+  /* Texte */
+  --bc-text: #1c1c1e;
+  --bc-text-secondary: #6c6c70;
+  --bc-text-muted: #a1a1a6;
+  --bc-text-on-accent: #ffffff;
+
+  /* Accent Buster Call */
+  --bc-accent: #0a97b0;
+  --bc-accent-hover: #0a87a0;
+  --bc-accent-active: #087f94;
+  --bc-accent-soft: rgba(10, 151, 176, 0.12);
+  --bc-accent-foreground: #ffffff;
+
+  /* Sémantique */
+  --bc-success: #34c759;
+  --bc-success-glow: rgba(52, 199, 89, 0.35);
+  --bc-danger: #ff3b30;
+  --bc-danger-soft: rgba(255, 59, 48, 0.08);
+  --bc-warning: #ff9f0a;
+
+  /* Bordures */
+  --bc-border: rgba(60, 60, 67, 0.13);
+  --bc-border-strong: rgba(60, 60, 67, 0.22);
+  --bc-border-accent: #0a97b0;
+
+  /* Ombres */
+  --bc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --bc-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --bc-shadow-lg: 0 8px 24px -8px rgba(0, 0, 0, 0.18);
+  --bc-shadow-float: 0 4px 20px rgba(52, 199, 89, 0.35);
+
+  /* Espacements (échelle 4px) */
+  --bc-space-1: 4px;
+  --bc-space-2: 8px;
+  --bc-space-3: 12px;
+  --bc-space-4: 16px;
+  --bc-space-5: 20px;
+  --bc-space-6: 24px;
+  --bc-space-7: 32px;
+  --bc-space-8: 40px;
+
+  /* Rayons */
+  --bc-radius-sm: 12px;
+  --bc-radius-md: 16px;
+  --bc-radius-lg: 24px;
+  --bc-radius-xl: 30px;
+  --bc-radius-full: 9999px;
+
+  /* Typographie */
+  --bc-font-display: 34px;
+  --bc-font-title: 17px;
+  --bc-font-body: 15px;
+  --bc-font-caption: 13px;
+  --bc-font-tab: 12px;
+  --bc-font-keypad-digit: clamp(36px, 10vw, 52px);
+  --bc-font-keypad-letters: clamp(11px, 3vw, 15px);
+
+  /* Z-index */
+  --bc-z-shell: 45;
+  --bc-z-nav: 40;
+  --bc-z-overlay: 50;
+  --bc-z-modal: 70;
+  --bc-z-call-overlay: 100;
+
+  /* Touch */
+  --bc-touch-target: 44px;
+}
+
+/* --- Utility : Fond téléphone --- */
+.bc-phone-bg {
+  background: var(--bc-bg-gradient);
+}
+
+/* --- Utility : Titre d'écran --- */
+.bc-screen-title {
+  font-size: var(--bc-font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--bc-text);
+}
+
+/* --- Utility : Marque/Buster Call caption --- */
+.bc-brand-caption {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--bc-accent);
+}
+
+/* --- Utility : Ligne de liste native --- */
+.bc-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--bc-space-3);
+  padding: var(--bc-space-3) var(--bc-space-4);
+  min-height: 72px;
+  background: var(--bc-surface);
+}
+.bc-list-row + .bc-list-row {
+  border-top: 1px solid var(--bc-border);
+}
+
+/* --- Utility : Avatar circulaire --- */
+.bc-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--bc-radius-full);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--bc-accent-soft);
+  color: var(--bc-accent);
+}
+
+/* --- Utility : Séparateur subtil --- */
+.bc-divider {
+  height: 1px;
+  background: var(--bc-border);
+  margin-left: 68px;
+}
+
+/* --- Utility : Contrôle segmenté --- */
+.bc-segmented {
+  display: flex;
+  border-radius: var(--bc-radius-sm);
+  background: var(--bc-surface-hover);
+  padding: 2px;
+  gap: 2px;
+}
+.bc-segmented-item {
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 8px var(--bc-space-3);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--bc-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+  min-height: var(--bc-touch-target);
+}
+.bc-segmented-item[aria-selected="true"] {
+  background: var(--bc-surface);
+  color: var(--bc-text);
+  box-shadow: var(--bc-shadow-sm);
+}
+
+/* --- Utility : Bouton icône circulaire --- */
+.bc-icon-btn {
+  width: var(--bc-touch-target);
+  height: var(--bc-touch-target);
+  border-radius: var(--bc-radius-full);
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--bc-text-secondary);
+  cursor: pointer;
+  transition: background 120ms ease, transform 100ms ease;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.bc-icon-btn:active {
+  background: var(--bc-surface-hover);
+  transform: scale(0.96);
+}
+
+/* --- Utility : Bouton primaire (appel) --- */
+.bc-btn-primary {
+  width: 88px;
+  height: 88px;
+  border-radius: var(--bc-radius-full);
+  display: grid;
+  place-items: center;
+  border: none;
+  background: var(--bc-success);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: var(--bc-shadow-float);
+  transition: transform 100ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.bc-btn-primary:active {
+  transform: scale(0.96);
+}
+
+/* --- Utility : Bouton secondaire circulaire --- */
+.bc-btn-secondary {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--bc-radius-full);
+  display: grid;
+  place-items: center;
+  border: none;
+  background: var(--bc-surface-hover);
+  color: var(--bc-text-secondary);
+  cursor: pointer;
+  transition: transform 100ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.bc-btn-secondary:active {
+  transform: scale(0.96);
+}
+
+/* --- Utility : État vide --- */
+.bc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--bc-space-8);
+}
+.bc-empty-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--bc-radius-full);
+  display: grid;
+  place-items: center;
+  background: var(--bc-surface-hover);
+  color: var(--bc-text-muted);
+  margin-bottom: var(--bc-space-5);
+}
+.bc-empty-title {
+  font-size: var(--bc-font-title);
+  font-weight: 600;
+  color: var(--bc-text);
+}
+.bc-empty-desc {
+  font-size: 14px;
+  color: var(--bc-text-secondary);
+  margin-top: var(--bc-space-2);
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+/* --- Utility : Skeleton --- */
+.bc-skeleton {
+  display: flex;
+  align-items: center;
+  gap: var(--bc-space-3);
+  padding: var(--bc-space-3) var(--bc-space-4);
+  min-height: 72px;
+}
+.bc-skeleton-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--bc-radius-full);
+  background: var(--bc-surface-hover);
+  flex-shrink: 0;
+}
+.bc-skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--bc-space-2);
+}
+.bc-skeleton-line {
+  height: 14px;
+  border-radius: var(--bc-radius-sm);
+  background: var(--bc-surface-hover);
+}
+.bc-skeleton-line--short {
+  width: 40%;
+}
+
+/* --- Utility : Safe areas --- */
+.bc-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.bc-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* --- Utility : Indicateur home iOS --- */
+.bc-home-indicator {
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--bc-text);
+  margin: 4px auto 8px;
+  flex-shrink: 0;
+}
+
+/* --- Utility : Barre d'onglets basse --- */
+.bc-tabbar {
+  display: flex;
+  align-items: stretch;
+  background: var(--bc-surface-translucent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--bc-radius-lg) var(--bc-radius-lg) 0 0;
+  box-shadow: 0 -1px 12px rgba(0, 0, 0, 0.06);
+  padding: var(--bc-space-2) var(--bc-space-1);
+  padding-bottom: max(var(--bc-space-2), env(safe-area-inset-bottom));
+  flex-shrink: 0;
+}
+
+.bc-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: var(--bc-space-2) 0 var(--bc-space-1);
+  border: none;
+  background: transparent;
+  color: var(--bc-text-muted);
+  cursor: pointer;
+  transition: color 150ms ease;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.bc-tab-icon {
+  width: 48px;
+  height: 28px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 150ms ease;
+}
+
+.bc-tab--active {
+  color: var(--bc-accent);
+}
+.bc-tab--active .bc-tab-icon {
+  background: var(--bc-accent-soft);
+}
+
+.bc-tab-label {
+  font-size: var(--bc-font-tab);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.bc-tab-badge {
+  position: absolute;
+  top: 2px;
+  right: calc(50% - 28px);
+  min-width: 16px;
+  height: 16px;
+  border-radius: var(--bc-radius-full);
+  background: var(--bc-danger);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+
+/* --- Utility : Header marque --- */
+.bc-header {
+  display: flex;
+  align-items: center;
+  gap: var(--bc-space-3);
+  padding: var(--bc-space-2) var(--bc-space-5) var(--bc-space-4);
+  flex-shrink: 0;
+}
+
+.bc-header-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--bc-radius-md);
+  background: linear-gradient(135deg, var(--bc-accent) 0%, var(--bc-accent-active) 100%);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(10, 151, 176, 0.25);
+  color: #ffffff;
+}
+
+.bc-header-brand {
+  flex: 1;
+  min-width: 0;
+}
+
+.bc-header-title {
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--bc-text);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.bc-header-tagline {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--bc-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-top: 2px;
+}
+
+.bc-header-profile {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--bc-radius-full);
+  background: var(--bc-surface-hover);
+  border: 1px solid rgba(60, 60, 67, 0.08);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--bc-text-secondary);
+  padding: 0;
+}
+
+/* --- Utility : Status bar simulée --- */
+.bc-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 var(--bc-space-5);
+  flex-shrink: 0;
+}
+
+.bc-statusbar-time {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bc-text);
+  letter-spacing: 0.02em;
+}
+
+.bc-statusbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--bc-text);
+}
+
+/* --- Utility : Champ numéro --- */
+.bc-number-field {
+  display: flex;
+  align-items: center;
+  height: 100px;
+  margin: 0 var(--bc-space-5);
+  border-radius: var(--bc-radius-xl);
+  background: var(--bc-surface-translucent);
+  border: 1px solid rgba(60, 60, 67, 0.08);
+  box-shadow: var(--bc-shadow-md);
+  padding: 0 6px 0 var(--bc-space-4);
+  flex-shrink: 0;
+}
+
+.bc-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(14px, 4vw, 20px) clamp(16px, 5vw, 24px);
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 0 var(--bc-space-5);
+  flex: 1;
+  align-content: center;
+  justify-content: center;
+}
+
+/* NOTE : `.bc-key` (touches du clavier) vit plus haut dans ce fichier
+   (bloc « Apple Phone app style »). On ne le redéfinit PAS ici pour ne
+   jamais écraser le Clavier validé. `.bc-keypad` ci-dessus est purement
+   layout (grille/padding) et n'entre pas en conflit. */
+
+/* --- Utility : Actions d'appel --- */
+.bc-call-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bc-space-8);
+  padding: var(--bc-space-3) var(--bc-space-5) var(--bc-space-2);
+  flex-shrink: 0;
+}
+
+/* --- Utility : Barre de recherche --- */
+.bc-search {
+  display: flex;
+  align-items: center;
+  gap: var(--bc-space-2);
+  padding: 0 var(--bc-space-4);
+  height: 44px;
+  border-radius: var(--bc-radius-sm);
+  background: var(--bc-surface-hover);
+  border: 1px solid transparent;
+  color: var(--bc-text-secondary);
+}
+
+/* --- Utility : Modal mobile --- */
+.bc-modal-panel {
+  border-radius: var(--bc-radius-lg);
+  background: var(--bc-surface);
+  box-shadow: var(--bc-shadow-lg);
+  overflow: hidden;
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .bc-key,
+  .bc-btn-primary,
+  .bc-btn-secondary,
+  .bc-icon-btn,
+  .bc-tab,
+  .bc-tab-icon,
+  .bc-segmented-item {
+    transition: none;
+  }
+}
+

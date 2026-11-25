@@ -32,6 +32,8 @@ function VoicemailRow({
   const name = contact ? contactName(contact) : formatPhoneNumber(voicemail.fromNumber ?? "");
   const duration = callDurationLabel({ id: voicemail.id, duration: voicemail.duration });
   const isPlaying = playingId === voicemail.id;
+  const durationLabel = duration ?? "Message vocal";
+  const hasTranscription = !!voicemail.transcriptionText?.trim();
 
   useEffect(() => {
     const element = audioRef.current;
@@ -53,9 +55,9 @@ function VoicemailRow({
   };
 
   return (
-    <li className="flex gap-3 border-b border-[var(--border-subtle)] px-4 py-3 last:border-b-0">
+    <li className="flex items-start gap-3 px-4 py-2 min-h-[80px] md:min-h-[92px]">
       <span
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[15px] font-semibold"
+        className="grid h-12 w-12 md:h-14 md:w-14 shrink-0 place-items-center rounded-full text-[15px] font-semibold mt-1"
         style={{
           background: "color-mix(in oklch, var(--brand) 14%, var(--bg-surface))",
           color: "var(--brand)",
@@ -65,36 +67,26 @@ function VoicemailRow({
         {initials(name)}
       </span>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 border-b border-[var(--border-subtle)] pb-2 pt-1">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-[17px] text-[var(--text-primary)]">{name}</span>
-          <span className="shrink-0 text-[13px] tabular-nums text-[var(--text-secondary)]">
+          <span className="truncate text-[16px] md:text-[17px] font-semibold text-[var(--text-primary)]" title={name}>
+            {name}
+          </span>
+          <span className="shrink-0 text-[12px] md:text-[13px] tabular-nums text-[var(--text-secondary)]">
             {recentTimestampLabel(voicemail.startedAt)}
           </span>
         </div>
         <div className="mt-0.5 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggle}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[var(--brand)] text-white transition-transform active:scale-95"
-            aria-label={isPlaying ? "Pause" : "Écouter le message"}
-          >
-            {isPlaying ? (
-              <Pause className="h-4 w-4" aria-hidden="true" />
-            ) : (
-              <Play className="h-4 w-4" aria-hidden="true" />
-            )}
-          </button>
-          <span className="text-[13px] tabular-nums text-[var(--text-secondary)]">
-            {duration ?? "Message vocal"}
+          <span className="text-[13px] md:text-[14px] text-[var(--text-secondary)]">
+            Message vocal · {durationLabel}
           </span>
         </div>
-        {voicemail.transcriptionText?.trim() && (
+        {hasTranscription && (
           <p
-            className="mt-1.5 text-[14px] leading-snug text-[var(--text-secondary)]"
+            className="mt-1 text-[13px] md:text-[14px] leading-snug text-[var(--text-secondary)]"
             style={{
               display: "-webkit-box",
-              WebkitLineClamp: 3,
+              WebkitLineClamp: 2,
               WebkitBoxOrient: "vertical",
               overflow: "hidden",
             }}
@@ -109,6 +101,20 @@ function VoicemailRow({
           onEnded={() => onMarkPlaying(null)}
         />
       </div>
+
+      <button
+        type="button"
+        onClick={toggle}
+        className="mt-2 grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[var(--brand)] text-white transition-transform active:scale-95"
+        aria-label={isPlaying ? "Mettre en pause le message vocal" : "Lire le message vocal"}
+        aria-pressed={isPlaying}
+      >
+        {isPlaying ? (
+          <Pause className="h-5 w-5" aria-hidden="true" />
+        ) : (
+          <Play className="h-5 w-5" aria-hidden="true" />
+        )}
+      </button>
     </li>
   );
 }
@@ -135,8 +141,8 @@ export function MobileMessagesView({
         action={
           <Link
             href="/dashboard/inbox"
-            className="mb-1 grid h-9 w-9 place-items-center rounded-full text-[var(--brand)] transition-colors active:bg-[var(--bg-surface-hover)]"
-            aria-label="Ouvrir la messagerie complète"
+            className="mb-1 grid h-11 w-11 place-items-center rounded-full text-[var(--brand)] transition-colors active:bg-[var(--bg-surface-hover)]"
+            aria-label="Ouvrir la messagerie complète (SMS, WhatsApp)"
           >
             <MessageCircle className="h-5 w-5" aria-hidden="true" />
           </Link>
@@ -146,15 +152,29 @@ export function MobileMessagesView({
       <p className="px-4 pb-2 text-[13px] text-[var(--text-secondary)]">Messagerie vocale</p>
 
       {loading && voicemails.length === 0 ? (
-        <p className="px-4 py-10 text-center text-[14px] text-[var(--text-secondary)]">Chargement…</p>
+        <ul className="mb-4">
+          {[0, 1, 2, 3].map((i) => (
+            <li key={i} className="flex items-center gap-3 px-4 py-2 min-h-[80px] md:min-h-[92px] animate-pulse">
+              <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-[var(--bg-surface-hover)] shrink-0" />
+              <div className="flex-1 border-b border-[var(--border-subtle)] pb-3">
+                <div className="flex justify-between gap-2">
+                  <div className="h-4 w-1/3 bg-[var(--bg-surface-hover)] rounded" />
+                  <div className="h-3 w-12 bg-[var(--bg-surface-hover)] rounded" />
+                </div>
+                <div className="mt-2 h-3 w-2/3 bg-[var(--bg-surface-hover)] rounded" />
+              </div>
+              <div className="h-11 w-11 rounded-full bg-[var(--bg-surface-hover)] shrink-0" />
+            </li>
+          ))}
+        </ul>
       ) : voicemails.length === 0 ? (
         <EmptyStateMobile
           icon={Voicemail}
           title="Aucun message vocal"
-          description="Les messages laissés sur votre ligne Buster Call apparaîtront ici."
+          description="Vos messages vocaux apparaîtront ici."
         />
       ) : (
-        <ul className="mx-4 mb-4 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <ul className="mb-4">
           {voicemails.map((voicemail) => (
             <VoicemailRow
               key={voicemail.id}
@@ -169,9 +189,9 @@ export function MobileMessagesView({
 
       <Link
         href="/dashboard/inbox"
-        className="mx-4 mb-6 flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-3 text-[15px] font-medium text-[var(--brand)]"
+        className="mx-4 mb-6 flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] py-3 text-[15px] font-medium text-[var(--brand)] min-h-[44px]"
       >
-        <MessageCircle className="h-4 w-4" aria-hidden="true" />
+        <MessageCircle className="h-5 w-5" aria-hidden="true" />
         Ouvrir la messagerie (SMS, WhatsApp)
       </Link>
     </div>

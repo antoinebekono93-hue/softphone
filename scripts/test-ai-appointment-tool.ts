@@ -37,9 +37,8 @@ import type { AIToolDeps } from '../lib/ai-tools/types';
 import type {
   AppointmentRecord,
   AppointmentWriter,
-  CreateAppointmentInput,
-  CreateAppointmentOutcome,
 } from '../lib/ai-tools/appointments';
+import { createMemoryAppointmentWriter } from './helpers/memory-appointment-writer';
 
 let failures = 0;
 function check(name: string, cond: boolean, detail?: string) {
@@ -142,60 +141,20 @@ const fakeDb: AIToolDataAccess = {
   },
 };
 
-interface WriterState {
-  store: Map<string, AppointmentRecord>;
-  createCalls: number;
-  overlapCalls: number;
-  lastInput: CreateAppointmentInput | null;
-}
-
 function makeWriter(config: {
   orgTimezoneA?: string | null;
   orgTimezoneB?: string | null;
   overlaps?: AppointmentRecord[];
-}): { writer: AppointmentWriter; state: WriterState } {
-  const state: WriterState = {
-    store: new Map(),
-    createCalls: 0,
-    overlapCalls: 0,
-    lastInput: null,
-  };
-  const writer: AppointmentWriter = {
-    async getOrganizationTimezone(organizationId) {
-      if (organizationId === ORG_A) {
-        return config.orgTimezoneA === undefined ? 'Europe/Paris' : config.orgTimezoneA;
-      }
-      if (organizationId === ORG_B) {
-        return config.orgTimezoneB === undefined ? null : config.orgTimezoneB;
-      }
-      return null;
+}) {
+  return createMemoryAppointmentWriter({
+    timezones: {
+      [ORG_A]:
+        config.orgTimezoneA === undefined ? 'Europe/Paris' : config.orgTimezoneA,
+      [ORG_B]:
+        config.orgTimezoneB === undefined ? null : config.orgTimezoneB,
     },
-    async findOverlappingAppointments() {
-      state.overlapCalls++;
-      return config.overlaps ?? [];
-    },
-    async createAppointment(input): Promise<CreateAppointmentOutcome> {
-      state.createCalls++;
-      state.lastInput = input;
-      const existing = state.store.get(input.idempotencyKey);
-      if (existing) return { status: 'DUPLICATE', appointment: existing };
-      const record: AppointmentRecord = {
-        id: `appt-${state.store.size + 1}`,
-        organizationId: input.organizationId,
-        aiEmployeeId: input.aiEmployeeId,
-        contactId: input.contactId,
-        customerName: input.customerName,
-        reason: input.reason,
-        startsAt: input.startsAt,
-        endsAt: input.endsAt,
-        timezone: input.timezone,
-        status: input.status,
-      };
-      state.store.set(input.idempotencyKey, record);
-      return { status: 'CREATED', appointment: record };
-    },
-  };
-  return { writer, state };
+    seed: config.overlaps ?? [],
+  });
 }
 
 let reqSeq = 0;
@@ -352,7 +311,10 @@ async function main() {
   const { writer, state } = makeWriter({ overlaps: [overlap] });
   const r = await run(ASSISTANT_WA, { ...valid, timezone: 'UTC' }, writer);
   check('J1 chevauchement → TIME_SLOT_UNAVAILABLE', r.ok === false && r.error.code === 'TIME_SLOT_UNAVAILABLE');
-  check('J2 aucune écriture sur conflit', state.createCalls === 0 && state.overlapCalls === 1);
+  check(
+    'J2 conflit détecté sans insertion',
+    state.createCalls === 1 && state.insertCalls === 0 && state.overlapCalls === 1
+  );
 }
 
 // ── K. Idempotence anti-doublon (même request_id) ───────────────────────────

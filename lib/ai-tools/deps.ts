@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { prismaAppointmentWriter } from '../appointment-writer-prisma';
+import { prismaLeadWriter } from '../crm-writer-prisma';
+import { prismaSmsWriter } from '../sms/writer';
+import { createTelnyxSmsSender } from '../sms/provider';
 import { prismaAIToolDataAccess } from './data-access-prisma';
 import { createConsoleEventSink } from './observability';
 import { createAIToolRateLimiter } from './rate-limit';
@@ -30,6 +33,9 @@ export function getDefaultAIToolDeps(): AIToolDeps {
       now: () => Date.now(),
       generateRequestId: () => randomUUID(),
       appointments: prismaAppointmentWriter,
+      leads: prismaLeadWriter,
+      sms: prismaSmsWriter,
+      smsSender: createTelnyxSmsSender(),
     };
   }
   return defaultDeps;

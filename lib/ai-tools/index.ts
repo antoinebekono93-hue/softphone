@@ -7,8 +7,8 @@ export type {
   AIToolRiskLevel,
   AuthorizedAssistant,
 } from './types';
-export type { AIToolErrorCode } from './errors';
-export { AIToolError, toSafeErrorCode } from './errors';
+export type { AIToolErrorCode, AIToolErrorDetails } from './errors';
+export { AIToolError, toSafeErrorCode, toSafeErrorDetails } from './errors';
 export type { AIToolDefinition } from './tool-definition';
 export {
   AI_TOOL_DEFINITIONS,
@@ -21,6 +21,8 @@ export {
 } from './registry';
 export {
   APPOINTMENT_WRITE_TOOLS,
+  LEAD_WRITE_TOOLS,
+  SMS_WRITE_TOOLS,
   grantedPermissionsFor,
   permissionsSatisfied,
   READ_ONLY_PERMISSIONS,
@@ -93,11 +95,71 @@ export type {
 } from './data-access';
 export {
   buildAppointmentIdempotencyKey,
+  createAppointmentInTransaction,
+  executeAppointmentCreate,
+  type AppointmentCreateExecutor,
   type AppointmentRecord,
+  type AppointmentTransaction,
   type AppointmentWriter,
+  type BusinessHoursQuery,
+  type BusinessHoursSets,
   type CreateAppointmentInput,
   type CreateAppointmentOutcome,
   type OverlapQuery,
+  type RetryPolicy,
 } from './appointments';
+export {
+  evaluateBusinessHours,
+  findNextAvailableWindows,
+  minutesToHm,
+  parseHm,
+  resolveBusinessHours,
+  validateBusinessHoursConfig,
+  type BusinessHoursConfigRejection,
+  type BusinessHoursConfigValidation,
+  type BusinessHoursEvaluation,
+  type BusinessHoursReason,
+  type BusinessHoursSource,
+  type BusinessHoursWindowRecord,
+  type NormalizedBusinessHour,
+  type ResolvedBusinessHours,
+} from './business-hours';
 export { createAppointmentTool } from './handlers/appointments';
-export { isValidIanaTimeZone, zonedLocalToUtc } from './time';
+export {
+  getZonedParts,
+  isValidIanaTimeZone,
+  zonedLocalToUtc,
+  type ZonedDateTimeParts,
+} from './time';
+export { createLeadTool, updateLeadTool } from './handlers/leads';
+export {
+  appendNote,
+  buildLeadIdempotencyKey,
+  resolveLeadByPhone,
+  type CreateLeadInput,
+  type CreateLeadOutcome,
+  type LeadIdentity,
+  type LeadRecord,
+  type LeadResolution,
+  type LeadWriter,
+  type UpdateLeadInput,
+  type UpdateLeadOutcome,
+} from './leads';
+export { sendSmsTool } from './handlers/messages';
+export {
+  buildSmsIdempotencyKey,
+  SMS_MAX_BODY_LENGTH,
+  SmsChargeError,
+  SmsProviderError,
+  type PersistOutboundSmsInput,
+  type ReservedSmsCharge,
+  type SmsClaimOutcome,
+  type SmsMessageRecord,
+  type SmsProviderSendInput,
+  type SmsProviderSendResult,
+  type SmsRecipientRecord,
+  type SmsSenderPort,
+  type SmsSenderRecord,
+  type SmsWriter,
+} from './sms';
+export type { SmsMessageDTO, SmsSendResultDTO } from './dto';

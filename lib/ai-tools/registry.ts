@@ -8,6 +8,8 @@ import {
   searchCrmTool,
 } from './handlers/opportunities';
 import { createAppointmentTool } from './handlers/appointments';
+import { createLeadTool, updateLeadTool } from './handlers/leads';
+import { sendSmsTool } from './handlers/messages';
 import { permissionsSatisfied } from './allowlist';
 import type { AIToolDefinition } from './tool-definition';
 import type { AIToolPermission, AIToolRiskLevel } from './types';
@@ -31,6 +33,9 @@ export const AI_TOOL_DEFINITIONS: readonly AIToolDefinition[] = [
   searchCrmTool,
   getOpportunityTool,
   createAppointmentTool,
+  createLeadTool,
+  updateLeadTool,
+  sendSmsTool,
 ];
 
 const definitionsByName = new Map<string, AIToolDefinition>(

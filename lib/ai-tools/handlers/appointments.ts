@@ -2,6 +2,12 @@ import {
   buildAppointmentIdempotencyKey,
   type CreateAppointmentOutcome,
 } from '../appointments';
+import {
+  evaluateBusinessHours,
+  findNextAvailableWindows,
+  resolveBusinessHours,
+  type ResolvedBusinessHours,
+} from '../business-hours';
 import { toAppointmentDTO, type AppointmentDTO } from '../dto';
 import { AIToolError } from '../errors';
 import { isValidIanaTimeZone, zonedLocalToUtc } from '../time';
@@ -18,6 +24,8 @@ import {
 const MIN_DURATION_MINUTES = 5;
 const MAX_DURATION_MINUTES = 480;
 const DEFAULT_DURATION_MINUTES = 30;
+const NEXT_AVAILABLE_HORIZON_DAYS = 7;
+const NEXT_AVAILABLE_MAX_RESULTS = 3;
 
 const ALLOWED_KEYS = [
   'date',
@@ -167,6 +175,69 @@ export const createAppointmentTool: AIToolDefinition<AppointmentDTO> = {
       throw new AIToolError('INVALID_ARGUMENTS', 'Invalid argument: date');
     }
 
+    // Phase 4A.2 : les horaires d'ouverture sont évalués AVANT toute écriture,
+    // et hors transaction (une modification de planning n'est pas un risque de
+    // double-réservation). Aucune configuration => comportement non restreint
+    // (décision A), le legacy reste inchangé.
+    let businessHours: ResolvedBusinessHours;
+    try {
+      businessHours = resolveBusinessHours(
+        await deps.appointments.getBusinessHours({
+          organizationId: context.organizationId,
+          aiEmployeeId: context.employeeId,
+        })
+      );
+    } catch {
+      emit(deps.events, 'AI_APPOINTMENT_FAILED', context, {
+        errorCode: 'TEMPORARILY_UNAVAILABLE',
+      });
+      throw new AIToolError('TEMPORARILY_UNAVAILABLE');
+    }
+
+    if (!businessHours.configured) {
+      emit(deps.events, 'AI_APPOINTMENT_BUSINESS_HOURS_CHECK', context, {
+        reason: 'UNRESTRICTED',
+      });
+    } else {
+      const evaluation = evaluateBusinessHours({
+        startsAt,
+        endsAt,
+        timezone: resolvedTimezone,
+        windows: businessHours.windows,
+      });
+      emit(deps.events, 'AI_APPOINTMENT_BUSINESS_HOURS_CHECK', context, {
+        reason: evaluation.withinHours
+          ? `WITHIN_HOURS:${businessHours.source}`
+          : evaluation.reason,
+      });
+      if (!evaluation.withinHours) {
+        const nextAvailableWindows = findNextAvailableWindows({
+          after: new Date(deps.now()),
+          durationMs: endsAt.getTime() - startsAt.getTime(),
+          timezone: resolvedTimezone,
+          windows: businessHours.windows,
+          maxDays: NEXT_AVAILABLE_HORIZON_DAYS,
+          maxResults: NEXT_AVAILABLE_MAX_RESULTS,
+        });
+        emit(deps.events, 'AI_APPOINTMENT_OUTSIDE_HOURS', context, {
+          errorCode: 'TIME_OUTSIDE_BUSINESS_HOURS',
+          reason: evaluation.reason,
+        });
+        throw new AIToolError(
+          'TIME_OUTSIDE_BUSINESS_HOURS',
+          'Requested time is outside business hours',
+          {
+            timezone: resolvedTimezone,
+            requestedStart: startsAt.toISOString(),
+            requestedEnd: endsAt.toISOString(),
+            ...(nextAvailableWindows.length > 0
+              ? { nextAvailableWindows }
+              : {}),
+          }
+        );
+      }
+    }
+
     let contactId: string | null = null;
     let canonicalPhone: string | null = null;
     if (contactIdArg) {
@@ -193,20 +264,6 @@ export const createAppointmentTool: AIToolDefinition<AppointmentDTO> = {
         contactId = contact.id;
         if (!customerName && contact.name) customerName = contact.name;
       }
-    }
-
-    const overlaps = await deps.appointments.findOverlappingAppointments({
-      organizationId: context.organizationId,
-      aiEmployeeId: context.employeeId,
-      startsAt,
-      endsAt,
-    });
-    if (overlaps.length > 0) {
-      emit(deps.events, 'AI_APPOINTMENT_CONFLICT', context, {
-        errorCode: 'TIME_SLOT_UNAVAILABLE',
-        reason: 'SLOT_OVERLAP',
-      });
-      throw new AIToolError('TIME_SLOT_UNAVAILABLE');
     }
 
     emit(deps.events, 'AI_APPOINTMENT_AUTHORIZED', context);
@@ -241,6 +298,23 @@ export const createAppointmentTool: AIToolDefinition<AppointmentDTO> = {
     } catch (error) {
       emit(deps.events, 'AI_APPOINTMENT_FAILED', context, {
         errorCode: error instanceof AIToolError ? error.code : 'TEMPORARILY_UNAVAILABLE',
+      });
+      throw new AIToolError('TEMPORARILY_UNAVAILABLE');
+    }
+
+    // Anti-double-réservation : la détection de chevauchement et l'écriture
+    // sont atomiques côté writer. Un perdant reçoit un conflit contrôlé.
+    if (outcome.status === 'CONFLICT') {
+      emit(deps.events, 'AI_APPOINTMENT_CONFLICT', context, {
+        errorCode: 'TIME_SLOT_UNAVAILABLE',
+        reason: 'SLOT_OVERLAP',
+      });
+      throw new AIToolError('TIME_SLOT_UNAVAILABLE');
+    }
+    if (outcome.status === 'UNAVAILABLE') {
+      emit(deps.events, 'AI_APPOINTMENT_FAILED', context, {
+        errorCode: 'TEMPORARILY_UNAVAILABLE',
+        reason: 'WRITE_CONTENTION',
       });
       throw new AIToolError('TEMPORARILY_UNAVAILABLE');
     }

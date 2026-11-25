@@ -26,7 +26,7 @@ import { contactName, isMissedCall, type PhoneContact } from "./phone-utils";
 export function MobilePhoneShell() {
   const [tab, setTab] = useState<PhoneTab>("dialer");
   const [selectedContact, setSelectedContact] = useState<PhoneContact | null>(null);
-  const { contacts, calls, voicemails, loading } = usePhoneData();
+  const { contacts, calls, voicemails, loading, contactsError, callsError, refresh } = usePhoneData();
   const { routeCall } = useCallRouter();
   const { callState } = useTelnyx();
 
@@ -50,7 +50,7 @@ export function MobilePhoneShell() {
       <div className="flex items-center justify-end px-3" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <Link
           href="/dashboard/inbox"
-          className="grid h-10 w-10 place-items-center rounded-full text-[var(--text-muted)] transition-colors active:bg-[var(--bg-surface-hover)]"
+          className="grid h-11 w-11 place-items-center rounded-full text-[var(--text-muted)] transition-colors active:bg-[var(--bg-surface-hover)]"
           aria-label="Revenir à l'application"
         >
           <LayoutGrid className="h-5 w-5" aria-hidden="true" />
@@ -61,6 +61,9 @@ export function MobilePhoneShell() {
         {tab === "favorites" && (
           <MobileFavoritesView
             contacts={contacts}
+            loading={loading}
+            error={contactsError}
+            onRetry={refresh}
             onCall={callContact}
             onSelect={setSelectedContact}
           />
@@ -70,6 +73,8 @@ export function MobilePhoneShell() {
             calls={calls}
             contacts={contacts}
             loading={loading}
+            error={callsError}
+            onRetry={refresh}
             onCall={callNumber}
           />
         )}
@@ -77,6 +82,8 @@ export function MobilePhoneShell() {
           <MobileContactsView
             contacts={contacts}
             loading={loading}
+            error={contactsError}
+            onRetry={refresh}
             onCall={callContact}
             onSelect={setSelectedContact}
           />

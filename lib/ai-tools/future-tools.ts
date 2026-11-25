@@ -36,22 +36,14 @@ export const FUTURE_AI_TOOLS: readonly FutureAIToolDefinition[] = [
     reason: 'Phase 2 is read-only.',
   },
   {
-    name: 'create_lead',
-    description: 'Create a lead.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-    riskLevel: 'WRITE',
-    requiredPermissions: ['crm:read'],
-    enabled: false,
-    reason: 'No Lead model exists yet.',
-  },
-  {
     name: 'get_business_hours',
     description: 'Read business hours.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     riskLevel: 'READ_ONLY',
     requiredPermissions: ['crm:read'],
     enabled: false,
-    reason: 'No BusinessHours model exists yet.',
+    reason:
+      'BusinessHour model now exists (Phase 4A.2), but the read tool is not exposed in this phase.',
   },
   {
     name: 'get_agent_availability',
@@ -60,16 +52,8 @@ export const FUTURE_AI_TOOLS: readonly FutureAIToolDefinition[] = [
     riskLevel: 'READ_ONLY',
     requiredPermissions: ['crm:read'],
     enabled: false,
-    reason: 'No availability model exists yet.',
-  },
-  {
-    name: 'send_sms',
-    description: 'Send an SMS.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-    riskLevel: 'COMMUNICATION',
-    requiredPermissions: ['contacts:read'],
-    enabled: false,
-    reason: 'Phase 2 is read-only.',
+    reason:
+      'Availability is enforced inside create_appointment (Phase 4A.2); no read tool is exposed yet.',
   },
   {
     name: 'send_whatsapp',

@@ -15,6 +15,11 @@ export const READ_ONLY_PERMISSIONS: readonly AIToolPermission[] = [
 /** Exact write-tool names that map to the `appointments:write` permission. */
 export const APPOINTMENT_WRITE_TOOLS: readonly string[] = ['create_appointment'];
 
+export const LEAD_WRITE_TOOLS: readonly string[] = ['create_lead', 'update_lead'];
+
+/** Exact write-tool names that map to the `messages:write` permission. */
+export const SMS_WRITE_TOOLS: readonly string[] = ['send_sms'];
+
 export interface AllowlistSubject {
   voiceProvider: string | null;
   isActive: boolean;
@@ -31,6 +36,12 @@ export function grantedPermissionsFor(
   const writeTools = subject.allowedWriteTools ?? [];
   if (writeTools.some((tool) => APPOINTMENT_WRITE_TOOLS.includes(tool))) {
     granted.push('appointments:write');
+  }
+  if (writeTools.some((tool) => LEAD_WRITE_TOOLS.includes(tool))) {
+    granted.push('leads:write');
+  }
+  if (writeTools.some((tool) => SMS_WRITE_TOOLS.includes(tool))) {
+    granted.push('messages:write');
   }
   return granted;
 }

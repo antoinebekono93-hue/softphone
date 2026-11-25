@@ -154,6 +154,7 @@ model Organization {
   callReservations           CallReservation[]
   appCallSessions            AppCallSession[]
   appointments               Appointment[]
+  businessHours              BusinessHour[]
   fcmDeviceTokens            FcmDeviceToken[]
 
   @@index([slug])
@@ -499,6 +500,7 @@ model AIEmployee {
   template         AgentTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
   skills           AgentSkill[]
   appointments     Appointment[]
+  businessHours    BusinessHour[]
 
   @@index([organizationId])
   @@index([templateId])
@@ -1342,4 +1344,29 @@ model Appointment {
   @@index([organizationId, startsAt])
   @@index([aiEmployeeId, startsAt])
   @@index([contactId])
+}
+
+/// Horaires d'ouverture (Phase 4A.2). Une ligne = UNE fenêtre ouvrée pour un
+/// jour de la semaine. `aiEmployeeId` nul = horaire par défaut de
+/// l'organisation ; non nul = horaire spécifique qui REMPLACE entièrement le
+/// défaut pour cet employé. `dayOfWeek` suit `Date.getDay()` (0 = dimanche …
+/// 6 = samedi). `opensAt`/`closesAt` sont des heures MURALES locales "HH:mm"
+/// interprétées dans le fuseau IANA (`Organization.timezone` ou l'argument de
+/// l'appel), jamais en UTC. Les fenêtres à cheval sur minuit ne sont PAS
+/// supportées (`opensAt` doit être strictement antérieur à `closesAt`).
+model BusinessHour {
+  id             String   @id @default(cuid())
+  organizationId String
+  aiEmployeeId   String?
+  dayOfWeek      Int
+  opensAt        String
+  closesAt       String
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  aiEmployee   AIEmployee?  @relation(fields: [aiEmployeeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, aiEmployeeId, dayOfWeek])
 }

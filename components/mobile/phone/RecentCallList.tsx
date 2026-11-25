@@ -25,8 +25,9 @@ function CallKindIcon({ call }: { call: PhoneCall }) {
 }
 
 /**
- * Liste d'appels récents type iPhone : avatar/initiales, nom ou numéro,
- * type d'appel, horodatage, bouton info. Les appels manqués passent en rouge.
+ * Liste d'appels récents type app Téléphone native : avatar/initiales, nom ou
+ * numéro, type d'appel, horodatage, bouton info. Les appels manqués passent en
+ * rouge. Rendu plat (pas de carte), séparateur inséré après la zone avatar.
  */
 export function RecentCallList({
   calls,
@@ -40,26 +41,27 @@ export function RecentCallList({
   onInfo: (call: PhoneCall) => void;
 }) {
   return (
-    <ul className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+    <ul className="bg-[var(--bg-surface)]">
       {calls.map((call) => {
         const name = callDisplayName(call, contacts);
         const missed = isMissedCall(call);
         const number = counterpartyNumber(call);
         const duration = callDurationLabel(call);
         const subtitle = [callKindLabel(call), duration].filter(Boolean).join(" · ");
+
         return (
           <li
             key={call.id}
-            className="flex items-center border-b border-[var(--border-subtle)] last:border-b-0"
+            className="relative flex items-center bg-[var(--bg-surface)] before:pointer-events-none before:absolute before:bottom-0 before:left-[76px] before:right-0 before:h-px before:bg-[var(--border-subtle)] last:before:hidden"
           >
             <button
               type="button"
               onClick={() => number && onCall(number)}
-              className="bc-cell flex min-w-0 flex-1 items-center gap-3 px-4 py-2.5 text-left"
+              className="bc-cell flex min-h-[72px] min-w-0 flex-1 items-center gap-3 py-2 pl-4 text-left"
               aria-label={`Rappeler ${name}`}
             >
               <span
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-[15px] font-semibold"
+                className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-[16px] font-semibold"
                 style={{
                   background: "color-mix(in oklch, var(--brand) 14%, var(--bg-surface))",
                   color: "var(--brand)",
@@ -68,9 +70,12 @@ export function RecentCallList({
               >
                 {initials(name)}
               </span>
+
               <span className="min-w-0 flex-1">
                 <span
-                  className={`block truncate text-[17px] ${missed ? "text-[var(--danger)]" : "text-[var(--text-primary)]"}`}
+                  className={`block truncate text-[17px] font-semibold ${
+                    missed ? "text-[var(--danger)]" : "text-[var(--text-primary)]"
+                  }`}
                 >
                   {name}
                 </span>

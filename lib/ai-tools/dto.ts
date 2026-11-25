@@ -1,5 +1,7 @@
 import type { AppointmentRecord } from './appointments';
 import type { ContactRecord, OpportunityRecord } from './data-access';
+import type { LeadRecord } from './leads';
+import type { SmsMessageRecord } from './sms';
 
 export interface ContactDTO {
   id: string;
@@ -35,6 +37,41 @@ export interface AppointmentDTO {
 }
 
 /**
+ * Projection publique d'un lead. Exclut volontairement le téléphone, les notes
+ * brutes et tout identifiant tenant : seuls le nom, la société, l'email et les
+ * indicateurs de suivi non sensibles franchissent la frontière.
+ */
+export interface LeadDTO {
+  id: string;
+  name: string | null;
+  company: string | null;
+  email: string | null;
+  isVip: boolean;
+  leadScore: number | null;
+  sentiment: string | null;
+  escalationStatus: string | null;
+  optedOut: boolean;
+}
+
+/**
+ * Vue SÛRE d'un SMS sortant (Phase 4C). Seuls l'identifiant local, le
+ * destinataire canonique et le statut franchissent la frontière : jamais
+ * l'identifiant tenant, le `telnyxMessageId` brut, le médias ni le coût.
+ */
+export interface SmsMessageDTO {
+  id: string;
+  to: string;
+  status: string;
+}
+
+export interface SmsSendResultDTO {
+  ok: true;
+  /** Vrai quand un rejeu idempotent a absorbé l'appel (aucun nouvel envoi). */
+  deduplicated: boolean;
+  message: SmsMessageDTO | null;
+}
+
+/**
  * Explicit DTOs are the only shape that leaves a tool handler. Prisma records
  * (with phone, notes, spend history, relations, tenant plumbing) never cross
  * this boundary.
@@ -66,6 +103,20 @@ export function toOpportunityDTO(record: OpportunityRecord): OpportunityDTO {
   };
 }
 
+export function toLeadDTO(record: LeadRecord): LeadDTO {
+  return {
+    id: record.id,
+    name: record.name,
+    company: record.company,
+    email: record.email,
+    isVip: record.isVip,
+    leadScore: record.leadScore,
+    sentiment: record.sentiment,
+    escalationStatus: record.escalationStatus,
+    optedOut: record.optedOut,
+  };
+}
+
 export function toAppointmentDTO(record: AppointmentRecord): AppointmentDTO {
   const durationMinutes = Math.max(
     0,
@@ -79,5 +130,13 @@ export function toAppointmentDTO(record: AppointmentRecord): AppointmentDTO {
     durationMinutes,
     status: record.status,
     customerName: record.customerName,
+  };
+}
+
+export function toSmsMessageDTO(record: SmsMessageRecord): SmsMessageDTO {
+  return {
+    id: record.id,
+    to: record.toNumber,
+    status: record.status,
   };
 }

@@ -22,6 +22,62 @@ export function isValidIanaTimeZone(timeZone: string): boolean {
   }
 }
 
+export interface ZonedDateTimeParts {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+  /** 0 = dimanche … 6 = samedi, identical to `Date.getDay()`. */
+  dayOfWeek: number;
+  /** Minutes écoulées depuis minuit dans le fuseau (0 … 1439). */
+  minutesOfDay: number;
+}
+
+/**
+ * Décompose un instant UTC en champs d'horloge MURALE locaux pour `timeZone`.
+ * Déterministe même lors des transitions DST (heure d'été), car `Intl` renvoie
+ * l'heure locale réellement en vigueur à cet instant. Ne lève jamais : un
+ * fuseau invalide doit être rejeté en amont par `isValidIanaTimeZone`.
+ */
+export function getZonedParts(
+  instant: Date,
+  timeZone: string
+): ZonedDateTimeParts {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(instant);
+  const get = (type: string): number => {
+    const part = parts.find((p) => p.type === type);
+    return part ? Number(part.value) : 0;
+  };
+  const year = get('year');
+  const month = get('month');
+  const day = get('day');
+  const hour = get('hour');
+  const minute = get('minute');
+  const second = get('second');
+  const dayOfWeek = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return {
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    dayOfWeek,
+    minutesOfDay: hour * 60 + minute,
+  };
+}
+
 /** Offset (ms) du fuseau par rapport à UTC à l'instant `utcMs`. */
 function timeZoneOffsetMs(utcMs: number, timeZone: string): number {
   const parts = new Intl.DateTimeFormat('en-US', {

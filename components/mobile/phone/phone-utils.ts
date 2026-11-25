@@ -139,10 +139,12 @@ export function callKindLabel(call: PhoneCall): "Manqué" | "Entrant" | "Sortant
 export function callDurationLabel(call: PhoneCall): string | null {
   const seconds = Number(call.duration ?? 0);
   if (!Number.isFinite(seconds) || seconds <= 0) return null;
-  const mins = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  if (mins <= 0) return `${secs} s`;
-  return `${mins} min ${secs.toString().padStart(2, "0")} s`;
+  if (hours > 0) return mins > 0 ? `${hours} h ${mins} min` : `${hours} h`;
+  if (mins > 0) return secs > 0 ? `${mins} min ${secs} s` : `${mins} min`;
+  return `${secs} s`;
 }
 
 /** Horodatage « Récents » type iOS : heure si aujourd'hui, sinon jour/date. */
@@ -162,4 +164,25 @@ export function recentTimestampLabel(value: PhoneCall["startedAt"]): string {
 export function alphabeticalKey(contact: PhoneContact): string {
   const base = (contact.name?.trim() || "#").charAt(0).toUpperCase();
   return /[A-Z]/.test(base) ? base : "#";
+}
+
+/** Normalise une chaîne pour la recherche : minuscules + accents retirés. */
+export function normalizeSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+/**
+ * Prédicat de recherche partagé (Contacts + Favoris) : correspondance insensible
+ * à la casse/aux accents sur nom, numéro, entreprise et email.
+ */
+export function contactMatchesQuery(contact: PhoneContact, query: string): boolean {
+  const q = normalizeSearch(query.trim());
+  if (!q) return true;
+  const haystack = normalizeSearch(
+    [contactName(contact), contact.phone ?? "", contact.company ?? "", contact.email ?? ""].join(" "),
+  );
+  return haystack.includes(q);
 }
